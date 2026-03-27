@@ -1,0 +1,2041 @@
+SSDB not set. Disabling Smartsim
+SSDB not set. Disabling Smartsim
+SSDB not set. Disabling Smartsim
+SSDB not set. Disabling Smartsim
+SSDB not set. Disabling Smartsim
+SSDB not set. Disabling Smartsim
+SSDB not set. Disabling Smartsim
+SSDB not set. Disabling Smartsim
+SSDB not set. Disabling Smartsim
+SSDB not set. Disabling Smartsim
+SSDB not set. Disabling Smartsim
+SSDB not set. Disabling Smartsim
+SSDB not set. Disabling Smartsim
+SSDB not set. Disabling Smartsim
+SSDB not set. Disabling Smartsim
+SSDB not set. Disabling Smartsim
+Loaded grid metadata: nx=2160, nz=1080, chunk_size=36, chunks_x=60, chunks_z=30, ranks_x=4, ranks_z=4, world_size=16, io_mode=rank0_gather, save_mode=periodic, triangular_scale=1, hdf5_xfer_mode=independent, sync_mode=none
+Initial water mass: 3.3867e+06
+Step 1, Regular, local moved: 0, time: 6.27028 ms
+STEP_TIMING step=1 solver=Regular step_ms=6.27028 local_moved=0
+Step 2, Regular, local moved: 0, time: 6.41761 ms
+STEP_TIMING step=2 solver=Regular step_ms=6.41761 local_moved=0
+Step 3, Regular, local moved: 0, time: 6.31888 ms
+STEP_TIMING step=3 solver=Regular step_ms=6.31888 local_moved=0
+Step 4, Regular, local moved: 0, time: 6.36534 ms
+STEP_TIMING step=4 solver=Regular step_ms=6.36534 local_moved=0
+Step 5, Regular, local moved: 0, time: 6.40358 ms
+STEP_TIMING step=5 solver=Regular step_ms=6.40358 local_moved=0
+Step 6, Regular, local moved: 0, time: 6.39269 ms
+STEP_TIMING step=6 solver=Regular step_ms=6.39269 local_moved=0
+Step 7, Regular, local moved: 0, time: 6.37402 ms
+STEP_TIMING step=7 solver=Regular step_ms=6.37402 local_moved=0
+Step 8, Regular, local moved: 0, time: 6.4249 ms
+STEP_TIMING step=8 solver=Regular step_ms=6.4249 local_moved=0
+Step 9, Regular, local moved: 0, time: 6.50662 ms
+STEP_TIMING step=9 solver=Regular step_ms=6.50662 local_moved=0
+Step 10, Regular, local moved: 0, time: 6.27049 ms
+STEP_TIMING step=10 solver=Regular step_ms=6.27049 local_moved=0
+Step 11, Regular, local moved: 0, time: 6.37545 ms
+STEP_TIMING step=11 solver=Regular step_ms=6.37545 local_moved=0
+Step 12, Regular, local moved: 0, time: 6.42024 ms
+STEP_TIMING step=12 solver=Regular step_ms=6.42024 local_moved=0
+Step 13, Regular, local moved: 0, time: 6.4759 ms
+STEP_TIMING step=13 solver=Regular step_ms=6.4759 local_moved=0
+Step 14, Regular, local moved: 0, time: 7.17464 ms
+STEP_TIMING step=14 solver=Regular step_ms=7.17464 local_moved=0
+Step 15, Regular, local moved: 0, time: 6.38945 ms
+STEP_TIMING step=15 solver=Regular step_ms=6.38945 local_moved=0
+Step 16, Regular, local moved: 0, time: 6.39096 ms
+STEP_TIMING step=16 solver=Regular step_ms=6.39096 local_moved=0
+Step 17, Regular, local moved: 0, time: 6.61809 ms
+STEP_TIMING step=17 solver=Regular step_ms=6.61809 local_moved=0
+Step 18, Regular, local moved: 0, time: 6.55192 ms
+STEP_TIMING step=18 solver=Regular step_ms=6.55192 local_moved=0
+Step 19, Regular, local moved: 0, time: 6.33883 ms
+STEP_TIMING step=19 solver=Regular step_ms=6.33883 local_moved=0
+Step 20, Regular, local moved: 0, time: 6.40791 ms
+STEP_TIMING step=20 solver=Regular step_ms=6.40791 local_moved=0
+Step 21, Regular, local moved: 0, time: 6.55613 ms
+STEP_TIMING step=21 solver=Regular step_ms=6.55613 local_moved=0
+Step 22, Regular, local moved: 0, time: 7.56409 ms
+STEP_TIMING step=22 solver=Regular step_ms=7.56409 local_moved=0
+Step 23, Regular, local moved: 0, time: 6.46126 ms
+STEP_TIMING step=23 solver=Regular step_ms=6.46126 local_moved=0
+Step 24, Regular, local moved: 0, time: 6.40807 ms
+STEP_TIMING step=24 solver=Regular step_ms=6.40807 local_moved=0
+Step 25, Regular, local moved: 0, time: 6.38601 ms
+STEP_TIMING step=25 solver=Regular step_ms=6.38601 local_moved=0
+Step 26, Regular, local moved: 0, time: 6.40516 ms
+STEP_TIMING step=26 solver=Regular step_ms=6.40516 local_moved=0
+Step 27, Regular, local moved: 0, time: 6.44328 ms
+STEP_TIMING step=27 solver=Regular step_ms=6.44328 local_moved=0
+Step 28, Regular, local moved: 0, time: 6.39996 ms
+STEP_TIMING step=28 solver=Regular step_ms=6.39996 local_moved=0
+Step 29, Regular, local moved: 0, time: 6.50626 ms
+STEP_TIMING step=29 solver=Regular step_ms=6.50626 local_moved=0
+Step 30, Regular, local moved: 0, time: 6.54823 ms
+STEP_TIMING step=30 solver=Regular step_ms=6.54823 local_moved=0
+Step 31, Regular, local moved: 0, time: 6.41151 ms
+STEP_TIMING step=31 solver=Regular step_ms=6.41151 local_moved=0
+Step 32, Regular, local moved: 0, time: 6.39637 ms
+STEP_TIMING step=32 solver=Regular step_ms=6.39637 local_moved=0
+Step 33, Regular, local moved: 0, time: 6.44636 ms
+STEP_TIMING step=33 solver=Regular step_ms=6.44636 local_moved=0
+Step 34, Regular, local moved: 0, time: 7.20836 ms
+STEP_TIMING step=34 solver=Regular step_ms=7.20836 local_moved=0
+Step 35, Regular, local moved: 0, time: 6.5386 ms
+STEP_TIMING step=35 solver=Regular step_ms=6.5386 local_moved=0
+Step 36, Regular, local moved: 0, time: 6.47541 ms
+STEP_TIMING step=36 solver=Regular step_ms=6.47541 local_moved=0
+Step 37, Regular, local moved: 0, time: 6.39213 ms
+STEP_TIMING step=37 solver=Regular step_ms=6.39213 local_moved=0
+Step 38, Regular, local moved: 0, time: 6.3543 ms
+STEP_TIMING step=38 solver=Regular step_ms=6.3543 local_moved=0
+Step 39, Regular, local moved: 0, time: 6.43315 ms
+STEP_TIMING step=39 solver=Regular step_ms=6.43315 local_moved=0
+Step 40, Regular, local moved: 0, time: 6.45941 ms
+STEP_TIMING step=40 solver=Regular step_ms=6.45941 local_moved=0
+Step 41, Regular, local moved: 0, time: 6.39128 ms
+STEP_TIMING step=41 solver=Regular step_ms=6.39128 local_moved=0
+Step 42, Regular, local moved: 0, time: 6.3804 ms
+STEP_TIMING step=42 solver=Regular step_ms=6.3804 local_moved=0
+Step 43, Regular, local moved: 0, time: 6.45328 ms
+STEP_TIMING step=43 solver=Regular step_ms=6.45328 local_moved=0
+Step 44, Regular, local moved: 0, time: 6.33804 ms
+STEP_TIMING step=44 solver=Regular step_ms=6.33804 local_moved=0
+Step 45, Regular, local moved: 0, time: 6.37579 ms
+STEP_TIMING step=45 solver=Regular step_ms=6.37579 local_moved=0
+Step 46, Regular, local moved: 0, time: 6.29127 ms
+STEP_TIMING step=46 solver=Regular step_ms=6.29127 local_moved=0
+Step 47, Regular, local moved: 0, time: 6.30838 ms
+STEP_TIMING step=47 solver=Regular step_ms=6.30838 local_moved=0
+Step 48, Regular, local moved: 0, time: 6.31169 ms
+STEP_TIMING step=48 solver=Regular step_ms=6.31169 local_moved=0
+Step 49, Regular, local moved: 0, time: 6.57433 ms
+STEP_TIMING step=49 solver=Regular step_ms=6.57433 local_moved=0
+Step 50, Regular, local moved: 0, time: 6.4918 ms
+STEP_TIMING step=50 solver=Regular step_ms=6.4918 local_moved=0
+Step 51, Regular, local moved: 0, time: 6.43921 ms
+STEP_TIMING step=51 solver=Regular step_ms=6.43921 local_moved=0
+Step 52, Regular, local moved: 0, time: 6.35009 ms
+STEP_TIMING step=52 solver=Regular step_ms=6.35009 local_moved=0
+Step 53, Regular, local moved: 0, time: 6.35156 ms
+STEP_TIMING step=53 solver=Regular step_ms=6.35156 local_moved=0
+Step 54, Regular, local moved: 0, time: 7.37997 ms
+STEP_TIMING step=54 solver=Regular step_ms=7.37997 local_moved=0
+Step 55, Regular, local moved: 0, time: 6.39936 ms
+STEP_TIMING step=55 solver=Regular step_ms=6.39936 local_moved=0
+Step 56, Regular, local moved: 0, time: 6.40854 ms
+STEP_TIMING step=56 solver=Regular step_ms=6.40854 local_moved=0
+Step 57, Regular, local moved: 0, time: 6.36439 ms
+STEP_TIMING step=57 solver=Regular step_ms=6.36439 local_moved=0
+Step 58, Regular, local moved: 0, time: 6.43241 ms
+STEP_TIMING step=58 solver=Regular step_ms=6.43241 local_moved=0
+Step 59, Regular, local moved: 0, time: 6.44703 ms
+STEP_TIMING step=59 solver=Regular step_ms=6.44703 local_moved=0
+Step 60, Regular, local moved: 0, time: 6.36177 ms
+STEP_TIMING step=60 solver=Regular step_ms=6.36177 local_moved=0
+Step 61, Regular, local moved: 0, time: 6.43507 ms
+STEP_TIMING step=61 solver=Regular step_ms=6.43507 local_moved=0
+Step 62, Regular, local moved: 0, time: 6.36808 ms
+STEP_TIMING step=62 solver=Regular step_ms=6.36808 local_moved=0
+Step 63, Regular, local moved: 0, time: 6.47463 ms
+STEP_TIMING step=63 solver=Regular step_ms=6.47463 local_moved=0
+Step 64, Regular, local moved: 0, time: 6.43253 ms
+STEP_TIMING step=64 solver=Regular step_ms=6.43253 local_moved=0
+Step 65, Regular, local moved: 0, time: 6.46465 ms
+STEP_TIMING step=65 solver=Regular step_ms=6.46465 local_moved=0
+Step 66, Regular, local moved: 0, time: 6.44461 ms
+STEP_TIMING step=66 solver=Regular step_ms=6.44461 local_moved=0
+Step 67, Regular, local moved: 0, time: 6.43326 ms
+STEP_TIMING step=67 solver=Regular step_ms=6.43326 local_moved=0
+Step 68, Regular, local moved: 0, time: 6.43779 ms
+STEP_TIMING step=68 solver=Regular step_ms=6.43779 local_moved=0
+Step 69, Regular, local moved: 0, time: 6.466 ms
+STEP_TIMING step=69 solver=Regular step_ms=6.466 local_moved=0
+Step 70, Regular, local moved: 0, time: 6.45991 ms
+STEP_TIMING step=70 solver=Regular step_ms=6.45991 local_moved=0
+Step 71, Regular, local moved: 0, time: 7.28074 ms
+STEP_TIMING step=71 solver=Regular step_ms=7.28074 local_moved=0
+Step 72, Regular, local moved: 0, time: 6.57461 ms
+STEP_TIMING step=72 solver=Regular step_ms=6.57461 local_moved=0
+Step 73, Regular, local moved: 0, time: 6.40492 ms
+STEP_TIMING step=73 solver=Regular step_ms=6.40492 local_moved=0
+Step 74, Regular, local moved: 0, time: 6.42346 ms
+STEP_TIMING step=74 solver=Regular step_ms=6.42346 local_moved=0
+Step 75, Regular, local moved: 0, time: 6.38797 ms
+STEP_TIMING step=75 solver=Regular step_ms=6.38797 local_moved=0
+Step 76, Regular, local moved: 0, time: 6.45193 ms
+STEP_TIMING step=76 solver=Regular step_ms=6.45193 local_moved=0
+Step 77, Regular, local moved: 0, time: 6.37207 ms
+STEP_TIMING step=77 solver=Regular step_ms=6.37207 local_moved=0
+Step 78, Regular, local moved: 0, time: 6.45444 ms
+STEP_TIMING step=78 solver=Regular step_ms=6.45444 local_moved=0
+Step 79, Regular, local moved: 0, time: 6.31829 ms
+STEP_TIMING step=79 solver=Regular step_ms=6.31829 local_moved=0
+Step 80, Regular, local moved: 0, time: 6.25902 ms
+STEP_TIMING step=80 solver=Regular step_ms=6.25902 local_moved=0
+Step 81, Regular, local moved: 0, time: 6.37748 ms
+STEP_TIMING step=81 solver=Regular step_ms=6.37748 local_moved=0
+Step 82, Regular, local moved: 0, time: 6.36633 ms
+STEP_TIMING step=82 solver=Regular step_ms=6.36633 local_moved=0
+Step 83, Regular, local moved: 0, time: 6.41883 ms
+STEP_TIMING step=83 solver=Regular step_ms=6.41883 local_moved=0
+Step 84, Regular, local moved: 0, time: 6.43269 ms
+STEP_TIMING step=84 solver=Regular step_ms=6.43269 local_moved=0
+Step 85, Regular, local moved: 0, time: 6.43301 ms
+STEP_TIMING step=85 solver=Regular step_ms=6.43301 local_moved=0
+Step 86, Regular, local moved: 0, time: 6.52804 ms
+STEP_TIMING step=86 solver=Regular step_ms=6.52804 local_moved=0
+Step 87, Regular, local moved: 0, time: 7.23935 ms
+STEP_TIMING step=87 solver=Regular step_ms=7.23935 local_moved=0
+Step 88, Regular, local moved: 0, time: 6.45598 ms
+STEP_TIMING step=88 solver=Regular step_ms=6.45598 local_moved=0
+Step 89, Regular, local moved: 0, time: 6.45108 ms
+STEP_TIMING step=89 solver=Regular step_ms=6.45108 local_moved=0
+Step 90, Regular, local moved: 0, time: 6.42512 ms
+STEP_TIMING step=90 solver=Regular step_ms=6.42512 local_moved=0
+Step 91, Regular, local moved: 0, time: 6.27712 ms
+STEP_TIMING step=91 solver=Regular step_ms=6.27712 local_moved=0
+Step 92, Regular, local moved: 0, time: 6.41686 ms
+STEP_TIMING step=92 solver=Regular step_ms=6.41686 local_moved=0
+Step 93, Regular, local moved: 0, time: 6.41308 ms
+STEP_TIMING step=93 solver=Regular step_ms=6.41308 local_moved=0
+Step 94, Regular, local moved: 0, time: 6.40503 ms
+STEP_TIMING step=94 solver=Regular step_ms=6.40503 local_moved=0
+Step 95, Regular, local moved: 0, time: 6.43622 ms
+STEP_TIMING step=95 solver=Regular step_ms=6.43622 local_moved=0
+Step 96, Regular, local moved: 0, time: 6.43821 ms
+STEP_TIMING step=96 solver=Regular step_ms=6.43821 local_moved=0
+Step 97, Regular, local moved: 0, time: 6.47445 ms
+STEP_TIMING step=97 solver=Regular step_ms=6.47445 local_moved=0
+Step 98, Regular, local moved: 0, time: 6.40718 ms
+STEP_TIMING step=98 solver=Regular step_ms=6.40718 local_moved=0
+Step 99, Regular, local moved: 0, time: 6.38812 ms
+STEP_TIMING step=99 solver=Regular step_ms=6.38812 local_moved=0
+Step 100, Regular, local moved: 0, time: 6.37008 ms
+STEP_TIMING step=100 solver=Regular step_ms=6.37008 local_moved=0
+Step 100/1000 | mass=3.3867e+06 | drift=0.00887641 | moved_this_step=36088.9 | min_water=0 | min_positive_water=5.8577e-09 | max_water=330.114 | runtime=00:00:05 | eta=00:00:45
+Step 101, Regular, local moved: 0, time: 6.42058 ms
+STEP_TIMING step=101 solver=Regular step_ms=6.42058 local_moved=0
+Step 102, Regular, local moved: 0, time: 6.29064 ms
+STEP_TIMING step=102 solver=Regular step_ms=6.29064 local_moved=0
+Step 103, Regular, local moved: 0, time: 6.39427 ms
+STEP_TIMING step=103 solver=Regular step_ms=6.39427 local_moved=0
+Step 104, Regular, local moved: 0, time: 6.34933 ms
+STEP_TIMING step=104 solver=Regular step_ms=6.34933 local_moved=0
+Step 105, Regular, local moved: 0, time: 6.71426 ms
+STEP_TIMING step=105 solver=Regular step_ms=6.71426 local_moved=0
+Step 106, Regular, local moved: 0, time: 6.35741 ms
+STEP_TIMING step=106 solver=Regular step_ms=6.35741 local_moved=0
+Step 107, Regular, local moved: 0, time: 6.32959 ms
+STEP_TIMING step=107 solver=Regular step_ms=6.32959 local_moved=0
+Step 108, Regular, local moved: 0, time: 6.35259 ms
+STEP_TIMING step=108 solver=Regular step_ms=6.35259 local_moved=0
+Step 109, Regular, local moved: 0, time: 6.42405 ms
+STEP_TIMING step=109 solver=Regular step_ms=6.42405 local_moved=0
+Step 110, Regular, local moved: 0, time: 6.33139 ms
+STEP_TIMING step=110 solver=Regular step_ms=6.33139 local_moved=0
+Step 111, Regular, local moved: 0, time: 6.37206 ms
+STEP_TIMING step=111 solver=Regular step_ms=6.37206 local_moved=0
+Step 112, Regular, local moved: 0, time: 6.43903 ms
+STEP_TIMING step=112 solver=Regular step_ms=6.43903 local_moved=0
+Step 113, Regular, local moved: 0, time: 6.29356 ms
+STEP_TIMING step=113 solver=Regular step_ms=6.29356 local_moved=0
+Step 114, Regular, local moved: 0, time: 6.30143 ms
+STEP_TIMING step=114 solver=Regular step_ms=6.30143 local_moved=0
+Step 115, Regular, local moved: 0, time: 6.48149 ms
+STEP_TIMING step=115 solver=Regular step_ms=6.48149 local_moved=0
+Step 116, Regular, local moved: 0, time: 6.40833 ms
+STEP_TIMING step=116 solver=Regular step_ms=6.40833 local_moved=0
+Step 117, Regular, local moved: 0, time: 6.41342 ms
+STEP_TIMING step=117 solver=Regular step_ms=6.41342 local_moved=0
+Step 118, Regular, local moved: 0, time: 6.4891 ms
+STEP_TIMING step=118 solver=Regular step_ms=6.4891 local_moved=0
+Step 119, Regular, local moved: 0, time: 6.40971 ms
+STEP_TIMING step=119 solver=Regular step_ms=6.40971 local_moved=0
+Step 120, Regular, local moved: 0, time: 6.63137 ms
+STEP_TIMING step=120 solver=Regular step_ms=6.63137 local_moved=0
+Step 121, Regular, local moved: 0, time: 6.40335 ms
+STEP_TIMING step=121 solver=Regular step_ms=6.40335 local_moved=0
+Step 122, Regular, local moved: 0, time: 6.39423 ms
+STEP_TIMING step=122 solver=Regular step_ms=6.39423 local_moved=0
+Step 123, Regular, local moved: 0, time: 6.56562 ms
+STEP_TIMING step=123 solver=Regular step_ms=6.56562 local_moved=0
+Step 124, Regular, local moved: 0, time: 6.39387 ms
+STEP_TIMING step=124 solver=Regular step_ms=6.39387 local_moved=0
+Step 125, Regular, local moved: 0, time: 6.51327 ms
+STEP_TIMING step=125 solver=Regular step_ms=6.51327 local_moved=0
+Step 126, Regular, local moved: 0, time: 6.42808 ms
+STEP_TIMING step=126 solver=Regular step_ms=6.42808 local_moved=0
+Step 127, Regular, local moved: 0, time: 6.41591 ms
+STEP_TIMING step=127 solver=Regular step_ms=6.41591 local_moved=0
+Step 128, Regular, local moved: 0, time: 6.37556 ms
+STEP_TIMING step=128 solver=Regular step_ms=6.37556 local_moved=0
+Step 129, Regular, local moved: 0, time: 6.31207 ms
+STEP_TIMING step=129 solver=Regular step_ms=6.31207 local_moved=0
+Step 130, Regular, local moved: 0, time: 6.38612 ms
+STEP_TIMING step=130 solver=Regular step_ms=6.38612 local_moved=0
+Step 131, Regular, local moved: 0, time: 6.45012 ms
+STEP_TIMING step=131 solver=Regular step_ms=6.45012 local_moved=0
+Step 132, Regular, local moved: 0, time: 6.4858 ms
+STEP_TIMING step=132 solver=Regular step_ms=6.4858 local_moved=0
+Step 133, Regular, local moved: 0, time: 6.45712 ms
+STEP_TIMING step=133 solver=Regular step_ms=6.45712 local_moved=0
+Step 134, Regular, local moved: 0, time: 6.41007 ms
+STEP_TIMING step=134 solver=Regular step_ms=6.41007 local_moved=0
+Step 135, Regular, local moved: 0, time: 6.43334 ms
+STEP_TIMING step=135 solver=Regular step_ms=6.43334 local_moved=0
+Step 136, Regular, local moved: 0, time: 6.36962 ms
+STEP_TIMING step=136 solver=Regular step_ms=6.36962 local_moved=0
+Step 137, Regular, local moved: 0, time: 6.34576 ms
+STEP_TIMING step=137 solver=Regular step_ms=6.34576 local_moved=0
+Step 138, Regular, local moved: 0, time: 6.41151 ms
+STEP_TIMING step=138 solver=Regular step_ms=6.41151 local_moved=0
+Step 139, Regular, local moved: 0, time: 6.39716 ms
+STEP_TIMING step=139 solver=Regular step_ms=6.39716 local_moved=0
+Step 140, Regular, local moved: 0, time: 7.36148 ms
+STEP_TIMING step=140 solver=Regular step_ms=7.36148 local_moved=0
+Step 141, Regular, local moved: 0, time: 6.41431 ms
+STEP_TIMING step=141 solver=Regular step_ms=6.41431 local_moved=0
+Step 142, Regular, local moved: 0, time: 6.43467 ms
+STEP_TIMING step=142 solver=Regular step_ms=6.43467 local_moved=0
+Step 143, Regular, local moved: 0, time: 6.52027 ms
+STEP_TIMING step=143 solver=Regular step_ms=6.52027 local_moved=0
+Step 144, Regular, local moved: 0, time: 6.30103 ms
+STEP_TIMING step=144 solver=Regular step_ms=6.30103 local_moved=0
+Step 145, Regular, local moved: 0, time: 6.44391 ms
+STEP_TIMING step=145 solver=Regular step_ms=6.44391 local_moved=0
+Step 146, Regular, local moved: 0, time: 7.23283 ms
+STEP_TIMING step=146 solver=Regular step_ms=7.23283 local_moved=0
+Step 147, Regular, local moved: 0, time: 6.42964 ms
+STEP_TIMING step=147 solver=Regular step_ms=6.42964 local_moved=0
+Step 148, Regular, local moved: 0, time: 6.45771 ms
+STEP_TIMING step=148 solver=Regular step_ms=6.45771 local_moved=0
+Step 149, Regular, local moved: 0, time: 6.39541 ms
+STEP_TIMING step=149 solver=Regular step_ms=6.39541 local_moved=0
+Step 150, Regular, local moved: 0, time: 6.29423 ms
+STEP_TIMING step=150 solver=Regular step_ms=6.29423 local_moved=0
+Step 151, Regular, local moved: 0, time: 6.36499 ms
+STEP_TIMING step=151 solver=Regular step_ms=6.36499 local_moved=0
+Step 152, Regular, local moved: 0, time: 6.33228 ms
+STEP_TIMING step=152 solver=Regular step_ms=6.33228 local_moved=0
+Step 153, Regular, local moved: 0, time: 6.31182 ms
+STEP_TIMING step=153 solver=Regular step_ms=6.31182 local_moved=0
+Step 154, Regular, local moved: 0, time: 6.39058 ms
+STEP_TIMING step=154 solver=Regular step_ms=6.39058 local_moved=0
+Step 155, Regular, local moved: 0, time: 6.28496 ms
+STEP_TIMING step=155 solver=Regular step_ms=6.28496 local_moved=0
+Step 156, Regular, local moved: 0, time: 6.45008 ms
+STEP_TIMING step=156 solver=Regular step_ms=6.45008 local_moved=0
+Step 157, Regular, local moved: 0, time: 7.3612 ms
+STEP_TIMING step=157 solver=Regular step_ms=7.3612 local_moved=0
+Step 158, Regular, local moved: 0, time: 6.3436 ms
+STEP_TIMING step=158 solver=Regular step_ms=6.3436 local_moved=0
+Step 159, Regular, local moved: 0, time: 6.31242 ms
+STEP_TIMING step=159 solver=Regular step_ms=6.31242 local_moved=0
+Step 160, Regular, local moved: 0, time: 6.40541 ms
+STEP_TIMING step=160 solver=Regular step_ms=6.40541 local_moved=0
+Step 161, Regular, local moved: 0, time: 6.63 ms
+STEP_TIMING step=161 solver=Regular step_ms=6.63 local_moved=0
+Step 162, Regular, local moved: 0, time: 6.39718 ms
+STEP_TIMING step=162 solver=Regular step_ms=6.39718 local_moved=0
+Step 163, Regular, local moved: 0, time: 6.38154 ms
+STEP_TIMING step=163 solver=Regular step_ms=6.38154 local_moved=0
+Step 164, Regular, local moved: 0, time: 6.41068 ms
+STEP_TIMING step=164 solver=Regular step_ms=6.41068 local_moved=0
+Step 165, Regular, local moved: 0, time: 6.38189 ms
+STEP_TIMING step=165 solver=Regular step_ms=6.38189 local_moved=0
+Step 166, Regular, local moved: 0, time: 6.26392 ms
+STEP_TIMING step=166 solver=Regular step_ms=6.26392 local_moved=0
+Step 167, Regular, local moved: 0, time: 6.30085 ms
+STEP_TIMING step=167 solver=Regular step_ms=6.30085 local_moved=0
+Step 168, Regular, local moved: 0, time: 6.40184 ms
+STEP_TIMING step=168 solver=Regular step_ms=6.40184 local_moved=0
+Step 169, Regular, local moved: 0, time: 6.39105 ms
+STEP_TIMING step=169 solver=Regular step_ms=6.39105 local_moved=0
+Step 170, Regular, local moved: 0, time: 6.46596 ms
+STEP_TIMING step=170 solver=Regular step_ms=6.46596 local_moved=0
+Step 171, Regular, local moved: 0, time: 6.42294 ms
+STEP_TIMING step=171 solver=Regular step_ms=6.42294 local_moved=0
+Step 172, Regular, local moved: 0, time: 6.34569 ms
+STEP_TIMING step=172 solver=Regular step_ms=6.34569 local_moved=0
+Step 173, Regular, local moved: 0, time: 6.48363 ms
+STEP_TIMING step=173 solver=Regular step_ms=6.48363 local_moved=0
+Step 174, Regular, local moved: 0, time: 6.4604 ms
+STEP_TIMING step=174 solver=Regular step_ms=6.4604 local_moved=0
+Step 175, Regular, local moved: 0, time: 6.41378 ms
+STEP_TIMING step=175 solver=Regular step_ms=6.41378 local_moved=0
+Step 176, Regular, local moved: 0, time: 6.39453 ms
+STEP_TIMING step=176 solver=Regular step_ms=6.39453 local_moved=0
+Step 177, Regular, local moved: 0, time: 7.3919 ms
+STEP_TIMING step=177 solver=Regular step_ms=7.3919 local_moved=0
+Step 178, Regular, local moved: 0, time: 6.47621 ms
+STEP_TIMING step=178 solver=Regular step_ms=6.47621 local_moved=0
+Step 179, Regular, local moved: 0, time: 6.48471 ms
+STEP_TIMING step=179 solver=Regular step_ms=6.48471 local_moved=0
+Step 180, Regular, local moved: 0, time: 6.45779 ms
+STEP_TIMING step=180 solver=Regular step_ms=6.45779 local_moved=0
+Step 181, Regular, local moved: 0, time: 6.43952 ms
+STEP_TIMING step=181 solver=Regular step_ms=6.43952 local_moved=0
+Step 182, Regular, local moved: 0, time: 6.39713 ms
+STEP_TIMING step=182 solver=Regular step_ms=6.39713 local_moved=0
+Step 183, Regular, local moved: 0, time: 6.42256 ms
+STEP_TIMING step=183 solver=Regular step_ms=6.42256 local_moved=0
+Step 184, Regular, local moved: 0, time: 7.19371 ms
+STEP_TIMING step=184 solver=Regular step_ms=7.19371 local_moved=0
+Step 185, Regular, local moved: 0, time: 6.64855 ms
+STEP_TIMING step=185 solver=Regular step_ms=6.64855 local_moved=0
+Step 186, Regular, local moved: 0, time: 6.36725 ms
+STEP_TIMING step=186 solver=Regular step_ms=6.36725 local_moved=0
+Step 187, Regular, local moved: 0, time: 6.46805 ms
+STEP_TIMING step=187 solver=Regular step_ms=6.46805 local_moved=0
+Step 188, Regular, local moved: 0, time: 6.28727 ms
+STEP_TIMING step=188 solver=Regular step_ms=6.28727 local_moved=0
+Step 189, Regular, local moved: 0, time: 6.40434 ms
+STEP_TIMING step=189 solver=Regular step_ms=6.40434 local_moved=0
+Step 190, Regular, local moved: 0, time: 6.42235 ms
+STEP_TIMING step=190 solver=Regular step_ms=6.42235 local_moved=0
+Step 191, Regular, local moved: 0, time: 6.4495 ms
+STEP_TIMING step=191 solver=Regular step_ms=6.4495 local_moved=0
+Step 192, Regular, local moved: 0, time: 6.42591 ms
+STEP_TIMING step=192 solver=Regular step_ms=6.42591 local_moved=0
+Step 193, Regular, local moved: 0, time: 6.39661 ms
+STEP_TIMING step=193 solver=Regular step_ms=6.39661 local_moved=0
+Step 194, Regular, local moved: 0, time: 7.31177 ms
+STEP_TIMING step=194 solver=Regular step_ms=7.31177 local_moved=0
+Step 195, Regular, local moved: 0, time: 6.47157 ms
+STEP_TIMING step=195 solver=Regular step_ms=6.47157 local_moved=0
+Step 196, Regular, local moved: 0, time: 6.37408 ms
+STEP_TIMING step=196 solver=Regular step_ms=6.37408 local_moved=0
+Step 197, Regular, local moved: 0, time: 6.45062 ms
+STEP_TIMING step=197 solver=Regular step_ms=6.45062 local_moved=0
+Step 198, Regular, local moved: 0, time: 6.39971 ms
+STEP_TIMING step=198 solver=Regular step_ms=6.39971 local_moved=0
+Step 199, Regular, local moved: 0, time: 6.48594 ms
+STEP_TIMING step=199 solver=Regular step_ms=6.48594 local_moved=0
+Step 200, Regular, local moved: 0, time: 6.43652 ms
+STEP_TIMING step=200 solver=Regular step_ms=6.43652 local_moved=0
+Step 200/1000 | mass=3.3867e+06 | drift=0.0332096 | moved_this_step=34009.8 | min_water=0 | min_positive_water=1.27788e-08 | max_water=333.225 | runtime=00:00:10 | eta=00:00:40
+Step 201, Regular, local moved: 0, time: 6.30598 ms
+STEP_TIMING step=201 solver=Regular step_ms=6.30598 local_moved=0
+Step 202, Regular, local moved: 0, time: 6.51527 ms
+STEP_TIMING step=202 solver=Regular step_ms=6.51527 local_moved=0
+Step 203, Regular, local moved: 0, time: 6.37924 ms
+STEP_TIMING step=203 solver=Regular step_ms=6.37924 local_moved=0
+Step 204, Regular, local moved: 0, time: 6.41835 ms
+STEP_TIMING step=204 solver=Regular step_ms=6.41835 local_moved=0
+Step 205, Regular, local moved: 0, time: 7.25448 ms
+STEP_TIMING step=205 solver=Regular step_ms=7.25448 local_moved=0
+Step 206, Regular, local moved: 0, time: 6.56342 ms
+STEP_TIMING step=206 solver=Regular step_ms=6.56342 local_moved=0
+Step 207, Regular, local moved: 0, time: 6.39316 ms
+STEP_TIMING step=207 solver=Regular step_ms=6.39316 local_moved=0
+Step 208, Regular, local moved: 0, time: 6.4089 ms
+STEP_TIMING step=208 solver=Regular step_ms=6.4089 local_moved=0
+Step 209, Regular, local moved: 0, time: 6.46229 ms
+STEP_TIMING step=209 solver=Regular step_ms=6.46229 local_moved=0
+Step 210, Regular, local moved: 0, time: 6.28638 ms
+STEP_TIMING step=210 solver=Regular step_ms=6.28638 local_moved=0
+Step 211, Regular, local moved: 0, time: 7.25688 ms
+STEP_TIMING step=211 solver=Regular step_ms=7.25688 local_moved=0
+Step 212, Regular, local moved: 0, time: 6.29225 ms
+STEP_TIMING step=212 solver=Regular step_ms=6.29225 local_moved=0
+Step 213, Regular, local moved: 0, time: 6.42579 ms
+STEP_TIMING step=213 solver=Regular step_ms=6.42579 local_moved=0
+Step 214, Regular, local moved: 0, time: 6.42406 ms
+STEP_TIMING step=214 solver=Regular step_ms=6.42406 local_moved=0
+Step 215, Regular, local moved: 0, time: 7.18694 ms
+STEP_TIMING step=215 solver=Regular step_ms=7.18694 local_moved=0
+Step 216, Regular, local moved: 0, time: 6.52103 ms
+STEP_TIMING step=216 solver=Regular step_ms=6.52103 local_moved=0
+Step 217, Regular, local moved: 0, time: 6.37942 ms
+STEP_TIMING step=217 solver=Regular step_ms=6.37942 local_moved=0
+Step 218, Regular, local moved: 0, time: 6.31938 ms
+STEP_TIMING step=218 solver=Regular step_ms=6.31938 local_moved=0
+Step 219, Regular, local moved: 0, time: 6.40859 ms
+STEP_TIMING step=219 solver=Regular step_ms=6.40859 local_moved=0
+Step 220, Regular, local moved: 0, time: 6.38256 ms
+STEP_TIMING step=220 solver=Regular step_ms=6.38256 local_moved=0
+Step 221, Regular, local moved: 0, time: 6.40822 ms
+STEP_TIMING step=221 solver=Regular step_ms=6.40822 local_moved=0
+Step 222, Regular, local moved: 0, time: 6.40189 ms
+STEP_TIMING step=222 solver=Regular step_ms=6.40189 local_moved=0
+Step 223, Regular, local moved: 0, time: 6.47348 ms
+STEP_TIMING step=223 solver=Regular step_ms=6.47348 local_moved=0
+Step 224, Regular, local moved: 0, time: 6.31176 ms
+STEP_TIMING step=224 solver=Regular step_ms=6.31176 local_moved=0
+Step 225, Regular, local moved: 0, time: 6.45628 ms
+STEP_TIMING step=225 solver=Regular step_ms=6.45628 local_moved=0
+Step 226, Regular, local moved: 0, time: 6.41405 ms
+STEP_TIMING step=226 solver=Regular step_ms=6.41405 local_moved=0
+Step 227, Regular, local moved: 0, time: 6.42549 ms
+STEP_TIMING step=227 solver=Regular step_ms=6.42549 local_moved=0
+Step 228, Regular, local moved: 0, time: 6.40729 ms
+STEP_TIMING step=228 solver=Regular step_ms=6.40729 local_moved=0
+Step 229, Regular, local moved: 0, time: 6.47092 ms
+STEP_TIMING step=229 solver=Regular step_ms=6.47092 local_moved=0
+Step 230, Regular, local moved: 0, time: 6.39762 ms
+STEP_TIMING step=230 solver=Regular step_ms=6.39762 local_moved=0
+Step 231, Regular, local moved: 0, time: 6.41032 ms
+STEP_TIMING step=231 solver=Regular step_ms=6.41032 local_moved=0
+Step 232, Regular, local moved: 0, time: 6.44624 ms
+STEP_TIMING step=232 solver=Regular step_ms=6.44624 local_moved=0
+Step 233, Regular, local moved: 0, time: 6.33525 ms
+STEP_TIMING step=233 solver=Regular step_ms=6.33525 local_moved=0
+Step 234, Regular, local moved: 0, time: 6.36614 ms
+STEP_TIMING step=234 solver=Regular step_ms=6.36614 local_moved=0
+Step 235, Regular, local moved: 0, time: 6.3968 ms
+STEP_TIMING step=235 solver=Regular step_ms=6.3968 local_moved=0
+Step 236, Regular, local moved: 0, time: 6.43268 ms
+STEP_TIMING step=236 solver=Regular step_ms=6.43268 local_moved=0
+Step 237, Regular, local moved: 0, time: 6.43584 ms
+STEP_TIMING step=237 solver=Regular step_ms=6.43584 local_moved=0
+Step 238, Regular, local moved: 0, time: 6.3937 ms
+STEP_TIMING step=238 solver=Regular step_ms=6.3937 local_moved=0
+Step 239, Regular, local moved: 0, time: 6.39547 ms
+STEP_TIMING step=239 solver=Regular step_ms=6.39547 local_moved=0
+Step 240, Regular, local moved: 0, time: 6.74148 ms
+STEP_TIMING step=240 solver=Regular step_ms=6.74148 local_moved=0
+Step 241, Regular, local moved: 0, time: 6.41262 ms
+STEP_TIMING step=241 solver=Regular step_ms=6.41262 local_moved=0
+Step 242, Regular, local moved: 0, time: 6.44229 ms
+STEP_TIMING step=242 solver=Regular step_ms=6.44229 local_moved=0
+Step 243, Regular, local moved: 0, time: 6.38998 ms
+STEP_TIMING step=243 solver=Regular step_ms=6.38998 local_moved=0
+Step 244, Regular, local moved: 0, time: 6.40083 ms
+STEP_TIMING step=244 solver=Regular step_ms=6.40083 local_moved=0
+Step 245, Regular, local moved: 0, time: 6.32141 ms
+STEP_TIMING step=245 solver=Regular step_ms=6.32141 local_moved=0
+Step 246, Regular, local moved: 0, time: 6.46737 ms
+STEP_TIMING step=246 solver=Regular step_ms=6.46737 local_moved=0
+Step 247, Regular, local moved: 0, time: 6.50635 ms
+STEP_TIMING step=247 solver=Regular step_ms=6.50635 local_moved=0
+Step 248, Regular, local moved: 0, time: 6.52293 ms
+STEP_TIMING step=248 solver=Regular step_ms=6.52293 local_moved=0
+Step 249, Regular, local moved: 0, time: 6.41907 ms
+STEP_TIMING step=249 solver=Regular step_ms=6.41907 local_moved=0
+Step 250, Regular, local moved: 0, time: 6.4439 ms
+STEP_TIMING step=250 solver=Regular step_ms=6.4439 local_moved=0
+Step 251, Regular, local moved: 0, time: 6.44928 ms
+STEP_TIMING step=251 solver=Regular step_ms=6.44928 local_moved=0
+Step 252, Regular, local moved: 0, time: 6.50264 ms
+STEP_TIMING step=252 solver=Regular step_ms=6.50264 local_moved=0
+Step 253, Regular, local moved: 0, time: 7.32788 ms
+STEP_TIMING step=253 solver=Regular step_ms=7.32788 local_moved=0
+Step 254, Regular, local moved: 0, time: 7.34534 ms
+STEP_TIMING step=254 solver=Regular step_ms=7.34534 local_moved=0
+Step 255, Regular, local moved: 0, time: 6.37749 ms
+STEP_TIMING step=255 solver=Regular step_ms=6.37749 local_moved=0
+Step 256, Regular, local moved: 0, time: 6.46281 ms
+STEP_TIMING step=256 solver=Regular step_ms=6.46281 local_moved=0
+Step 257, Regular, local moved: 0, time: 6.43285 ms
+STEP_TIMING step=257 solver=Regular step_ms=6.43285 local_moved=0
+Step 258, Regular, local moved: 0, time: 6.31269 ms
+STEP_TIMING step=258 solver=Regular step_ms=6.31269 local_moved=0
+Step 259, Regular, local moved: 0, time: 6.42171 ms
+STEP_TIMING step=259 solver=Regular step_ms=6.42171 local_moved=0
+Step 260, Regular, local moved: 0, time: 6.54337 ms
+STEP_TIMING step=260 solver=Regular step_ms=6.54337 local_moved=0
+Step 261, Regular, local moved: 0, time: 6.37218 ms
+STEP_TIMING step=261 solver=Regular step_ms=6.37218 local_moved=0
+Step 262, Regular, local moved: 0, time: 6.43512 ms
+STEP_TIMING step=262 solver=Regular step_ms=6.43512 local_moved=0
+Step 263, Regular, local moved: 0, time: 7.32611 ms
+STEP_TIMING step=263 solver=Regular step_ms=7.32611 local_moved=0
+Step 264, Regular, local moved: 0, time: 6.41352 ms
+STEP_TIMING step=264 solver=Regular step_ms=6.41352 local_moved=0
+Step 265, Regular, local moved: 0, time: 7.20686 ms
+STEP_TIMING step=265 solver=Regular step_ms=7.20686 local_moved=0
+Step 266, Regular, local moved: 0, time: 6.40902 ms
+STEP_TIMING step=266 solver=Regular step_ms=6.40902 local_moved=0
+Step 267, Regular, local moved: 0, time: 6.42383 ms
+STEP_TIMING step=267 solver=Regular step_ms=6.42383 local_moved=0
+Step 268, Regular, local moved: 0, time: 6.44767 ms
+STEP_TIMING step=268 solver=Regular step_ms=6.44767 local_moved=0
+Step 269, Regular, local moved: 0, time: 6.37924 ms
+STEP_TIMING step=269 solver=Regular step_ms=6.37924 local_moved=0
+Step 270, Regular, local moved: 0, time: 6.40737 ms
+STEP_TIMING step=270 solver=Regular step_ms=6.40737 local_moved=0
+Step 271, Regular, local moved: 0, time: 6.42856 ms
+STEP_TIMING step=271 solver=Regular step_ms=6.42856 local_moved=0
+Step 272, Regular, local moved: 0, time: 6.35572 ms
+STEP_TIMING step=272 solver=Regular step_ms=6.35572 local_moved=0
+Step 273, Regular, local moved: 0, time: 6.45258 ms
+STEP_TIMING step=273 solver=Regular step_ms=6.45258 local_moved=0
+Step 274, Regular, local moved: 0, time: 6.33135 ms
+STEP_TIMING step=274 solver=Regular step_ms=6.33135 local_moved=0
+Step 275, Regular, local moved: 0, time: 6.40521 ms
+STEP_TIMING step=275 solver=Regular step_ms=6.40521 local_moved=0
+Step 276, Regular, local moved: 0, time: 6.40283 ms
+STEP_TIMING step=276 solver=Regular step_ms=6.40283 local_moved=0
+Step 277, Regular, local moved: 0, time: 6.44747 ms
+STEP_TIMING step=277 solver=Regular step_ms=6.44747 local_moved=0
+Step 278, Regular, local moved: 0, time: 6.46965 ms
+STEP_TIMING step=278 solver=Regular step_ms=6.46965 local_moved=0
+Step 279, Regular, local moved: 0, time: 6.38851 ms
+STEP_TIMING step=279 solver=Regular step_ms=6.38851 local_moved=0
+Step 280, Regular, local moved: 0, time: 7.25856 ms
+STEP_TIMING step=280 solver=Regular step_ms=7.25856 local_moved=0
+Step 281, Regular, local moved: 0, time: 6.40516 ms
+STEP_TIMING step=281 solver=Regular step_ms=6.40516 local_moved=0
+Step 282, Regular, local moved: 0, time: 6.43854 ms
+STEP_TIMING step=282 solver=Regular step_ms=6.43854 local_moved=0
+Step 283, Regular, local moved: 0, time: 6.3872 ms
+STEP_TIMING step=283 solver=Regular step_ms=6.3872 local_moved=0
+Step 284, Regular, local moved: 0, time: 6.43458 ms
+STEP_TIMING step=284 solver=Regular step_ms=6.43458 local_moved=0
+Step 285, Regular, local moved: 0, time: 6.41812 ms
+STEP_TIMING step=285 solver=Regular step_ms=6.41812 local_moved=0
+Step 286, Regular, local moved: 0, time: 6.43463 ms
+STEP_TIMING step=286 solver=Regular step_ms=6.43463 local_moved=0
+Step 287, Regular, local moved: 0, time: 6.34319 ms
+STEP_TIMING step=287 solver=Regular step_ms=6.34319 local_moved=0
+Step 288, Regular, local moved: 0, time: 6.38563 ms
+STEP_TIMING step=288 solver=Regular step_ms=6.38563 local_moved=0
+Step 289, Regular, local moved: 0, time: 6.44793 ms
+STEP_TIMING step=289 solver=Regular step_ms=6.44793 local_moved=0
+Step 290, Regular, local moved: 0, time: 6.49013 ms
+STEP_TIMING step=290 solver=Regular step_ms=6.49013 local_moved=0
+Step 291, Regular, local moved: 0, time: 6.50197 ms
+STEP_TIMING step=291 solver=Regular step_ms=6.50197 local_moved=0
+Step 292, Regular, local moved: 0, time: 6.55075 ms
+STEP_TIMING step=292 solver=Regular step_ms=6.55075 local_moved=0
+Step 293, Regular, local moved: 0, time: 6.41386 ms
+STEP_TIMING step=293 solver=Regular step_ms=6.41386 local_moved=0
+Step 294, Regular, local moved: 0, time: 6.38002 ms
+STEP_TIMING step=294 solver=Regular step_ms=6.38002 local_moved=0
+Step 295, Regular, local moved: 0, time: 6.41138 ms
+STEP_TIMING step=295 solver=Regular step_ms=6.41138 local_moved=0
+Step 296, Regular, local moved: 0, time: 6.3628 ms
+STEP_TIMING step=296 solver=Regular step_ms=6.3628 local_moved=0
+Step 297, Regular, local moved: 0, time: 6.44123 ms
+STEP_TIMING step=297 solver=Regular step_ms=6.44123 local_moved=0
+Step 298, Regular, local moved: 0, time: 6.33473 ms
+STEP_TIMING step=298 solver=Regular step_ms=6.33473 local_moved=0
+Step 299, Regular, local moved: 0, time: 6.34409 ms
+STEP_TIMING step=299 solver=Regular step_ms=6.34409 local_moved=0
+Step 300, Regular, local moved: 0, time: 6.45298 ms
+STEP_TIMING step=300 solver=Regular step_ms=6.45298 local_moved=0
+Step 300/1000 | mass=3.3867e+06 | drift=0.0219319 | moved_this_step=32834.2 | min_water=0 | min_positive_water=5.25507e-09 | max_water=334.469 | runtime=00:00:16 | eta=00:00:37
+Step 301, Regular, local moved: 0, time: 6.34281 ms
+STEP_TIMING step=301 solver=Regular step_ms=6.34281 local_moved=0
+Step 302, Regular, local moved: 0, time: 6.38264 ms
+STEP_TIMING step=302 solver=Regular step_ms=6.38264 local_moved=0
+Step 303, Regular, local moved: 0, time: 6.37481 ms
+STEP_TIMING step=303 solver=Regular step_ms=6.37481 local_moved=0
+Step 304, Regular, local moved: 0, time: 6.35405 ms
+STEP_TIMING step=304 solver=Regular step_ms=6.35405 local_moved=0
+Step 305, Regular, local moved: 0, time: 6.72834 ms
+STEP_TIMING step=305 solver=Regular step_ms=6.72834 local_moved=0
+Step 306, Regular, local moved: 0, time: 6.32289 ms
+STEP_TIMING step=306 solver=Regular step_ms=6.32289 local_moved=0
+Step 307, Regular, local moved: 0, time: 6.41991 ms
+STEP_TIMING step=307 solver=Regular step_ms=6.41991 local_moved=0
+Step 308, Regular, local moved: 0, time: 6.26111 ms
+STEP_TIMING step=308 solver=Regular step_ms=6.26111 local_moved=0
+Step 309, Regular, local moved: 0, time: 6.54458 ms
+STEP_TIMING step=309 solver=Regular step_ms=6.54458 local_moved=0
+Step 310, Regular, local moved: 0, time: 6.27053 ms
+STEP_TIMING step=310 solver=Regular step_ms=6.27053 local_moved=0
+Step 311, Regular, local moved: 0, time: 6.28246 ms
+STEP_TIMING step=311 solver=Regular step_ms=6.28246 local_moved=0
+Step 312, Regular, local moved: 0, time: 6.46675 ms
+STEP_TIMING step=312 solver=Regular step_ms=6.46675 local_moved=0
+Step 313, Regular, local moved: 0, time: 6.26532 ms
+STEP_TIMING step=313 solver=Regular step_ms=6.26532 local_moved=0
+Step 314, Regular, local moved: 0, time: 6.3535 ms
+STEP_TIMING step=314 solver=Regular step_ms=6.3535 local_moved=0
+Step 315, Regular, local moved: 0, time: 6.79619 ms
+STEP_TIMING step=315 solver=Regular step_ms=6.79619 local_moved=0
+Step 316, Regular, local moved: 0, time: 6.38469 ms
+STEP_TIMING step=316 solver=Regular step_ms=6.38469 local_moved=0
+Step 317, Regular, local moved: 0, time: 6.29418 ms
+STEP_TIMING step=317 solver=Regular step_ms=6.29418 local_moved=0
+Step 318, Regular, local moved: 0, time: 6.29692 ms
+STEP_TIMING step=318 solver=Regular step_ms=6.29692 local_moved=0
+Step 319, Regular, local moved: 0, time: 6.28962 ms
+STEP_TIMING step=319 solver=Regular step_ms=6.28962 local_moved=0
+Step 320, Regular, local moved: 0, time: 6.49536 ms
+STEP_TIMING step=320 solver=Regular step_ms=6.49536 local_moved=0
+Step 321, Regular, local moved: 0, time: 6.40818 ms
+STEP_TIMING step=321 solver=Regular step_ms=6.40818 local_moved=0
+Step 322, Regular, local moved: 0, time: 6.31148 ms
+STEP_TIMING step=322 solver=Regular step_ms=6.31148 local_moved=0
+Step 323, Regular, local moved: 0, time: 6.26137 ms
+STEP_TIMING step=323 solver=Regular step_ms=6.26137 local_moved=0
+Step 324, Regular, local moved: 0, time: 6.31118 ms
+STEP_TIMING step=324 solver=Regular step_ms=6.31118 local_moved=0
+Step 325, Regular, local moved: 0, time: 6.46597 ms
+STEP_TIMING step=325 solver=Regular step_ms=6.46597 local_moved=0
+Step 326, Regular, local moved: 0, time: 6.28382 ms
+STEP_TIMING step=326 solver=Regular step_ms=6.28382 local_moved=0
+Step 327, Regular, local moved: 0, time: 6.45661 ms
+STEP_TIMING step=327 solver=Regular step_ms=6.45661 local_moved=0
+Step 328, Regular, local moved: 0, time: 6.26797 ms
+STEP_TIMING step=328 solver=Regular step_ms=6.26797 local_moved=0
+Step 329, Regular, local moved: 0, time: 6.40013 ms
+STEP_TIMING step=329 solver=Regular step_ms=6.40013 local_moved=0
+Step 330, Regular, local moved: 0, time: 6.34211 ms
+STEP_TIMING step=330 solver=Regular step_ms=6.34211 local_moved=0
+Step 331, Regular, local moved: 0, time: 6.32433 ms
+STEP_TIMING step=331 solver=Regular step_ms=6.32433 local_moved=0
+Step 332, Regular, local moved: 0, time: 6.88126 ms
+STEP_TIMING step=332 solver=Regular step_ms=6.88126 local_moved=0
+Step 333, Regular, local moved: 0, time: 6.34167 ms
+STEP_TIMING step=333 solver=Regular step_ms=6.34167 local_moved=0
+Step 334, Regular, local moved: 0, time: 6.29264 ms
+STEP_TIMING step=334 solver=Regular step_ms=6.29264 local_moved=0
+Step 335, Regular, local moved: 0, time: 6.73015 ms
+STEP_TIMING step=335 solver=Regular step_ms=6.73015 local_moved=0
+Step 336, Regular, local moved: 0, time: 6.43234 ms
+STEP_TIMING step=336 solver=Regular step_ms=6.43234 local_moved=0
+Step 337, Regular, local moved: 0, time: 6.8354 ms
+STEP_TIMING step=337 solver=Regular step_ms=6.8354 local_moved=0
+Step 338, Regular, local moved: 0, time: 6.42541 ms
+STEP_TIMING step=338 solver=Regular step_ms=6.42541 local_moved=0
+Step 339, Regular, local moved: 0, time: 6.3956 ms
+STEP_TIMING step=339 solver=Regular step_ms=6.3956 local_moved=0
+Step 340, Regular, local moved: 0, time: 6.27519 ms
+STEP_TIMING step=340 solver=Regular step_ms=6.27519 local_moved=0
+Step 341, Regular, local moved: 0, time: 6.434 ms
+STEP_TIMING step=341 solver=Regular step_ms=6.434 local_moved=0
+Step 342, Regular, local moved: 0, time: 6.41068 ms
+STEP_TIMING step=342 solver=Regular step_ms=6.41068 local_moved=0
+Step 343, Regular, local moved: 0, time: 6.36658 ms
+STEP_TIMING step=343 solver=Regular step_ms=6.36658 local_moved=0
+Step 344, Regular, local moved: 0, time: 6.40861 ms
+STEP_TIMING step=344 solver=Regular step_ms=6.40861 local_moved=0
+Step 345, Regular, local moved: 0, time: 6.42465 ms
+STEP_TIMING step=345 solver=Regular step_ms=6.42465 local_moved=0
+Step 346, Regular, local moved: 0, time: 6.34717 ms
+STEP_TIMING step=346 solver=Regular step_ms=6.34717 local_moved=0
+Step 347, Regular, local moved: 0, time: 6.42561 ms
+STEP_TIMING step=347 solver=Regular step_ms=6.42561 local_moved=0
+Step 348, Regular, local moved: 0, time: 6.29156 ms
+STEP_TIMING step=348 solver=Regular step_ms=6.29156 local_moved=0
+Step 349, Regular, local moved: 0, time: 6.44483 ms
+STEP_TIMING step=349 solver=Regular step_ms=6.44483 local_moved=0
+Step 350, Regular, local moved: 0, time: 6.45225 ms
+STEP_TIMING step=350 solver=Regular step_ms=6.45225 local_moved=0
+Step 351, Regular, local moved: 0, time: 6.4776 ms
+STEP_TIMING step=351 solver=Regular step_ms=6.4776 local_moved=0
+Step 352, Regular, local moved: 0, time: 6.30284 ms
+STEP_TIMING step=352 solver=Regular step_ms=6.30284 local_moved=0
+Step 353, Regular, local moved: 0, time: 6.65709 ms
+STEP_TIMING step=353 solver=Regular step_ms=6.65709 local_moved=0
+Step 354, Regular, local moved: 0, time: 6.44754 ms
+STEP_TIMING step=354 solver=Regular step_ms=6.44754 local_moved=0
+Step 355, Regular, local moved: 0, time: 6.46303 ms
+STEP_TIMING step=355 solver=Regular step_ms=6.46303 local_moved=0
+Step 356, Regular, local moved: 0, time: 6.40366 ms
+STEP_TIMING step=356 solver=Regular step_ms=6.40366 local_moved=0
+Step 357, Regular, local moved: 0, time: 6.49101 ms
+STEP_TIMING step=357 solver=Regular step_ms=6.49101 local_moved=0
+Step 358, Regular, local moved: 0, time: 6.39737 ms
+STEP_TIMING step=358 solver=Regular step_ms=6.39737 local_moved=0
+Step 359, Regular, local moved: 0, time: 6.52316 ms
+STEP_TIMING step=359 solver=Regular step_ms=6.52316 local_moved=0
+Step 360, Regular, local moved: 0, time: 6.44452 ms
+STEP_TIMING step=360 solver=Regular step_ms=6.44452 local_moved=0
+Step 361, Regular, local moved: 0, time: 6.41309 ms
+STEP_TIMING step=361 solver=Regular step_ms=6.41309 local_moved=0
+Step 362, Regular, local moved: 0, time: 6.45434 ms
+STEP_TIMING step=362 solver=Regular step_ms=6.45434 local_moved=0
+Step 363, Regular, local moved: 0, time: 6.36188 ms
+STEP_TIMING step=363 solver=Regular step_ms=6.36188 local_moved=0
+Step 364, Regular, local moved: 0, time: 6.45242 ms
+STEP_TIMING step=364 solver=Regular step_ms=6.45242 local_moved=0
+Step 365, Regular, local moved: 0, time: 6.46463 ms
+STEP_TIMING step=365 solver=Regular step_ms=6.46463 local_moved=0
+Step 366, Regular, local moved: 0, time: 6.38464 ms
+STEP_TIMING step=366 solver=Regular step_ms=6.38464 local_moved=0
+Step 367, Regular, local moved: 0, time: 6.41246 ms
+STEP_TIMING step=367 solver=Regular step_ms=6.41246 local_moved=0
+Step 368, Regular, local moved: 0, time: 6.35492 ms
+STEP_TIMING step=368 solver=Regular step_ms=6.35492 local_moved=0
+Step 369, Regular, local moved: 0, time: 6.41801 ms
+STEP_TIMING step=369 solver=Regular step_ms=6.41801 local_moved=0
+Step 370, Regular, local moved: 0, time: 6.50416 ms
+STEP_TIMING step=370 solver=Regular step_ms=6.50416 local_moved=0
+Step 371, Regular, local moved: 0, time: 6.55562 ms
+STEP_TIMING step=371 solver=Regular step_ms=6.55562 local_moved=0
+Step 372, Regular, local moved: 0, time: 6.41687 ms
+STEP_TIMING step=372 solver=Regular step_ms=6.41687 local_moved=0
+Step 373, Regular, local moved: 0, time: 6.49707 ms
+STEP_TIMING step=373 solver=Regular step_ms=6.49707 local_moved=0
+Step 374, Regular, local moved: 0, time: 6.39428 ms
+STEP_TIMING step=374 solver=Regular step_ms=6.39428 local_moved=0
+Step 375, Regular, local moved: 0, time: 6.43729 ms
+STEP_TIMING step=375 solver=Regular step_ms=6.43729 local_moved=0
+Step 376, Regular, local moved: 0, time: 6.39693 ms
+STEP_TIMING step=376 solver=Regular step_ms=6.39693 local_moved=0
+Step 377, Regular, local moved: 0, time: 6.39568 ms
+STEP_TIMING step=377 solver=Regular step_ms=6.39568 local_moved=0
+Step 378, Regular, local moved: 0, time: 6.47012 ms
+STEP_TIMING step=378 solver=Regular step_ms=6.47012 local_moved=0
+Step 379, Regular, local moved: 0, time: 6.79557 ms
+STEP_TIMING step=379 solver=Regular step_ms=6.79557 local_moved=0
+Step 380, Regular, local moved: 0, time: 6.37151 ms
+STEP_TIMING step=380 solver=Regular step_ms=6.37151 local_moved=0
+Step 381, Regular, local moved: 0, time: 6.33948 ms
+STEP_TIMING step=381 solver=Regular step_ms=6.33948 local_moved=0
+Step 382, Regular, local moved: 0, time: 6.39618 ms
+STEP_TIMING step=382 solver=Regular step_ms=6.39618 local_moved=0
+Step 383, Regular, local moved: 0, time: 6.4803 ms
+STEP_TIMING step=383 solver=Regular step_ms=6.4803 local_moved=0
+Step 384, Regular, local moved: 0, time: 6.38164 ms
+STEP_TIMING step=384 solver=Regular step_ms=6.38164 local_moved=0
+Step 385, Regular, local moved: 0, time: 6.35269 ms
+STEP_TIMING step=385 solver=Regular step_ms=6.35269 local_moved=0
+Step 386, Regular, local moved: 0, time: 6.43986 ms
+STEP_TIMING step=386 solver=Regular step_ms=6.43986 local_moved=0
+Step 387, Regular, local moved: 0, time: 6.42593 ms
+STEP_TIMING step=387 solver=Regular step_ms=6.42593 local_moved=0
+Step 388, Regular, local moved: 0, time: 6.53941 ms
+STEP_TIMING step=388 solver=Regular step_ms=6.53941 local_moved=0
+Step 389, Regular, local moved: 0, time: 6.43962 ms
+STEP_TIMING step=389 solver=Regular step_ms=6.43962 local_moved=0
+Step 390, Regular, local moved: 0, time: 6.29812 ms
+STEP_TIMING step=390 solver=Regular step_ms=6.29812 local_moved=0
+Step 391, Regular, local moved: 0, time: 6.4566 ms
+STEP_TIMING step=391 solver=Regular step_ms=6.4566 local_moved=0
+Step 392, Regular, local moved: 0, time: 6.43968 ms
+STEP_TIMING step=392 solver=Regular step_ms=6.43968 local_moved=0
+Step 393, Regular, local moved: 0, time: 7.34087 ms
+STEP_TIMING step=393 solver=Regular step_ms=7.34087 local_moved=0
+Step 394, Regular, local moved: 0, time: 6.45773 ms
+STEP_TIMING step=394 solver=Regular step_ms=6.45773 local_moved=0
+Step 395, Regular, local moved: 0, time: 6.32914 ms
+STEP_TIMING step=395 solver=Regular step_ms=6.32914 local_moved=0
+Step 396, Regular, local moved: 0, time: 6.36688 ms
+STEP_TIMING step=396 solver=Regular step_ms=6.36688 local_moved=0
+Step 397, Regular, local moved: 0, time: 6.42291 ms
+STEP_TIMING step=397 solver=Regular step_ms=6.42291 local_moved=0
+Step 398, Regular, local moved: 0, time: 7.73955 ms
+STEP_TIMING step=398 solver=Regular step_ms=7.73955 local_moved=0
+Step 399, Regular, local moved: 0, time: 6.335 ms
+STEP_TIMING step=399 solver=Regular step_ms=6.335 local_moved=0
+Step 400, Regular, local moved: 0, time: 7.20031 ms
+STEP_TIMING step=400 solver=Regular step_ms=7.20031 local_moved=0
+Step 400/1000 | mass=3.3867e+06 | drift=0.032961 | moved_this_step=32030 | min_water=0 | min_positive_water=5.139e-09 | max_water=334.16 | runtime=00:00:21 | eta=00:00:32
+Step 401, Regular, local moved: 0, time: 6.33439 ms
+STEP_TIMING step=401 solver=Regular step_ms=6.33439 local_moved=0
+Step 402, Regular, local moved: 0, time: 6.46551 ms
+STEP_TIMING step=402 solver=Regular step_ms=6.46551 local_moved=0
+Step 403, Regular, local moved: 0, time: 6.42274 ms
+STEP_TIMING step=403 solver=Regular step_ms=6.42274 local_moved=0
+Step 404, Regular, local moved: 0, time: 6.43999 ms
+STEP_TIMING step=404 solver=Regular step_ms=6.43999 local_moved=0
+Step 405, Regular, local moved: 0, time: 6.36776 ms
+STEP_TIMING step=405 solver=Regular step_ms=6.36776 local_moved=0
+Step 406, Regular, local moved: 0, time: 6.40049 ms
+STEP_TIMING step=406 solver=Regular step_ms=6.40049 local_moved=0
+Step 407, Regular, local moved: 0, time: 6.27717 ms
+STEP_TIMING step=407 solver=Regular step_ms=6.27717 local_moved=0
+Step 408, Regular, local moved: 0, time: 6.44616 ms
+STEP_TIMING step=408 solver=Regular step_ms=6.44616 local_moved=0
+Step 409, Regular, local moved: 0, time: 6.41704 ms
+STEP_TIMING step=409 solver=Regular step_ms=6.41704 local_moved=0
+Step 410, Regular, local moved: 0, time: 6.48653 ms
+STEP_TIMING step=410 solver=Regular step_ms=6.48653 local_moved=0
+Step 411, Regular, local moved: 0, time: 6.402 ms
+STEP_TIMING step=411 solver=Regular step_ms=6.402 local_moved=0
+Step 412, Regular, local moved: 0, time: 6.28103 ms
+STEP_TIMING step=412 solver=Regular step_ms=6.28103 local_moved=0
+Step 413, Regular, local moved: 0, time: 6.43515 ms
+STEP_TIMING step=413 solver=Regular step_ms=6.43515 local_moved=0
+Step 414, Regular, local moved: 0, time: 6.44375 ms
+STEP_TIMING step=414 solver=Regular step_ms=6.44375 local_moved=0
+Step 415, Regular, local moved: 0, time: 6.43302 ms
+STEP_TIMING step=415 solver=Regular step_ms=6.43302 local_moved=0
+Step 416, Regular, local moved: 0, time: 6.39423 ms
+STEP_TIMING step=416 solver=Regular step_ms=6.39423 local_moved=0
+Step 417, Regular, local moved: 0, time: 8.04845 ms
+STEP_TIMING step=417 solver=Regular step_ms=8.04845 local_moved=0
+Step 418, Regular, local moved: 0, time: 6.37393 ms
+STEP_TIMING step=418 solver=Regular step_ms=6.37393 local_moved=0
+Step 419, Regular, local moved: 0, time: 6.38852 ms
+STEP_TIMING step=419 solver=Regular step_ms=6.38852 local_moved=0
+Step 420, Regular, local moved: 0, time: 6.49982 ms
+STEP_TIMING step=420 solver=Regular step_ms=6.49982 local_moved=0
+Step 421, Regular, local moved: 0, time: 6.51308 ms
+STEP_TIMING step=421 solver=Regular step_ms=6.51308 local_moved=0
+Step 422, Regular, local moved: 0, time: 6.46531 ms
+STEP_TIMING step=422 solver=Regular step_ms=6.46531 local_moved=0
+Step 423, Regular, local moved: 0, time: 6.402 ms
+STEP_TIMING step=423 solver=Regular step_ms=6.402 local_moved=0
+Step 424, Regular, local moved: 0, time: 6.57183 ms
+STEP_TIMING step=424 solver=Regular step_ms=6.57183 local_moved=0
+Step 425, Regular, local moved: 0, time: 6.34599 ms
+STEP_TIMING step=425 solver=Regular step_ms=6.34599 local_moved=0
+Step 426, Regular, local moved: 0, time: 6.44212 ms
+STEP_TIMING step=426 solver=Regular step_ms=6.44212 local_moved=0
+Step 427, Regular, local moved: 0, time: 6.45607 ms
+STEP_TIMING step=427 solver=Regular step_ms=6.45607 local_moved=0
+Step 428, Regular, local moved: 0, time: 6.47877 ms
+STEP_TIMING step=428 solver=Regular step_ms=6.47877 local_moved=0
+Step 429, Regular, local moved: 0, time: 6.45066 ms
+STEP_TIMING step=429 solver=Regular step_ms=6.45066 local_moved=0
+Step 430, Regular, local moved: 0, time: 6.54208 ms
+STEP_TIMING step=430 solver=Regular step_ms=6.54208 local_moved=0
+Step 431, Regular, local moved: 0, time: 6.49912 ms
+STEP_TIMING step=431 solver=Regular step_ms=6.49912 local_moved=0
+Step 432, Regular, local moved: 0, time: 6.35928 ms
+STEP_TIMING step=432 solver=Regular step_ms=6.35928 local_moved=0
+Step 433, Regular, local moved: 0, time: 6.2951 ms
+STEP_TIMING step=433 solver=Regular step_ms=6.2951 local_moved=0
+Step 434, Regular, local moved: 0, time: 6.56141 ms
+STEP_TIMING step=434 solver=Regular step_ms=6.56141 local_moved=0
+Step 435, Regular, local moved: 0, time: 6.37099 ms
+STEP_TIMING step=435 solver=Regular step_ms=6.37099 local_moved=0
+Step 436, Regular, local moved: 0, time: 7.82079 ms
+STEP_TIMING step=436 solver=Regular step_ms=7.82079 local_moved=0
+Step 437, Regular, local moved: 0, time: 6.37441 ms
+STEP_TIMING step=437 solver=Regular step_ms=6.37441 local_moved=0
+Step 438, Regular, local moved: 0, time: 6.26839 ms
+STEP_TIMING step=438 solver=Regular step_ms=6.26839 local_moved=0
+Step 439, Regular, local moved: 0, time: 6.33159 ms
+STEP_TIMING step=439 solver=Regular step_ms=6.33159 local_moved=0
+Step 440, Regular, local moved: 0, time: 6.61858 ms
+STEP_TIMING step=440 solver=Regular step_ms=6.61858 local_moved=0
+Step 441, Regular, local moved: 0, time: 6.45209 ms
+STEP_TIMING step=441 solver=Regular step_ms=6.45209 local_moved=0
+Step 442, Regular, local moved: 0, time: 6.41452 ms
+STEP_TIMING step=442 solver=Regular step_ms=6.41452 local_moved=0
+Step 443, Regular, local moved: 0, time: 6.44386 ms
+STEP_TIMING step=443 solver=Regular step_ms=6.44386 local_moved=0
+Step 444, Regular, local moved: 0, time: 6.46146 ms
+STEP_TIMING step=444 solver=Regular step_ms=6.46146 local_moved=0
+Step 445, Regular, local moved: 0, time: 6.41314 ms
+STEP_TIMING step=445 solver=Regular step_ms=6.41314 local_moved=0
+Step 446, Regular, local moved: 0, time: 6.47351 ms
+STEP_TIMING step=446 solver=Regular step_ms=6.47351 local_moved=0
+Step 447, Regular, local moved: 0, time: 6.45067 ms
+STEP_TIMING step=447 solver=Regular step_ms=6.45067 local_moved=0
+Step 448, Regular, local moved: 0, time: 6.51331 ms
+STEP_TIMING step=448 solver=Regular step_ms=6.51331 local_moved=0
+Step 449, Regular, local moved: 0, time: 6.64793 ms
+STEP_TIMING step=449 solver=Regular step_ms=6.64793 local_moved=0
+Step 450, Regular, local moved: 0, time: 6.48115 ms
+STEP_TIMING step=450 solver=Regular step_ms=6.48115 local_moved=0
+Step 451, Regular, local moved: 0, time: 6.50019 ms
+STEP_TIMING step=451 solver=Regular step_ms=6.50019 local_moved=0
+Step 452, Regular, local moved: 0, time: 6.47082 ms
+STEP_TIMING step=452 solver=Regular step_ms=6.47082 local_moved=0
+Step 453, Regular, local moved: 0, time: 6.65243 ms
+STEP_TIMING step=453 solver=Regular step_ms=6.65243 local_moved=0
+Step 454, Regular, local moved: 0, time: 6.37885 ms
+STEP_TIMING step=454 solver=Regular step_ms=6.37885 local_moved=0
+Step 455, Regular, local moved: 0, time: 6.44714 ms
+STEP_TIMING step=455 solver=Regular step_ms=6.44714 local_moved=0
+Step 456, Regular, local moved: 0, time: 7.79723 ms
+STEP_TIMING step=456 solver=Regular step_ms=7.79723 local_moved=0
+Step 457, Regular, local moved: 0, time: 6.47094 ms
+STEP_TIMING step=457 solver=Regular step_ms=6.47094 local_moved=0
+Step 458, Regular, local moved: 0, time: 6.51773 ms
+STEP_TIMING step=458 solver=Regular step_ms=6.51773 local_moved=0
+Step 459, Regular, local moved: 0, time: 6.48828 ms
+STEP_TIMING step=459 solver=Regular step_ms=6.48828 local_moved=0
+Step 460, Regular, local moved: 0, time: 6.54929 ms
+STEP_TIMING step=460 solver=Regular step_ms=6.54929 local_moved=0
+Step 461, Regular, local moved: 0, time: 6.4455 ms
+STEP_TIMING step=461 solver=Regular step_ms=6.4455 local_moved=0
+Step 462, Regular, local moved: 0, time: 6.38793 ms
+STEP_TIMING step=462 solver=Regular step_ms=6.38793 local_moved=0
+Step 463, Regular, local moved: 0, time: 6.50647 ms
+STEP_TIMING step=463 solver=Regular step_ms=6.50647 local_moved=0
+Step 464, Regular, local moved: 0, time: 6.41924 ms
+STEP_TIMING step=464 solver=Regular step_ms=6.41924 local_moved=0
+Step 465, Regular, local moved: 0, time: 6.5817 ms
+STEP_TIMING step=465 solver=Regular step_ms=6.5817 local_moved=0
+Step 466, Regular, local moved: 0, time: 6.55501 ms
+STEP_TIMING step=466 solver=Regular step_ms=6.55501 local_moved=0
+Step 467, Regular, local moved: 0, time: 6.43412 ms
+STEP_TIMING step=467 solver=Regular step_ms=6.43412 local_moved=0
+Step 468, Regular, local moved: 0, time: 6.47907 ms
+STEP_TIMING step=468 solver=Regular step_ms=6.47907 local_moved=0
+Step 469, Regular, local moved: 0, time: 6.35004 ms
+STEP_TIMING step=469 solver=Regular step_ms=6.35004 local_moved=0
+Step 470, Regular, local moved: 0, time: 6.45508 ms
+STEP_TIMING step=470 solver=Regular step_ms=6.45508 local_moved=0
+Step 471, Regular, local moved: 0, time: 7.32291 ms
+STEP_TIMING step=471 solver=Regular step_ms=7.32291 local_moved=0
+Step 472, Regular, local moved: 0, time: 6.25412 ms
+STEP_TIMING step=472 solver=Regular step_ms=6.25412 local_moved=0
+Step 473, Regular, local moved: 0, time: 6.35327 ms
+STEP_TIMING step=473 solver=Regular step_ms=6.35327 local_moved=0
+Step 474, Regular, local moved: 0, time: 6.3309 ms
+STEP_TIMING step=474 solver=Regular step_ms=6.3309 local_moved=0
+Step 475, Regular, local moved: 0, time: 6.54577 ms
+STEP_TIMING step=475 solver=Regular step_ms=6.54577 local_moved=0
+Step 476, Regular, local moved: 0, time: 6.40159 ms
+STEP_TIMING step=476 solver=Regular step_ms=6.40159 local_moved=0
+Step 477, Regular, local moved: 0, time: 7.89634 ms
+STEP_TIMING step=477 solver=Regular step_ms=7.89634 local_moved=0
+Step 478, Regular, local moved: 0, time: 8.03307 ms
+STEP_TIMING step=478 solver=Regular step_ms=8.03307 local_moved=0
+Step 479, Regular, local moved: 0, time: 7.70189 ms
+STEP_TIMING step=479 solver=Regular step_ms=7.70189 local_moved=0
+Step 480, Regular, local moved: 0, time: 6.39988 ms
+STEP_TIMING step=480 solver=Regular step_ms=6.39988 local_moved=0
+Step 481, Regular, local moved: 0, time: 6.43189 ms
+STEP_TIMING step=481 solver=Regular step_ms=6.43189 local_moved=0
+Step 482, Regular, local moved: 0, time: 6.36633 ms
+STEP_TIMING step=482 solver=Regular step_ms=6.36633 local_moved=0
+Step 483, Regular, local moved: 0, time: 6.47642 ms
+STEP_TIMING step=483 solver=Regular step_ms=6.47642 local_moved=0
+Step 484, Regular, local moved: 0, time: 7.32852 ms
+STEP_TIMING step=484 solver=Regular step_ms=7.32852 local_moved=0
+Step 485, Regular, local moved: 0, time: 6.38471 ms
+STEP_TIMING step=485 solver=Regular step_ms=6.38471 local_moved=0
+Step 486, Regular, local moved: 0, time: 6.61036 ms
+STEP_TIMING step=486 solver=Regular step_ms=6.61036 local_moved=0
+Step 487, Regular, local moved: 0, time: 6.52735 ms
+STEP_TIMING step=487 solver=Regular step_ms=6.52735 local_moved=0
+Step 488, Regular, local moved: 0, time: 6.43152 ms
+STEP_TIMING step=488 solver=Regular step_ms=6.43152 local_moved=0
+Step 489, Regular, local moved: 0, time: 6.33206 ms
+STEP_TIMING step=489 solver=Regular step_ms=6.33206 local_moved=0
+Step 490, Regular, local moved: 0, time: 6.42618 ms
+STEP_TIMING step=490 solver=Regular step_ms=6.42618 local_moved=0
+Step 491, Regular, local moved: 0, time: 6.4649 ms
+STEP_TIMING step=491 solver=Regular step_ms=6.4649 local_moved=0
+Step 492, Regular, local moved: 0, time: 6.42305 ms
+STEP_TIMING step=492 solver=Regular step_ms=6.42305 local_moved=0
+Step 493, Regular, local moved: 0, time: 6.41284 ms
+STEP_TIMING step=493 solver=Regular step_ms=6.41284 local_moved=0
+Step 494, Regular, local moved: 0, time: 6.45115 ms
+STEP_TIMING step=494 solver=Regular step_ms=6.45115 local_moved=0
+Step 495, Regular, local moved: 0, time: 6.53627 ms
+STEP_TIMING step=495 solver=Regular step_ms=6.53627 local_moved=0
+Step 496, Regular, local moved: 0, time: 6.42147 ms
+STEP_TIMING step=496 solver=Regular step_ms=6.42147 local_moved=0
+Step 497, Regular, local moved: 0, time: 6.35545 ms
+STEP_TIMING step=497 solver=Regular step_ms=6.35545 local_moved=0
+Step 498, Regular, local moved: 0, time: 6.5197 ms
+STEP_TIMING step=498 solver=Regular step_ms=6.5197 local_moved=0
+Step 499, Regular, local moved: 0, time: 6.40476 ms
+STEP_TIMING step=499 solver=Regular step_ms=6.40476 local_moved=0
+Step 500, Regular, local moved: 0, time: 6.44775 ms
+STEP_TIMING step=500 solver=Regular step_ms=6.44775 local_moved=0
+Step 500/1000 | mass=3.3867e+06 | drift=0.0366283 | moved_this_step=31397.8 | min_water=0 | min_positive_water=5.10535e-09 | max_water=333.318 | runtime=00:00:27 | eta=00:00:27
+Step 501, Regular, local moved: 0, time: 6.44361 ms
+STEP_TIMING step=501 solver=Regular step_ms=6.44361 local_moved=0
+Step 502, Regular, local moved: 0, time: 6.46387 ms
+STEP_TIMING step=502 solver=Regular step_ms=6.46387 local_moved=0
+Step 503, Regular, local moved: 0, time: 6.45748 ms
+STEP_TIMING step=503 solver=Regular step_ms=6.45748 local_moved=0
+Step 504, Regular, local moved: 0, time: 6.49343 ms
+STEP_TIMING step=504 solver=Regular step_ms=6.49343 local_moved=0
+Step 505, Regular, local moved: 0, time: 6.43439 ms
+STEP_TIMING step=505 solver=Regular step_ms=6.43439 local_moved=0
+Step 506, Regular, local moved: 0, time: 6.454 ms
+STEP_TIMING step=506 solver=Regular step_ms=6.454 local_moved=0
+Step 507, Regular, local moved: 0, time: 6.48212 ms
+STEP_TIMING step=507 solver=Regular step_ms=6.48212 local_moved=0
+Step 508, Regular, local moved: 0, time: 6.44501 ms
+STEP_TIMING step=508 solver=Regular step_ms=6.44501 local_moved=0
+Step 509, Regular, local moved: 0, time: 6.61299 ms
+STEP_TIMING step=509 solver=Regular step_ms=6.61299 local_moved=0
+Step 510, Regular, local moved: 0, time: 6.43414 ms
+STEP_TIMING step=510 solver=Regular step_ms=6.43414 local_moved=0
+Step 511, Regular, local moved: 0, time: 6.55479 ms
+STEP_TIMING step=511 solver=Regular step_ms=6.55479 local_moved=0
+Step 512, Regular, local moved: 0, time: 6.40569 ms
+STEP_TIMING step=512 solver=Regular step_ms=6.40569 local_moved=0
+Step 513, Regular, local moved: 0, time: 6.40277 ms
+STEP_TIMING step=513 solver=Regular step_ms=6.40277 local_moved=0
+Step 514, Regular, local moved: 0, time: 6.44704 ms
+STEP_TIMING step=514 solver=Regular step_ms=6.44704 local_moved=0
+Step 515, Regular, local moved: 0, time: 6.39438 ms
+STEP_TIMING step=515 solver=Regular step_ms=6.39438 local_moved=0
+Step 516, Regular, local moved: 0, time: 6.41607 ms
+STEP_TIMING step=516 solver=Regular step_ms=6.41607 local_moved=0
+Step 517, Regular, local moved: 0, time: 6.39167 ms
+STEP_TIMING step=517 solver=Regular step_ms=6.39167 local_moved=0
+Step 518, Regular, local moved: 0, time: 6.58592 ms
+STEP_TIMING step=518 solver=Regular step_ms=6.58592 local_moved=0
+Step 519, Regular, local moved: 0, time: 6.46661 ms
+STEP_TIMING step=519 solver=Regular step_ms=6.46661 local_moved=0
+Step 520, Regular, local moved: 0, time: 6.4558 ms
+STEP_TIMING step=520 solver=Regular step_ms=6.4558 local_moved=0
+Step 521, Regular, local moved: 0, time: 6.51206 ms
+STEP_TIMING step=521 solver=Regular step_ms=6.51206 local_moved=0
+Step 522, Regular, local moved: 0, time: 6.45819 ms
+STEP_TIMING step=522 solver=Regular step_ms=6.45819 local_moved=0
+Step 523, Regular, local moved: 0, time: 6.45064 ms
+STEP_TIMING step=523 solver=Regular step_ms=6.45064 local_moved=0
+Step 524, Regular, local moved: 0, time: 6.6357 ms
+STEP_TIMING step=524 solver=Regular step_ms=6.6357 local_moved=0
+Step 525, Regular, local moved: 0, time: 6.30824 ms
+STEP_TIMING step=525 solver=Regular step_ms=6.30824 local_moved=0
+Step 526, Regular, local moved: 0, time: 6.72439 ms
+STEP_TIMING step=526 solver=Regular step_ms=6.72439 local_moved=0
+Step 527, Regular, local moved: 0, time: 6.45368 ms
+STEP_TIMING step=527 solver=Regular step_ms=6.45368 local_moved=0
+Step 528, Regular, local moved: 0, time: 6.30821 ms
+STEP_TIMING step=528 solver=Regular step_ms=6.30821 local_moved=0
+Step 529, Regular, local moved: 0, time: 6.45216 ms
+STEP_TIMING step=529 solver=Regular step_ms=6.45216 local_moved=0
+Step 530, Regular, local moved: 0, time: 6.38719 ms
+STEP_TIMING step=530 solver=Regular step_ms=6.38719 local_moved=0
+Step 531, Regular, local moved: 0, time: 6.58186 ms
+STEP_TIMING step=531 solver=Regular step_ms=6.58186 local_moved=0
+Step 532, Regular, local moved: 0, time: 6.41786 ms
+STEP_TIMING step=532 solver=Regular step_ms=6.41786 local_moved=0
+Step 533, Regular, local moved: 0, time: 6.40006 ms
+STEP_TIMING step=533 solver=Regular step_ms=6.40006 local_moved=0
+Step 534, Regular, local moved: 0, time: 6.44513 ms
+STEP_TIMING step=534 solver=Regular step_ms=6.44513 local_moved=0
+Step 535, Regular, local moved: 0, time: 6.62033 ms
+STEP_TIMING step=535 solver=Regular step_ms=6.62033 local_moved=0
+Step 536, Regular, local moved: 0, time: 6.3609 ms
+STEP_TIMING step=536 solver=Regular step_ms=6.3609 local_moved=0
+Step 537, Regular, local moved: 0, time: 6.38915 ms
+STEP_TIMING step=537 solver=Regular step_ms=6.38915 local_moved=0
+Step 538, Regular, local moved: 0, time: 6.42428 ms
+STEP_TIMING step=538 solver=Regular step_ms=6.42428 local_moved=0
+Step 539, Regular, local moved: 0, time: 6.39782 ms
+STEP_TIMING step=539 solver=Regular step_ms=6.39782 local_moved=0
+Step 540, Regular, local moved: 0, time: 6.31372 ms
+STEP_TIMING step=540 solver=Regular step_ms=6.31372 local_moved=0
+Step 541, Regular, local moved: 0, time: 6.37017 ms
+STEP_TIMING step=541 solver=Regular step_ms=6.37017 local_moved=0
+Step 542, Regular, local moved: 0, time: 6.42025 ms
+STEP_TIMING step=542 solver=Regular step_ms=6.42025 local_moved=0
+Step 543, Regular, local moved: 0, time: 6.3066 ms
+STEP_TIMING step=543 solver=Regular step_ms=6.3066 local_moved=0
+Step 544, Regular, local moved: 0, time: 6.42515 ms
+STEP_TIMING step=544 solver=Regular step_ms=6.42515 local_moved=0
+Step 545, Regular, local moved: 0, time: 6.45214 ms
+STEP_TIMING step=545 solver=Regular step_ms=6.45214 local_moved=0
+Step 546, Regular, local moved: 0, time: 6.43837 ms
+STEP_TIMING step=546 solver=Regular step_ms=6.43837 local_moved=0
+Step 547, Regular, local moved: 0, time: 6.61726 ms
+STEP_TIMING step=547 solver=Regular step_ms=6.61726 local_moved=0
+Step 548, Regular, local moved: 0, time: 7.38014 ms
+STEP_TIMING step=548 solver=Regular step_ms=7.38014 local_moved=0
+Step 549, Regular, local moved: 0, time: 6.46571 ms
+STEP_TIMING step=549 solver=Regular step_ms=6.46571 local_moved=0
+Step 550, Regular, local moved: 0, time: 6.55162 ms
+STEP_TIMING step=550 solver=Regular step_ms=6.55162 local_moved=0
+Step 551, Regular, local moved: 0, time: 6.56148 ms
+STEP_TIMING step=551 solver=Regular step_ms=6.56148 local_moved=0
+Step 552, Regular, local moved: 0, time: 6.45838 ms
+STEP_TIMING step=552 solver=Regular step_ms=6.45838 local_moved=0
+Step 553, Regular, local moved: 0, time: 6.4241 ms
+STEP_TIMING step=553 solver=Regular step_ms=6.4241 local_moved=0
+Step 554, Regular, local moved: 0, time: 6.60431 ms
+STEP_TIMING step=554 solver=Regular step_ms=6.60431 local_moved=0
+Step 555, Regular, local moved: 0, time: 6.42062 ms
+STEP_TIMING step=555 solver=Regular step_ms=6.42062 local_moved=0
+Step 556, Regular, local moved: 0, time: 6.45751 ms
+STEP_TIMING step=556 solver=Regular step_ms=6.45751 local_moved=0
+Step 557, Regular, local moved: 0, time: 6.401 ms
+STEP_TIMING step=557 solver=Regular step_ms=6.401 local_moved=0
+Step 558, Regular, local moved: 0, time: 6.48613 ms
+STEP_TIMING step=558 solver=Regular step_ms=6.48613 local_moved=0
+Step 559, Regular, local moved: 0, time: 7.26714 ms
+STEP_TIMING step=559 solver=Regular step_ms=7.26714 local_moved=0
+Step 560, Regular, local moved: 0, time: 6.71206 ms
+STEP_TIMING step=560 solver=Regular step_ms=6.71206 local_moved=0
+Step 561, Regular, local moved: 0, time: 6.37276 ms
+STEP_TIMING step=561 solver=Regular step_ms=6.37276 local_moved=0
+Step 562, Regular, local moved: 0, time: 6.47452 ms
+STEP_TIMING step=562 solver=Regular step_ms=6.47452 local_moved=0
+Step 563, Regular, local moved: 0, time: 6.46361 ms
+STEP_TIMING step=563 solver=Regular step_ms=6.46361 local_moved=0
+Step 564, Regular, local moved: 0, time: 6.43332 ms
+STEP_TIMING step=564 solver=Regular step_ms=6.43332 local_moved=0
+Step 565, Regular, local moved: 0, time: 6.34707 ms
+STEP_TIMING step=565 solver=Regular step_ms=6.34707 local_moved=0
+Step 566, Regular, local moved: 0, time: 6.37135 ms
+STEP_TIMING step=566 solver=Regular step_ms=6.37135 local_moved=0
+Step 567, Regular, local moved: 0, time: 6.42696 ms
+STEP_TIMING step=567 solver=Regular step_ms=6.42696 local_moved=0
+Step 568, Regular, local moved: 0, time: 6.44521 ms
+STEP_TIMING step=568 solver=Regular step_ms=6.44521 local_moved=0
+Step 569, Regular, local moved: 0, time: 6.40375 ms
+STEP_TIMING step=569 solver=Regular step_ms=6.40375 local_moved=0
+Step 570, Regular, local moved: 0, time: 6.62941 ms
+STEP_TIMING step=570 solver=Regular step_ms=6.62941 local_moved=0
+Step 571, Regular, local moved: 0, time: 6.47991 ms
+STEP_TIMING step=571 solver=Regular step_ms=6.47991 local_moved=0
+Step 572, Regular, local moved: 0, time: 6.4411 ms
+STEP_TIMING step=572 solver=Regular step_ms=6.4411 local_moved=0
+Step 573, Regular, local moved: 0, time: 6.43285 ms
+STEP_TIMING step=573 solver=Regular step_ms=6.43285 local_moved=0
+Step 574, Regular, local moved: 0, time: 6.33305 ms
+STEP_TIMING step=574 solver=Regular step_ms=6.33305 local_moved=0
+Step 575, Regular, local moved: 0, time: 6.58175 ms
+STEP_TIMING step=575 solver=Regular step_ms=6.58175 local_moved=0
+Step 576, Regular, local moved: 0, time: 6.4962 ms
+STEP_TIMING step=576 solver=Regular step_ms=6.4962 local_moved=0
+Step 577, Regular, local moved: 0, time: 6.8348 ms
+STEP_TIMING step=577 solver=Regular step_ms=6.8348 local_moved=0
+Step 578, Regular, local moved: 0, time: 6.45809 ms
+STEP_TIMING step=578 solver=Regular step_ms=6.45809 local_moved=0
+Step 579, Regular, local moved: 0, time: 6.43519 ms
+STEP_TIMING step=579 solver=Regular step_ms=6.43519 local_moved=0
+Step 580, Regular, local moved: 0, time: 6.29886 ms
+STEP_TIMING step=580 solver=Regular step_ms=6.29886 local_moved=0
+Step 581, Regular, local moved: 0, time: 6.40708 ms
+STEP_TIMING step=581 solver=Regular step_ms=6.40708 local_moved=0
+Step 582, Regular, local moved: 0, time: 6.45644 ms
+STEP_TIMING step=582 solver=Regular step_ms=6.45644 local_moved=0
+Step 583, Regular, local moved: 0, time: 6.42654 ms
+STEP_TIMING step=583 solver=Regular step_ms=6.42654 local_moved=0
+Step 584, Regular, local moved: 0, time: 6.48423 ms
+STEP_TIMING step=584 solver=Regular step_ms=6.48423 local_moved=0
+Step 585, Regular, local moved: 0, time: 6.45154 ms
+STEP_TIMING step=585 solver=Regular step_ms=6.45154 local_moved=0
+Step 586, Regular, local moved: 0, time: 6.39972 ms
+STEP_TIMING step=586 solver=Regular step_ms=6.39972 local_moved=0
+Step 587, Regular, local moved: 0, time: 6.37443 ms
+STEP_TIMING step=587 solver=Regular step_ms=6.37443 local_moved=0
+Step 588, Regular, local moved: 0, time: 6.48372 ms
+STEP_TIMING step=588 solver=Regular step_ms=6.48372 local_moved=0
+Step 589, Regular, local moved: 0, time: 6.44353 ms
+STEP_TIMING step=589 solver=Regular step_ms=6.44353 local_moved=0
+Step 590, Regular, local moved: 0, time: 6.44467 ms
+STEP_TIMING step=590 solver=Regular step_ms=6.44467 local_moved=0
+Step 591, Regular, local moved: 0, time: 6.40681 ms
+STEP_TIMING step=591 solver=Regular step_ms=6.40681 local_moved=0
+Step 592, Regular, local moved: 0, time: 6.45743 ms
+STEP_TIMING step=592 solver=Regular step_ms=6.45743 local_moved=0
+Step 593, Regular, local moved: 0, time: 6.42366 ms
+STEP_TIMING step=593 solver=Regular step_ms=6.42366 local_moved=0
+Step 594, Regular, local moved: 0, time: 6.47896 ms
+STEP_TIMING step=594 solver=Regular step_ms=6.47896 local_moved=0
+Step 595, Regular, local moved: 0, time: 6.41225 ms
+STEP_TIMING step=595 solver=Regular step_ms=6.41225 local_moved=0
+Step 596, Regular, local moved: 0, time: 6.54317 ms
+STEP_TIMING step=596 solver=Regular step_ms=6.54317 local_moved=0
+Step 597, Regular, local moved: 0, time: 6.50978 ms
+STEP_TIMING step=597 solver=Regular step_ms=6.50978 local_moved=0
+Step 598, Regular, local moved: 0, time: 6.41276 ms
+STEP_TIMING step=598 solver=Regular step_ms=6.41276 local_moved=0
+Step 599, Regular, local moved: 0, time: 6.4898 ms
+STEP_TIMING step=599 solver=Regular step_ms=6.4898 local_moved=0
+Step 600, Regular, local moved: 0, time: 6.51289 ms
+STEP_TIMING step=600 solver=Regular step_ms=6.51289 local_moved=0
+Step 600/1000 | mass=3.3867e+06 | drift=0.0168859 | moved_this_step=30881.9 | min_water=0 | min_positive_water=3.99761e-09 | max_water=331.351 | runtime=00:00:32 | eta=00:00:21
+Step 601, Regular, local moved: 0, time: 6.40539 ms
+STEP_TIMING step=601 solver=Regular step_ms=6.40539 local_moved=0
+Step 602, Regular, local moved: 0, time: 6.42668 ms
+STEP_TIMING step=602 solver=Regular step_ms=6.42668 local_moved=0
+Step 603, Regular, local moved: 0, time: 6.30533 ms
+STEP_TIMING step=603 solver=Regular step_ms=6.30533 local_moved=0
+Step 604, Regular, local moved: 0, time: 6.2902 ms
+STEP_TIMING step=604 solver=Regular step_ms=6.2902 local_moved=0
+Step 605, Regular, local moved: 0, time: 6.56778 ms
+STEP_TIMING step=605 solver=Regular step_ms=6.56778 local_moved=0
+Step 606, Regular, local moved: 0, time: 6.57184 ms
+STEP_TIMING step=606 solver=Regular step_ms=6.57184 local_moved=0
+Step 607, Regular, local moved: 0, time: 6.52951 ms
+STEP_TIMING step=607 solver=Regular step_ms=6.52951 local_moved=0
+Step 608, Regular, local moved: 0, time: 6.37526 ms
+STEP_TIMING step=608 solver=Regular step_ms=6.37526 local_moved=0
+Step 609, Regular, local moved: 0, time: 6.29437 ms
+STEP_TIMING step=609 solver=Regular step_ms=6.29437 local_moved=0
+Step 610, Regular, local moved: 0, time: 6.50652 ms
+STEP_TIMING step=610 solver=Regular step_ms=6.50652 local_moved=0
+Step 611, Regular, local moved: 0, time: 6.41203 ms
+STEP_TIMING step=611 solver=Regular step_ms=6.41203 local_moved=0
+Step 612, Regular, local moved: 0, time: 6.41332 ms
+STEP_TIMING step=612 solver=Regular step_ms=6.41332 local_moved=0
+Step 613, Regular, local moved: 0, time: 6.36583 ms
+STEP_TIMING step=613 solver=Regular step_ms=6.36583 local_moved=0
+Step 614, Regular, local moved: 0, time: 6.52739 ms
+STEP_TIMING step=614 solver=Regular step_ms=6.52739 local_moved=0
+Step 615, Regular, local moved: 0, time: 6.42403 ms
+STEP_TIMING step=615 solver=Regular step_ms=6.42403 local_moved=0
+Step 616, Regular, local moved: 0, time: 6.46333 ms
+STEP_TIMING step=616 solver=Regular step_ms=6.46333 local_moved=0
+Step 617, Regular, local moved: 0, time: 7.44383 ms
+STEP_TIMING step=617 solver=Regular step_ms=7.44383 local_moved=0
+Step 618, Regular, local moved: 0, time: 6.43105 ms
+STEP_TIMING step=618 solver=Regular step_ms=6.43105 local_moved=0
+Step 619, Regular, local moved: 0, time: 6.43148 ms
+STEP_TIMING step=619 solver=Regular step_ms=6.43148 local_moved=0
+Step 620, Regular, local moved: 0, time: 6.45507 ms
+STEP_TIMING step=620 solver=Regular step_ms=6.45507 local_moved=0
+Step 621, Regular, local moved: 0, time: 6.41458 ms
+STEP_TIMING step=621 solver=Regular step_ms=6.41458 local_moved=0
+Step 622, Regular, local moved: 0, time: 6.30054 ms
+STEP_TIMING step=622 solver=Regular step_ms=6.30054 local_moved=0
+Step 623, Regular, local moved: 0, time: 6.45594 ms
+STEP_TIMING step=623 solver=Regular step_ms=6.45594 local_moved=0
+Step 624, Regular, local moved: 0, time: 6.40146 ms
+STEP_TIMING step=624 solver=Regular step_ms=6.40146 local_moved=0
+Step 625, Regular, local moved: 0, time: 6.30415 ms
+STEP_TIMING step=625 solver=Regular step_ms=6.30415 local_moved=0
+Step 626, Regular, local moved: 0, time: 6.34687 ms
+STEP_TIMING step=626 solver=Regular step_ms=6.34687 local_moved=0
+Step 627, Regular, local moved: 0, time: 6.47533 ms
+STEP_TIMING step=627 solver=Regular step_ms=6.47533 local_moved=0
+Step 628, Regular, local moved: 0, time: 6.38632 ms
+STEP_TIMING step=628 solver=Regular step_ms=6.38632 local_moved=0
+Step 629, Regular, local moved: 0, time: 6.29383 ms
+STEP_TIMING step=629 solver=Regular step_ms=6.29383 local_moved=0
+Step 630, Regular, local moved: 0, time: 6.33795 ms
+STEP_TIMING step=630 solver=Regular step_ms=6.33795 local_moved=0
+Step 631, Regular, local moved: 0, time: 6.32058 ms
+STEP_TIMING step=631 solver=Regular step_ms=6.32058 local_moved=0
+Step 632, Regular, local moved: 0, time: 6.39446 ms
+STEP_TIMING step=632 solver=Regular step_ms=6.39446 local_moved=0
+Step 633, Regular, local moved: 0, time: 6.42315 ms
+STEP_TIMING step=633 solver=Regular step_ms=6.42315 local_moved=0
+Step 634, Regular, local moved: 0, time: 6.44763 ms
+STEP_TIMING step=634 solver=Regular step_ms=6.44763 local_moved=0
+Step 635, Regular, local moved: 0, time: 6.48923 ms
+STEP_TIMING step=635 solver=Regular step_ms=6.48923 local_moved=0
+Step 636, Regular, local moved: 0, time: 6.47678 ms
+STEP_TIMING step=636 solver=Regular step_ms=6.47678 local_moved=0
+Step 637, Regular, local moved: 0, time: 6.40951 ms
+STEP_TIMING step=637 solver=Regular step_ms=6.40951 local_moved=0
+Step 638, Regular, local moved: 0, time: 6.32737 ms
+STEP_TIMING step=638 solver=Regular step_ms=6.32737 local_moved=0
+Step 639, Regular, local moved: 0, time: 6.40409 ms
+STEP_TIMING step=639 solver=Regular step_ms=6.40409 local_moved=0
+Step 640, Regular, local moved: 0, time: 6.4237 ms
+STEP_TIMING step=640 solver=Regular step_ms=6.4237 local_moved=0
+Step 641, Regular, local moved: 0, time: 6.35945 ms
+STEP_TIMING step=641 solver=Regular step_ms=6.35945 local_moved=0
+Step 642, Regular, local moved: 0, time: 6.42892 ms
+STEP_TIMING step=642 solver=Regular step_ms=6.42892 local_moved=0
+Step 643, Regular, local moved: 0, time: 6.40597 ms
+STEP_TIMING step=643 solver=Regular step_ms=6.40597 local_moved=0
+Step 644, Regular, local moved: 0, time: 6.40303 ms
+STEP_TIMING step=644 solver=Regular step_ms=6.40303 local_moved=0
+Step 645, Regular, local moved: 0, time: 6.42195 ms
+STEP_TIMING step=645 solver=Regular step_ms=6.42195 local_moved=0
+Step 646, Regular, local moved: 0, time: 6.44644 ms
+STEP_TIMING step=646 solver=Regular step_ms=6.44644 local_moved=0
+Step 647, Regular, local moved: 0, time: 6.39674 ms
+STEP_TIMING step=647 solver=Regular step_ms=6.39674 local_moved=0
+Step 648, Regular, local moved: 0, time: 6.30418 ms
+STEP_TIMING step=648 solver=Regular step_ms=6.30418 local_moved=0
+Step 649, Regular, local moved: 0, time: 7.44024 ms
+STEP_TIMING step=649 solver=Regular step_ms=7.44024 local_moved=0
+Step 650, Regular, local moved: 0, time: 6.30976 ms
+STEP_TIMING step=650 solver=Regular step_ms=6.30976 local_moved=0
+Step 651, Regular, local moved: 0, time: 6.4461 ms
+STEP_TIMING step=651 solver=Regular step_ms=6.4461 local_moved=0
+Step 652, Regular, local moved: 0, time: 6.31768 ms
+STEP_TIMING step=652 solver=Regular step_ms=6.31768 local_moved=0
+Step 653, Regular, local moved: 0, time: 6.34163 ms
+STEP_TIMING step=653 solver=Regular step_ms=6.34163 local_moved=0
+Step 654, Regular, local moved: 0, time: 6.32252 ms
+STEP_TIMING step=654 solver=Regular step_ms=6.32252 local_moved=0
+Step 655, Regular, local moved: 0, time: 6.39831 ms
+STEP_TIMING step=655 solver=Regular step_ms=6.39831 local_moved=0
+Step 656, Regular, local moved: 0, time: 6.41104 ms
+STEP_TIMING step=656 solver=Regular step_ms=6.41104 local_moved=0
+Step 657, Regular, local moved: 0, time: 6.46454 ms
+STEP_TIMING step=657 solver=Regular step_ms=6.46454 local_moved=0
+Step 658, Regular, local moved: 0, time: 6.67268 ms
+STEP_TIMING step=658 solver=Regular step_ms=6.67268 local_moved=0
+Step 659, Regular, local moved: 0, time: 6.46067 ms
+STEP_TIMING step=659 solver=Regular step_ms=6.46067 local_moved=0
+Step 660, Regular, local moved: 0, time: 6.43813 ms
+STEP_TIMING step=660 solver=Regular step_ms=6.43813 local_moved=0
+Step 661, Regular, local moved: 0, time: 6.47371 ms
+STEP_TIMING step=661 solver=Regular step_ms=6.47371 local_moved=0
+Step 662, Regular, local moved: 0, time: 6.5963 ms
+STEP_TIMING step=662 solver=Regular step_ms=6.5963 local_moved=0
+Step 663, Regular, local moved: 0, time: 6.4043 ms
+STEP_TIMING step=663 solver=Regular step_ms=6.4043 local_moved=0
+Step 664, Regular, local moved: 0, time: 6.43849 ms
+STEP_TIMING step=664 solver=Regular step_ms=6.43849 local_moved=0
+Step 665, Regular, local moved: 0, time: 6.45418 ms
+STEP_TIMING step=665 solver=Regular step_ms=6.45418 local_moved=0
+Step 666, Regular, local moved: 0, time: 6.43752 ms
+STEP_TIMING step=666 solver=Regular step_ms=6.43752 local_moved=0
+Step 667, Regular, local moved: 0, time: 6.37859 ms
+STEP_TIMING step=667 solver=Regular step_ms=6.37859 local_moved=0
+Step 668, Regular, local moved: 0, time: 6.35628 ms
+STEP_TIMING step=668 solver=Regular step_ms=6.35628 local_moved=0
+Step 669, Regular, local moved: 0, time: 6.40027 ms
+STEP_TIMING step=669 solver=Regular step_ms=6.40027 local_moved=0
+Step 670, Regular, local moved: 0, time: 6.40839 ms
+STEP_TIMING step=670 solver=Regular step_ms=6.40839 local_moved=0
+Step 671, Regular, local moved: 0, time: 6.43845 ms
+STEP_TIMING step=671 solver=Regular step_ms=6.43845 local_moved=0
+Step 672, Regular, local moved: 0, time: 6.404 ms
+STEP_TIMING step=672 solver=Regular step_ms=6.404 local_moved=0
+Step 673, Regular, local moved: 0, time: 6.57588 ms
+STEP_TIMING step=673 solver=Regular step_ms=6.57588 local_moved=0
+Step 674, Regular, local moved: 0, time: 6.46184 ms
+STEP_TIMING step=674 solver=Regular step_ms=6.46184 local_moved=0
+Step 675, Regular, local moved: 0, time: 6.40342 ms
+STEP_TIMING step=675 solver=Regular step_ms=6.40342 local_moved=0
+Step 676, Regular, local moved: 0, time: 6.39637 ms
+STEP_TIMING step=676 solver=Regular step_ms=6.39637 local_moved=0
+Step 677, Regular, local moved: 0, time: 6.4376 ms
+STEP_TIMING step=677 solver=Regular step_ms=6.4376 local_moved=0
+Step 678, Regular, local moved: 0, time: 6.41981 ms
+STEP_TIMING step=678 solver=Regular step_ms=6.41981 local_moved=0
+Step 679, Regular, local moved: 0, time: 6.57076 ms
+STEP_TIMING step=679 solver=Regular step_ms=6.57076 local_moved=0
+Step 680, Regular, local moved: 0, time: 7.27415 ms
+STEP_TIMING step=680 solver=Regular step_ms=7.27415 local_moved=0
+Step 681, Regular, local moved: 0, time: 6.40139 ms
+STEP_TIMING step=681 solver=Regular step_ms=6.40139 local_moved=0
+Step 682, Regular, local moved: 0, time: 6.44499 ms
+STEP_TIMING step=682 solver=Regular step_ms=6.44499 local_moved=0
+Step 683, Regular, local moved: 0, time: 6.48569 ms
+STEP_TIMING step=683 solver=Regular step_ms=6.48569 local_moved=0
+Step 684, Regular, local moved: 0, time: 6.48484 ms
+STEP_TIMING step=684 solver=Regular step_ms=6.48484 local_moved=0
+Step 685, Regular, local moved: 0, time: 6.43124 ms
+STEP_TIMING step=685 solver=Regular step_ms=6.43124 local_moved=0
+Step 686, Regular, local moved: 0, time: 6.35432 ms
+STEP_TIMING step=686 solver=Regular step_ms=6.35432 local_moved=0
+Step 687, Regular, local moved: 0, time: 6.89559 ms
+STEP_TIMING step=687 solver=Regular step_ms=6.89559 local_moved=0
+Step 688, Regular, local moved: 0, time: 7.33657 ms
+STEP_TIMING step=688 solver=Regular step_ms=7.33657 local_moved=0
+Step 689, Regular, local moved: 0, time: 6.46533 ms
+STEP_TIMING step=689 solver=Regular step_ms=6.46533 local_moved=0
+Step 690, Regular, local moved: 0, time: 6.4975 ms
+STEP_TIMING step=690 solver=Regular step_ms=6.4975 local_moved=0
+Step 691, Regular, local moved: 0, time: 7.55713 ms
+STEP_TIMING step=691 solver=Regular step_ms=7.55713 local_moved=0
+Step 692, Regular, local moved: 0, time: 6.53153 ms
+STEP_TIMING step=692 solver=Regular step_ms=6.53153 local_moved=0
+Step 693, Regular, local moved: 0, time: 6.39963 ms
+STEP_TIMING step=693 solver=Regular step_ms=6.39963 local_moved=0
+Step 694, Regular, local moved: 0, time: 6.50915 ms
+STEP_TIMING step=694 solver=Regular step_ms=6.50915 local_moved=0
+Step 695, Regular, local moved: 0, time: 6.61436 ms
+STEP_TIMING step=695 solver=Regular step_ms=6.61436 local_moved=0
+Step 696, Regular, local moved: 0, time: 6.42935 ms
+STEP_TIMING step=696 solver=Regular step_ms=6.42935 local_moved=0
+Step 697, Regular, local moved: 0, time: 6.3795 ms
+STEP_TIMING step=697 solver=Regular step_ms=6.3795 local_moved=0
+Step 698, Regular, local moved: 0, time: 6.46483 ms
+STEP_TIMING step=698 solver=Regular step_ms=6.46483 local_moved=0
+Step 699, Regular, local moved: 0, time: 6.49952 ms
+STEP_TIMING step=699 solver=Regular step_ms=6.49952 local_moved=0
+Step 700, Regular, local moved: 0, time: 6.49252 ms
+STEP_TIMING step=700 solver=Regular step_ms=6.49252 local_moved=0
+Step 700/1000 | mass=3.3867e+06 | drift=0.0306006 | moved_this_step=30454.6 | min_water=0 | min_positive_water=3.99745e-09 | max_water=328.586 | runtime=00:00:38 | eta=00:00:16
+Step 701, Regular, local moved: 0, time: 6.29514 ms
+STEP_TIMING step=701 solver=Regular step_ms=6.29514 local_moved=0
+Step 702, Regular, local moved: 0, time: 6.41834 ms
+STEP_TIMING step=702 solver=Regular step_ms=6.41834 local_moved=0
+Step 703, Regular, local moved: 0, time: 6.29969 ms
+STEP_TIMING step=703 solver=Regular step_ms=6.29969 local_moved=0
+Step 704, Regular, local moved: 0, time: 6.31792 ms
+STEP_TIMING step=704 solver=Regular step_ms=6.31792 local_moved=0
+Step 705, Regular, local moved: 0, time: 6.47037 ms
+STEP_TIMING step=705 solver=Regular step_ms=6.47037 local_moved=0
+Step 706, Regular, local moved: 0, time: 6.43063 ms
+STEP_TIMING step=706 solver=Regular step_ms=6.43063 local_moved=0
+Step 707, Regular, local moved: 0, time: 6.44423 ms
+STEP_TIMING step=707 solver=Regular step_ms=6.44423 local_moved=0
+Step 708, Regular, local moved: 0, time: 6.60408 ms
+STEP_TIMING step=708 solver=Regular step_ms=6.60408 local_moved=0
+Step 709, Regular, local moved: 0, time: 6.41336 ms
+STEP_TIMING step=709 solver=Regular step_ms=6.41336 local_moved=0
+Step 710, Regular, local moved: 0, time: 7.33492 ms
+STEP_TIMING step=710 solver=Regular step_ms=7.33492 local_moved=0
+Step 711, Regular, local moved: 0, time: 6.48907 ms
+STEP_TIMING step=711 solver=Regular step_ms=6.48907 local_moved=0
+Step 712, Regular, local moved: 0, time: 6.483 ms
+STEP_TIMING step=712 solver=Regular step_ms=6.483 local_moved=0
+Step 713, Regular, local moved: 0, time: 6.51725 ms
+STEP_TIMING step=713 solver=Regular step_ms=6.51725 local_moved=0
+Step 714, Regular, local moved: 0, time: 6.41244 ms
+STEP_TIMING step=714 solver=Regular step_ms=6.41244 local_moved=0
+Step 715, Regular, local moved: 0, time: 6.43813 ms
+STEP_TIMING step=715 solver=Regular step_ms=6.43813 local_moved=0
+Step 716, Regular, local moved: 0, time: 6.48243 ms
+STEP_TIMING step=716 solver=Regular step_ms=6.48243 local_moved=0
+Step 717, Regular, local moved: 0, time: 6.43198 ms
+STEP_TIMING step=717 solver=Regular step_ms=6.43198 local_moved=0
+Step 718, Regular, local moved: 0, time: 7.38977 ms
+STEP_TIMING step=718 solver=Regular step_ms=7.38977 local_moved=0
+Step 719, Regular, local moved: 0, time: 6.40794 ms
+STEP_TIMING step=719 solver=Regular step_ms=6.40794 local_moved=0
+Step 720, Regular, local moved: 0, time: 6.4208 ms
+STEP_TIMING step=720 solver=Regular step_ms=6.4208 local_moved=0
+Step 721, Regular, local moved: 0, time: 6.58723 ms
+STEP_TIMING step=721 solver=Regular step_ms=6.58723 local_moved=0
+Step 722, Regular, local moved: 0, time: 6.36668 ms
+STEP_TIMING step=722 solver=Regular step_ms=6.36668 local_moved=0
+Step 723, Regular, local moved: 0, time: 7.34191 ms
+STEP_TIMING step=723 solver=Regular step_ms=7.34191 local_moved=0
+Step 724, Regular, local moved: 0, time: 6.34015 ms
+STEP_TIMING step=724 solver=Regular step_ms=6.34015 local_moved=0
+Step 725, Regular, local moved: 0, time: 6.47591 ms
+STEP_TIMING step=725 solver=Regular step_ms=6.47591 local_moved=0
+Step 726, Regular, local moved: 0, time: 6.44506 ms
+STEP_TIMING step=726 solver=Regular step_ms=6.44506 local_moved=0
+Step 727, Regular, local moved: 0, time: 6.43727 ms
+STEP_TIMING step=727 solver=Regular step_ms=6.43727 local_moved=0
+Step 728, Regular, local moved: 0, time: 6.4206 ms
+STEP_TIMING step=728 solver=Regular step_ms=6.4206 local_moved=0
+Step 729, Regular, local moved: 0, time: 6.31039 ms
+STEP_TIMING step=729 solver=Regular step_ms=6.31039 local_moved=0
+Step 730, Regular, local moved: 0, time: 6.45542 ms
+STEP_TIMING step=730 solver=Regular step_ms=6.45542 local_moved=0
+Step 731, Regular, local moved: 0, time: 6.38265 ms
+STEP_TIMING step=731 solver=Regular step_ms=6.38265 local_moved=0
+Step 732, Regular, local moved: 0, time: 6.43193 ms
+STEP_TIMING step=732 solver=Regular step_ms=6.43193 local_moved=0
+Step 733, Regular, local moved: 0, time: 6.44154 ms
+STEP_TIMING step=733 solver=Regular step_ms=6.44154 local_moved=0
+Step 734, Regular, local moved: 0, time: 6.3635 ms
+STEP_TIMING step=734 solver=Regular step_ms=6.3635 local_moved=0
+Step 735, Regular, local moved: 0, time: 7.24894 ms
+STEP_TIMING step=735 solver=Regular step_ms=7.24894 local_moved=0
+Step 736, Regular, local moved: 0, time: 6.5254 ms
+STEP_TIMING step=736 solver=Regular step_ms=6.5254 local_moved=0
+Step 737, Regular, local moved: 0, time: 6.50643 ms
+STEP_TIMING step=737 solver=Regular step_ms=6.50643 local_moved=0
+Step 738, Regular, local moved: 0, time: 6.36806 ms
+STEP_TIMING step=738 solver=Regular step_ms=6.36806 local_moved=0
+Step 739, Regular, local moved: 0, time: 6.37474 ms
+STEP_TIMING step=739 solver=Regular step_ms=6.37474 local_moved=0
+Step 740, Regular, local moved: 0, time: 7.26586 ms
+STEP_TIMING step=740 solver=Regular step_ms=7.26586 local_moved=0
+Step 741, Regular, local moved: 0, time: 6.47233 ms
+STEP_TIMING step=741 solver=Regular step_ms=6.47233 local_moved=0
+Step 742, Regular, local moved: 0, time: 7.19271 ms
+STEP_TIMING step=742 solver=Regular step_ms=7.19271 local_moved=0
+Step 743, Regular, local moved: 0, time: 6.34638 ms
+STEP_TIMING step=743 solver=Regular step_ms=6.34638 local_moved=0
+Step 744, Regular, local moved: 0, time: 7.49111 ms
+STEP_TIMING step=744 solver=Regular step_ms=7.49111 local_moved=0
+Step 745, Regular, local moved: 0, time: 6.44738 ms
+STEP_TIMING step=745 solver=Regular step_ms=6.44738 local_moved=0
+Step 746, Regular, local moved: 0, time: 6.46484 ms
+STEP_TIMING step=746 solver=Regular step_ms=6.46484 local_moved=0
+Step 747, Regular, local moved: 0, time: 6.37106 ms
+STEP_TIMING step=747 solver=Regular step_ms=6.37106 local_moved=0
+Step 748, Regular, local moved: 0, time: 6.47753 ms
+STEP_TIMING step=748 solver=Regular step_ms=6.47753 local_moved=0
+Step 749, Regular, local moved: 0, time: 6.43642 ms
+STEP_TIMING step=749 solver=Regular step_ms=6.43642 local_moved=0
+Step 750, Regular, local moved: 0, time: 6.32426 ms
+STEP_TIMING step=750 solver=Regular step_ms=6.32426 local_moved=0
+Step 751, Regular, local moved: 0, time: 6.47591 ms
+STEP_TIMING step=751 solver=Regular step_ms=6.47591 local_moved=0
+Step 752, Regular, local moved: 0, time: 6.42528 ms
+STEP_TIMING step=752 solver=Regular step_ms=6.42528 local_moved=0
+Step 753, Regular, local moved: 0, time: 6.37746 ms
+STEP_TIMING step=753 solver=Regular step_ms=6.37746 local_moved=0
+Step 754, Regular, local moved: 0, time: 6.62888 ms
+STEP_TIMING step=754 solver=Regular step_ms=6.62888 local_moved=0
+Step 755, Regular, local moved: 0, time: 6.39328 ms
+STEP_TIMING step=755 solver=Regular step_ms=6.39328 local_moved=0
+Step 756, Regular, local moved: 0, time: 6.41028 ms
+STEP_TIMING step=756 solver=Regular step_ms=6.41028 local_moved=0
+Step 757, Regular, local moved: 0, time: 6.42311 ms
+STEP_TIMING step=757 solver=Regular step_ms=6.42311 local_moved=0
+Step 758, Regular, local moved: 0, time: 6.45757 ms
+STEP_TIMING step=758 solver=Regular step_ms=6.45757 local_moved=0
+Step 759, Regular, local moved: 0, time: 6.42742 ms
+STEP_TIMING step=759 solver=Regular step_ms=6.42742 local_moved=0
+Step 760, Regular, local moved: 0, time: 6.35844 ms
+STEP_TIMING step=760 solver=Regular step_ms=6.35844 local_moved=0
+Step 761, Regular, local moved: 0, time: 6.34287 ms
+STEP_TIMING step=761 solver=Regular step_ms=6.34287 local_moved=0
+Step 762, Regular, local moved: 0, time: 6.4307 ms
+STEP_TIMING step=762 solver=Regular step_ms=6.4307 local_moved=0
+Step 763, Regular, local moved: 0, time: 6.40649 ms
+STEP_TIMING step=763 solver=Regular step_ms=6.40649 local_moved=0
+Step 764, Regular, local moved: 0, time: 6.54978 ms
+STEP_TIMING step=764 solver=Regular step_ms=6.54978 local_moved=0
+Step 765, Regular, local moved: 0, time: 6.4075 ms
+STEP_TIMING step=765 solver=Regular step_ms=6.4075 local_moved=0
+Step 766, Regular, local moved: 0, time: 6.4822 ms
+STEP_TIMING step=766 solver=Regular step_ms=6.4822 local_moved=0
+Step 767, Regular, local moved: 0, time: 7.35089 ms
+STEP_TIMING step=767 solver=Regular step_ms=7.35089 local_moved=0
+Step 768, Regular, local moved: 0, time: 6.40472 ms
+STEP_TIMING step=768 solver=Regular step_ms=6.40472 local_moved=0
+Step 769, Regular, local moved: 0, time: 6.39747 ms
+STEP_TIMING step=769 solver=Regular step_ms=6.39747 local_moved=0
+Step 770, Regular, local moved: 0, time: 6.52445 ms
+STEP_TIMING step=770 solver=Regular step_ms=6.52445 local_moved=0
+Step 771, Regular, local moved: 0, time: 6.52426 ms
+STEP_TIMING step=771 solver=Regular step_ms=6.52426 local_moved=0
+Step 772, Regular, local moved: 0, time: 6.4392 ms
+STEP_TIMING step=772 solver=Regular step_ms=6.4392 local_moved=0
+Step 773, Regular, local moved: 0, time: 6.45016 ms
+STEP_TIMING step=773 solver=Regular step_ms=6.45016 local_moved=0
+Step 774, Regular, local moved: 0, time: 6.58377 ms
+STEP_TIMING step=774 solver=Regular step_ms=6.58377 local_moved=0
+Step 775, Regular, local moved: 0, time: 6.3929 ms
+STEP_TIMING step=775 solver=Regular step_ms=6.3929 local_moved=0
+Step 776, Regular, local moved: 0, time: 6.38155 ms
+STEP_TIMING step=776 solver=Regular step_ms=6.38155 local_moved=0
+Step 777, Regular, local moved: 0, time: 6.27319 ms
+STEP_TIMING step=777 solver=Regular step_ms=6.27319 local_moved=0
+Step 778, Regular, local moved: 0, time: 6.4364 ms
+STEP_TIMING step=778 solver=Regular step_ms=6.4364 local_moved=0
+Step 779, Regular, local moved: 0, time: 6.43558 ms
+STEP_TIMING step=779 solver=Regular step_ms=6.43558 local_moved=0
+Step 780, Regular, local moved: 0, time: 6.39089 ms
+STEP_TIMING step=780 solver=Regular step_ms=6.39089 local_moved=0
+Step 781, Regular, local moved: 0, time: 6.59707 ms
+STEP_TIMING step=781 solver=Regular step_ms=6.59707 local_moved=0
+Step 782, Regular, local moved: 0, time: 7.23763 ms
+STEP_TIMING step=782 solver=Regular step_ms=7.23763 local_moved=0
+Step 783, Regular, local moved: 0, time: 6.37018 ms
+STEP_TIMING step=783 solver=Regular step_ms=6.37018 local_moved=0
+Step 784, Regular, local moved: 0, time: 6.42646 ms
+STEP_TIMING step=784 solver=Regular step_ms=6.42646 local_moved=0
+Step 785, Regular, local moved: 0, time: 6.35778 ms
+STEP_TIMING step=785 solver=Regular step_ms=6.35778 local_moved=0
+Step 786, Regular, local moved: 0, time: 6.40247 ms
+STEP_TIMING step=786 solver=Regular step_ms=6.40247 local_moved=0
+Step 787, Regular, local moved: 0, time: 6.39767 ms
+STEP_TIMING step=787 solver=Regular step_ms=6.39767 local_moved=0
+Step 788, Regular, local moved: 0, time: 7.28932 ms
+STEP_TIMING step=788 solver=Regular step_ms=7.28932 local_moved=0
+Step 789, Regular, local moved: 0, time: 6.43124 ms
+STEP_TIMING step=789 solver=Regular step_ms=6.43124 local_moved=0
+Step 790, Regular, local moved: 0, time: 6.41651 ms
+STEP_TIMING step=790 solver=Regular step_ms=6.41651 local_moved=0
+Step 791, Regular, local moved: 0, time: 6.42432 ms
+STEP_TIMING step=791 solver=Regular step_ms=6.42432 local_moved=0
+Step 792, Regular, local moved: 0, time: 6.42126 ms
+STEP_TIMING step=792 solver=Regular step_ms=6.42126 local_moved=0
+Step 793, Regular, local moved: 0, time: 6.38453 ms
+STEP_TIMING step=793 solver=Regular step_ms=6.38453 local_moved=0
+Step 794, Regular, local moved: 0, time: 6.51039 ms
+STEP_TIMING step=794 solver=Regular step_ms=6.51039 local_moved=0
+Step 795, Regular, local moved: 0, time: 6.42597 ms
+STEP_TIMING step=795 solver=Regular step_ms=6.42597 local_moved=0
+Step 796, Regular, local moved: 0, time: 6.45986 ms
+STEP_TIMING step=796 solver=Regular step_ms=6.45986 local_moved=0
+Step 797, Regular, local moved: 0, time: 6.29852 ms
+STEP_TIMING step=797 solver=Regular step_ms=6.29852 local_moved=0
+Step 798, Regular, local moved: 0, time: 6.44688 ms
+STEP_TIMING step=798 solver=Regular step_ms=6.44688 local_moved=0
+Step 799, Regular, local moved: 0, time: 6.40732 ms
+STEP_TIMING step=799 solver=Regular step_ms=6.40732 local_moved=0
+Step 800, Regular, local moved: 0, time: 6.37425 ms
+STEP_TIMING step=800 solver=Regular step_ms=6.37425 local_moved=0
+Step 800/1000 | mass=3.3867e+06 | drift=0.034431 | moved_this_step=30060.7 | min_water=0 | min_positive_water=7.62255e-09 | max_water=325.834 | runtime=00:00:44 | eta=00:00:11
+Step 801, Regular, local moved: 0, time: 6.3188 ms
+STEP_TIMING step=801 solver=Regular step_ms=6.3188 local_moved=0
+Step 802, Regular, local moved: 0, time: 7.28089 ms
+STEP_TIMING step=802 solver=Regular step_ms=7.28089 local_moved=0
+Step 803, Regular, local moved: 0, time: 6.39324 ms
+STEP_TIMING step=803 solver=Regular step_ms=6.39324 local_moved=0
+Step 804, Regular, local moved: 0, time: 6.47868 ms
+STEP_TIMING step=804 solver=Regular step_ms=6.47868 local_moved=0
+Step 805, Regular, local moved: 0, time: 6.426 ms
+STEP_TIMING step=805 solver=Regular step_ms=6.426 local_moved=0
+Step 806, Regular, local moved: 0, time: 6.42617 ms
+STEP_TIMING step=806 solver=Regular step_ms=6.42617 local_moved=0
+Step 807, Regular, local moved: 0, time: 6.41994 ms
+STEP_TIMING step=807 solver=Regular step_ms=6.41994 local_moved=0
+Step 808, Regular, local moved: 0, time: 6.45431 ms
+STEP_TIMING step=808 solver=Regular step_ms=6.45431 local_moved=0
+Step 809, Regular, local moved: 0, time: 6.47187 ms
+STEP_TIMING step=809 solver=Regular step_ms=6.47187 local_moved=0
+Step 810, Regular, local moved: 0, time: 6.36645 ms
+STEP_TIMING step=810 solver=Regular step_ms=6.36645 local_moved=0
+Step 811, Regular, local moved: 0, time: 6.35266 ms
+STEP_TIMING step=811 solver=Regular step_ms=6.35266 local_moved=0
+Step 812, Regular, local moved: 0, time: 6.41336 ms
+STEP_TIMING step=812 solver=Regular step_ms=6.41336 local_moved=0
+Step 813, Regular, local moved: 0, time: 6.4415 ms
+STEP_TIMING step=813 solver=Regular step_ms=6.4415 local_moved=0
+Step 814, Regular, local moved: 0, time: 8.90811 ms
+STEP_TIMING step=814 solver=Regular step_ms=8.90811 local_moved=0
+Step 815, Regular, local moved: 0, time: 6.46763 ms
+STEP_TIMING step=815 solver=Regular step_ms=6.46763 local_moved=0
+Step 816, Regular, local moved: 0, time: 7.19323 ms
+STEP_TIMING step=816 solver=Regular step_ms=7.19323 local_moved=0
+Step 817, Regular, local moved: 0, time: 6.47385 ms
+STEP_TIMING step=817 solver=Regular step_ms=6.47385 local_moved=0
+Step 818, Regular, local moved: 0, time: 6.36148 ms
+STEP_TIMING step=818 solver=Regular step_ms=6.36148 local_moved=0
+Step 819, Regular, local moved: 0, time: 6.42317 ms
+STEP_TIMING step=819 solver=Regular step_ms=6.42317 local_moved=0
+Step 820, Regular, local moved: 0, time: 6.43695 ms
+STEP_TIMING step=820 solver=Regular step_ms=6.43695 local_moved=0
+Step 821, Regular, local moved: 0, time: 6.43573 ms
+STEP_TIMING step=821 solver=Regular step_ms=6.43573 local_moved=0
+Step 822, Regular, local moved: 0, time: 6.39241 ms
+STEP_TIMING step=822 solver=Regular step_ms=6.39241 local_moved=0
+Step 823, Regular, local moved: 0, time: 6.43514 ms
+STEP_TIMING step=823 solver=Regular step_ms=6.43514 local_moved=0
+Step 824, Regular, local moved: 0, time: 6.4416 ms
+STEP_TIMING step=824 solver=Regular step_ms=6.4416 local_moved=0
+Step 825, Regular, local moved: 0, time: 6.37298 ms
+STEP_TIMING step=825 solver=Regular step_ms=6.37298 local_moved=0
+Step 826, Regular, local moved: 0, time: 6.40046 ms
+STEP_TIMING step=826 solver=Regular step_ms=6.40046 local_moved=0
+Step 827, Regular, local moved: 0, time: 6.45306 ms
+STEP_TIMING step=827 solver=Regular step_ms=6.45306 local_moved=0
+Step 828, Regular, local moved: 0, time: 6.46577 ms
+STEP_TIMING step=828 solver=Regular step_ms=6.46577 local_moved=0
+Step 829, Regular, local moved: 0, time: 6.35794 ms
+STEP_TIMING step=829 solver=Regular step_ms=6.35794 local_moved=0
+Step 830, Regular, local moved: 0, time: 6.36517 ms
+STEP_TIMING step=830 solver=Regular step_ms=6.36517 local_moved=0
+Step 831, Regular, local moved: 0, time: 6.41533 ms
+STEP_TIMING step=831 solver=Regular step_ms=6.41533 local_moved=0
+Step 832, Regular, local moved: 0, time: 6.6398 ms
+STEP_TIMING step=832 solver=Regular step_ms=6.6398 local_moved=0
+Step 833, Regular, local moved: 0, time: 6.33683 ms
+STEP_TIMING step=833 solver=Regular step_ms=6.33683 local_moved=0
+Step 834, Regular, local moved: 0, time: 6.62965 ms
+STEP_TIMING step=834 solver=Regular step_ms=6.62965 local_moved=0
+Step 835, Regular, local moved: 0, time: 6.37285 ms
+STEP_TIMING step=835 solver=Regular step_ms=6.37285 local_moved=0
+Step 836, Regular, local moved: 0, time: 6.37402 ms
+STEP_TIMING step=836 solver=Regular step_ms=6.37402 local_moved=0
+Step 837, Regular, local moved: 0, time: 6.44893 ms
+STEP_TIMING step=837 solver=Regular step_ms=6.44893 local_moved=0
+Step 838, Regular, local moved: 0, time: 7.25483 ms
+STEP_TIMING step=838 solver=Regular step_ms=7.25483 local_moved=0
+Step 839, Regular, local moved: 0, time: 6.39365 ms
+STEP_TIMING step=839 solver=Regular step_ms=6.39365 local_moved=0
+Step 840, Regular, local moved: 0, time: 6.43662 ms
+STEP_TIMING step=840 solver=Regular step_ms=6.43662 local_moved=0
+Step 841, Regular, local moved: 0, time: 6.45093 ms
+STEP_TIMING step=841 solver=Regular step_ms=6.45093 local_moved=0
+Step 842, Regular, local moved: 0, time: 6.42392 ms
+STEP_TIMING step=842 solver=Regular step_ms=6.42392 local_moved=0
+Step 843, Regular, local moved: 0, time: 7.4146 ms
+STEP_TIMING step=843 solver=Regular step_ms=7.4146 local_moved=0
+Step 844, Regular, local moved: 0, time: 6.45343 ms
+STEP_TIMING step=844 solver=Regular step_ms=6.45343 local_moved=0
+Step 845, Regular, local moved: 0, time: 6.46213 ms
+STEP_TIMING step=845 solver=Regular step_ms=6.46213 local_moved=0
+Step 846, Regular, local moved: 0, time: 6.33772 ms
+STEP_TIMING step=846 solver=Regular step_ms=6.33772 local_moved=0
+Step 847, Regular, local moved: 0, time: 6.431 ms
+STEP_TIMING step=847 solver=Regular step_ms=6.431 local_moved=0
+Step 848, Regular, local moved: 0, time: 6.34277 ms
+STEP_TIMING step=848 solver=Regular step_ms=6.34277 local_moved=0
+Step 849, Regular, local moved: 0, time: 6.40186 ms
+STEP_TIMING step=849 solver=Regular step_ms=6.40186 local_moved=0
+Step 850, Regular, local moved: 0, time: 6.44925 ms
+STEP_TIMING step=850 solver=Regular step_ms=6.44925 local_moved=0
+Step 851, Regular, local moved: 0, time: 6.46058 ms
+STEP_TIMING step=851 solver=Regular step_ms=6.46058 local_moved=0
+Step 852, Regular, local moved: 0, time: 6.56098 ms
+STEP_TIMING step=852 solver=Regular step_ms=6.56098 local_moved=0
+Step 853, Regular, local moved: 0, time: 6.42109 ms
+STEP_TIMING step=853 solver=Regular step_ms=6.42109 local_moved=0
+Step 854, Regular, local moved: 0, time: 6.45112 ms
+STEP_TIMING step=854 solver=Regular step_ms=6.45112 local_moved=0
+Step 855, Regular, local moved: 0, time: 6.38921 ms
+STEP_TIMING step=855 solver=Regular step_ms=6.38921 local_moved=0
+Step 856, Regular, local moved: 0, time: 6.45499 ms
+STEP_TIMING step=856 solver=Regular step_ms=6.45499 local_moved=0
+Step 857, Regular, local moved: 0, time: 7.5193 ms
+STEP_TIMING step=857 solver=Regular step_ms=7.5193 local_moved=0
+Step 858, Regular, local moved: 0, time: 6.28683 ms
+STEP_TIMING step=858 solver=Regular step_ms=6.28683 local_moved=0
+Step 859, Regular, local moved: 0, time: 6.36664 ms
+STEP_TIMING step=859 solver=Regular step_ms=6.36664 local_moved=0
+Step 860, Regular, local moved: 0, time: 6.52989 ms
+STEP_TIMING step=860 solver=Regular step_ms=6.52989 local_moved=0
+Step 861, Regular, local moved: 0, time: 6.44292 ms
+STEP_TIMING step=861 solver=Regular step_ms=6.44292 local_moved=0
+Step 862, Regular, local moved: 0, time: 6.3558 ms
+STEP_TIMING step=862 solver=Regular step_ms=6.3558 local_moved=0
+Step 863, Regular, local moved: 0, time: 7.35402 ms
+STEP_TIMING step=863 solver=Regular step_ms=7.35402 local_moved=0
+Step 864, Regular, local moved: 0, time: 6.44822 ms
+STEP_TIMING step=864 solver=Regular step_ms=6.44822 local_moved=0
+Step 865, Regular, local moved: 0, time: 6.34658 ms
+STEP_TIMING step=865 solver=Regular step_ms=6.34658 local_moved=0
+Step 866, Regular, local moved: 0, time: 6.3482 ms
+STEP_TIMING step=866 solver=Regular step_ms=6.3482 local_moved=0
+Step 867, Regular, local moved: 0, time: 7.16807 ms
+STEP_TIMING step=867 solver=Regular step_ms=7.16807 local_moved=0
+Step 868, Regular, local moved: 0, time: 6.44287 ms
+STEP_TIMING step=868 solver=Regular step_ms=6.44287 local_moved=0
+Step 869, Regular, local moved: 0, time: 6.31735 ms
+STEP_TIMING step=869 solver=Regular step_ms=6.31735 local_moved=0
+Step 870, Regular, local moved: 0, time: 7.32068 ms
+STEP_TIMING step=870 solver=Regular step_ms=7.32068 local_moved=0
+Step 871, Regular, local moved: 0, time: 6.41566 ms
+STEP_TIMING step=871 solver=Regular step_ms=6.41566 local_moved=0
+Step 872, Regular, local moved: 0, time: 6.43322 ms
+STEP_TIMING step=872 solver=Regular step_ms=6.43322 local_moved=0
+Step 873, Regular, local moved: 0, time: 6.42178 ms
+STEP_TIMING step=873 solver=Regular step_ms=6.42178 local_moved=0
+Step 874, Regular, local moved: 0, time: 6.44948 ms
+STEP_TIMING step=874 solver=Regular step_ms=6.44948 local_moved=0
+Step 875, Regular, local moved: 0, time: 6.49902 ms
+STEP_TIMING step=875 solver=Regular step_ms=6.49902 local_moved=0
+Step 876, Regular, local moved: 0, time: 6.45703 ms
+STEP_TIMING step=876 solver=Regular step_ms=6.45703 local_moved=0
+Step 877, Regular, local moved: 0, time: 6.45141 ms
+STEP_TIMING step=877 solver=Regular step_ms=6.45141 local_moved=0
+Step 878, Regular, local moved: 0, time: 6.49189 ms
+STEP_TIMING step=878 solver=Regular step_ms=6.49189 local_moved=0
+Step 879, Regular, local moved: 0, time: 6.36721 ms
+STEP_TIMING step=879 solver=Regular step_ms=6.36721 local_moved=0
+Step 880, Regular, local moved: 0, time: 6.3711 ms
+STEP_TIMING step=880 solver=Regular step_ms=6.3711 local_moved=0
+Step 881, Regular, local moved: 0, time: 6.47844 ms
+STEP_TIMING step=881 solver=Regular step_ms=6.47844 local_moved=0
+Step 882, Regular, local moved: 0, time: 6.41056 ms
+STEP_TIMING step=882 solver=Regular step_ms=6.41056 local_moved=0
+Step 883, Regular, local moved: 0, time: 6.44804 ms
+STEP_TIMING step=883 solver=Regular step_ms=6.44804 local_moved=0
+Step 884, Regular, local moved: 0, time: 6.44175 ms
+STEP_TIMING step=884 solver=Regular step_ms=6.44175 local_moved=0
+Step 885, Regular, local moved: 0, time: 6.41236 ms
+STEP_TIMING step=885 solver=Regular step_ms=6.41236 local_moved=0
+Step 886, Regular, local moved: 0, time: 6.39365 ms
+STEP_TIMING step=886 solver=Regular step_ms=6.39365 local_moved=0
+Step 887, Regular, local moved: 0, time: 6.5133 ms
+STEP_TIMING step=887 solver=Regular step_ms=6.5133 local_moved=0
+Step 888, Regular, local moved: 0, time: 6.43445 ms
+STEP_TIMING step=888 solver=Regular step_ms=6.43445 local_moved=0
+Step 889, Regular, local moved: 0, time: 6.40819 ms
+STEP_TIMING step=889 solver=Regular step_ms=6.40819 local_moved=0
+Step 890, Regular, local moved: 0, time: 7.34263 ms
+STEP_TIMING step=890 solver=Regular step_ms=7.34263 local_moved=0
+Step 891, Regular, local moved: 0, time: 6.31636 ms
+STEP_TIMING step=891 solver=Regular step_ms=6.31636 local_moved=0
+Step 892, Regular, local moved: 0, time: 6.25254 ms
+STEP_TIMING step=892 solver=Regular step_ms=6.25254 local_moved=0
+Step 893, Regular, local moved: 0, time: 6.39232 ms
+STEP_TIMING step=893 solver=Regular step_ms=6.39232 local_moved=0
+Step 894, Regular, local moved: 0, time: 6.47477 ms
+STEP_TIMING step=894 solver=Regular step_ms=6.47477 local_moved=0
+Step 895, Regular, local moved: 0, time: 6.45533 ms
+STEP_TIMING step=895 solver=Regular step_ms=6.45533 local_moved=0
+Step 896, Regular, local moved: 0, time: 6.4796 ms
+STEP_TIMING step=896 solver=Regular step_ms=6.4796 local_moved=0
+Step 897, Regular, local moved: 0, time: 6.45107 ms
+STEP_TIMING step=897 solver=Regular step_ms=6.45107 local_moved=0
+Step 898, Regular, local moved: 0, time: 6.42047 ms
+STEP_TIMING step=898 solver=Regular step_ms=6.42047 local_moved=0
+Step 899, Regular, local moved: 0, time: 6.36746 ms
+STEP_TIMING step=899 solver=Regular step_ms=6.36746 local_moved=0
+Step 900, Regular, local moved: 0, time: 6.454 ms
+STEP_TIMING step=900 solver=Regular step_ms=6.454 local_moved=0
+Step 900/1000 | mass=3.3867e+06 | drift=0.0519142 | moved_this_step=29684.6 | min_water=0 | min_positive_water=5.6549e-09 | max_water=323.189 | runtime=00:00:50 | eta=00:00:06
+Step 901, Regular, local moved: 0, time: 6.53292 ms
+STEP_TIMING step=901 solver=Regular step_ms=6.53292 local_moved=0
+Step 902, Regular, local moved: 0, time: 6.558 ms
+STEP_TIMING step=902 solver=Regular step_ms=6.558 local_moved=0
+Step 903, Regular, local moved: 0, time: 6.32758 ms
+STEP_TIMING step=903 solver=Regular step_ms=6.32758 local_moved=0
+Step 904, Regular, local moved: 0, time: 6.35995 ms
+STEP_TIMING step=904 solver=Regular step_ms=6.35995 local_moved=0
+Step 905, Regular, local moved: 0, time: 6.54587 ms
+STEP_TIMING step=905 solver=Regular step_ms=6.54587 local_moved=0
+Step 906, Regular, local moved: 0, time: 7.38828 ms
+STEP_TIMING step=906 solver=Regular step_ms=7.38828 local_moved=0
+Step 907, Regular, local moved: 0, time: 6.40252 ms
+STEP_TIMING step=907 solver=Regular step_ms=6.40252 local_moved=0
+Step 908, Regular, local moved: 0, time: 6.52542 ms
+STEP_TIMING step=908 solver=Regular step_ms=6.52542 local_moved=0
+Step 909, Regular, local moved: 0, time: 6.44416 ms
+STEP_TIMING step=909 solver=Regular step_ms=6.44416 local_moved=0
+Step 910, Regular, local moved: 0, time: 6.42591 ms
+STEP_TIMING step=910 solver=Regular step_ms=6.42591 local_moved=0
+Step 911, Regular, local moved: 0, time: 6.38195 ms
+STEP_TIMING step=911 solver=Regular step_ms=6.38195 local_moved=0
+Step 912, Regular, local moved: 0, time: 7.36728 ms
+STEP_TIMING step=912 solver=Regular step_ms=7.36728 local_moved=0
+Step 913, Regular, local moved: 0, time: 6.43045 ms
+STEP_TIMING step=913 solver=Regular step_ms=6.43045 local_moved=0
+Step 914, Regular, local moved: 0, time: 6.33597 ms
+STEP_TIMING step=914 solver=Regular step_ms=6.33597 local_moved=0
+Step 915, Regular, local moved: 0, time: 6.40085 ms
+STEP_TIMING step=915 solver=Regular step_ms=6.40085 local_moved=0
+Step 916, Regular, local moved: 0, time: 6.44789 ms
+STEP_TIMING step=916 solver=Regular step_ms=6.44789 local_moved=0
+Step 917, Regular, local moved: 0, time: 6.37666 ms
+STEP_TIMING step=917 solver=Regular step_ms=6.37666 local_moved=0
+Step 918, Regular, local moved: 0, time: 6.4896 ms
+STEP_TIMING step=918 solver=Regular step_ms=6.4896 local_moved=0
+Step 919, Regular, local moved: 0, time: 6.34861 ms
+STEP_TIMING step=919 solver=Regular step_ms=6.34861 local_moved=0
+Step 920, Regular, local moved: 0, time: 6.48232 ms
+STEP_TIMING step=920 solver=Regular step_ms=6.48232 local_moved=0
+Step 921, Regular, local moved: 0, time: 6.34951 ms
+STEP_TIMING step=921 solver=Regular step_ms=6.34951 local_moved=0
+Step 922, Regular, local moved: 0, time: 7.47371 ms
+STEP_TIMING step=922 solver=Regular step_ms=7.47371 local_moved=0
+Step 923, Regular, local moved: 0, time: 6.38801 ms
+STEP_TIMING step=923 solver=Regular step_ms=6.38801 local_moved=0
+Step 924, Regular, local moved: 0, time: 6.458 ms
+STEP_TIMING step=924 solver=Regular step_ms=6.458 local_moved=0
+Step 925, Regular, local moved: 0, time: 6.33596 ms
+STEP_TIMING step=925 solver=Regular step_ms=6.33596 local_moved=0
+Step 926, Regular, local moved: 0, time: 7.32825 ms
+STEP_TIMING step=926 solver=Regular step_ms=7.32825 local_moved=0
+Step 927, Regular, local moved: 0, time: 6.50811 ms
+STEP_TIMING step=927 solver=Regular step_ms=6.50811 local_moved=0
+Step 928, Regular, local moved: 0, time: 6.42718 ms
+STEP_TIMING step=928 solver=Regular step_ms=6.42718 local_moved=0
+Step 929, Regular, local moved: 0, time: 6.46116 ms
+STEP_TIMING step=929 solver=Regular step_ms=6.46116 local_moved=0
+Step 930, Regular, local moved: 0, time: 6.52314 ms
+STEP_TIMING step=930 solver=Regular step_ms=6.52314 local_moved=0
+Step 931, Regular, local moved: 0, time: 6.46947 ms
+STEP_TIMING step=931 solver=Regular step_ms=6.46947 local_moved=0
+Step 932, Regular, local moved: 0, time: 6.52058 ms
+STEP_TIMING step=932 solver=Regular step_ms=6.52058 local_moved=0
+Step 933, Regular, local moved: 0, time: 6.49413 ms
+STEP_TIMING step=933 solver=Regular step_ms=6.49413 local_moved=0
+Step 934, Regular, local moved: 0, time: 6.46334 ms
+STEP_TIMING step=934 solver=Regular step_ms=6.46334 local_moved=0
+Step 935, Regular, local moved: 0, time: 6.37481 ms
+STEP_TIMING step=935 solver=Regular step_ms=6.37481 local_moved=0
+Step 936, Regular, local moved: 0, time: 6.43679 ms
+STEP_TIMING step=936 solver=Regular step_ms=6.43679 local_moved=0
+Step 937, Regular, local moved: 0, time: 6.41717 ms
+STEP_TIMING step=937 solver=Regular step_ms=6.41717 local_moved=0
+Step 938, Regular, local moved: 0, time: 6.45275 ms
+STEP_TIMING step=938 solver=Regular step_ms=6.45275 local_moved=0
+Step 939, Regular, local moved: 0, time: 7.32465 ms
+STEP_TIMING step=939 solver=Regular step_ms=7.32465 local_moved=0
+Step 940, Regular, local moved: 0, time: 6.47368 ms
+STEP_TIMING step=940 solver=Regular step_ms=6.47368 local_moved=0
+Step 941, Regular, local moved: 0, time: 6.40831 ms
+STEP_TIMING step=941 solver=Regular step_ms=6.40831 local_moved=0
+Step 942, Regular, local moved: 0, time: 6.40137 ms
+STEP_TIMING step=942 solver=Regular step_ms=6.40137 local_moved=0
+Step 943, Regular, local moved: 0, time: 6.41662 ms
+STEP_TIMING step=943 solver=Regular step_ms=6.41662 local_moved=0
+Step 944, Regular, local moved: 0, time: 6.31175 ms
+STEP_TIMING step=944 solver=Regular step_ms=6.31175 local_moved=0
+Step 945, Regular, local moved: 0, time: 6.40242 ms
+STEP_TIMING step=945 solver=Regular step_ms=6.40242 local_moved=0
+Step 946, Regular, local moved: 0, time: 6.49649 ms
+STEP_TIMING step=946 solver=Regular step_ms=6.49649 local_moved=0
+Step 947, Regular, local moved: 0, time: 6.50401 ms
+STEP_TIMING step=947 solver=Regular step_ms=6.50401 local_moved=0
+Step 948, Regular, local moved: 0, time: 6.41353 ms
+STEP_TIMING step=948 solver=Regular step_ms=6.41353 local_moved=0
+Step 949, Regular, local moved: 0, time: 6.45313 ms
+STEP_TIMING step=949 solver=Regular step_ms=6.45313 local_moved=0
+Step 950, Regular, local moved: 0, time: 6.48325 ms
+STEP_TIMING step=950 solver=Regular step_ms=6.48325 local_moved=0
+Step 951, Regular, local moved: 0, time: 6.47789 ms
+STEP_TIMING step=951 solver=Regular step_ms=6.47789 local_moved=0
+Step 952, Regular, local moved: 0, time: 6.41118 ms
+STEP_TIMING step=952 solver=Regular step_ms=6.41118 local_moved=0
+Step 953, Regular, local moved: 0, time: 6.4943 ms
+STEP_TIMING step=953 solver=Regular step_ms=6.4943 local_moved=0
+Step 954, Regular, local moved: 0, time: 7.83234 ms
+STEP_TIMING step=954 solver=Regular step_ms=7.83234 local_moved=0
+Step 955, Regular, local moved: 0, time: 6.42049 ms
+STEP_TIMING step=955 solver=Regular step_ms=6.42049 local_moved=0
+Step 956, Regular, local moved: 0, time: 7.44993 ms
+STEP_TIMING step=956 solver=Regular step_ms=7.44993 local_moved=0
+Step 957, Regular, local moved: 0, time: 6.48358 ms
+STEP_TIMING step=957 solver=Regular step_ms=6.48358 local_moved=0
+Step 958, Regular, local moved: 0, time: 7.37122 ms
+STEP_TIMING step=958 solver=Regular step_ms=7.37122 local_moved=0
+Step 959, Regular, local moved: 0, time: 6.47055 ms
+STEP_TIMING step=959 solver=Regular step_ms=6.47055 local_moved=0
+Step 960, Regular, local moved: 0, time: 6.40955 ms
+STEP_TIMING step=960 solver=Regular step_ms=6.40955 local_moved=0
+Step 961, Regular, local moved: 0, time: 6.32997 ms
+STEP_TIMING step=961 solver=Regular step_ms=6.32997 local_moved=0
+Step 962, Regular, local moved: 0, time: 6.47262 ms
+STEP_TIMING step=962 solver=Regular step_ms=6.47262 local_moved=0
+Step 963, Regular, local moved: 0, time: 6.4254 ms
+STEP_TIMING step=963 solver=Regular step_ms=6.4254 local_moved=0
+Step 964, Regular, local moved: 0, time: 6.50037 ms
+STEP_TIMING step=964 solver=Regular step_ms=6.50037 local_moved=0
+Step 965, Regular, local moved: 0, time: 6.48795 ms
+STEP_TIMING step=965 solver=Regular step_ms=6.48795 local_moved=0
+Step 966, Regular, local moved: 0, time: 6.46093 ms
+STEP_TIMING step=966 solver=Regular step_ms=6.46093 local_moved=0
+Step 967, Regular, local moved: 0, time: 6.41079 ms
+STEP_TIMING step=967 solver=Regular step_ms=6.41079 local_moved=0
+Step 968, Regular, local moved: 0, time: 6.3712 ms
+STEP_TIMING step=968 solver=Regular step_ms=6.3712 local_moved=0
+Step 969, Regular, local moved: 0, time: 6.36748 ms
+STEP_TIMING step=969 solver=Regular step_ms=6.36748 local_moved=0
+Step 970, Regular, local moved: 0, time: 6.39772 ms
+STEP_TIMING step=970 solver=Regular step_ms=6.39772 local_moved=0
+Step 971, Regular, local moved: 0, time: 6.3865 ms
+STEP_TIMING step=971 solver=Regular step_ms=6.3865 local_moved=0
+Step 972, Regular, local moved: 0, time: 6.48663 ms
+STEP_TIMING step=972 solver=Regular step_ms=6.48663 local_moved=0
+Step 973, Regular, local moved: 0, time: 6.3716 ms
+STEP_TIMING step=973 solver=Regular step_ms=6.3716 local_moved=0
+Step 974, Regular, local moved: 0, time: 6.39635 ms
+STEP_TIMING step=974 solver=Regular step_ms=6.39635 local_moved=0
+Step 975, Regular, local moved: 0, time: 6.52501 ms
+STEP_TIMING step=975 solver=Regular step_ms=6.52501 local_moved=0
+Step 976, Regular, local moved: 0, time: 7.37608 ms
+STEP_TIMING step=976 solver=Regular step_ms=7.37608 local_moved=0
+Step 977, Regular, local moved: 0, time: 6.49132 ms
+STEP_TIMING step=977 solver=Regular step_ms=6.49132 local_moved=0
+Step 978, Regular, local moved: 0, time: 6.44027 ms
+STEP_TIMING step=978 solver=Regular step_ms=6.44027 local_moved=0
+Step 979, Regular, local moved: 0, time: 6.38946 ms
+STEP_TIMING step=979 solver=Regular step_ms=6.38946 local_moved=0
+Step 980, Regular, local moved: 0, time: 6.47428 ms
+STEP_TIMING step=980 solver=Regular step_ms=6.47428 local_moved=0
+Step 981, Regular, local moved: 0, time: 7.34708 ms
+STEP_TIMING step=981 solver=Regular step_ms=7.34708 local_moved=0
+Step 982, Regular, local moved: 0, time: 6.38897 ms
+STEP_TIMING step=982 solver=Regular step_ms=6.38897 local_moved=0
+Step 983, Regular, local moved: 0, time: 7.42877 ms
+STEP_TIMING step=983 solver=Regular step_ms=7.42877 local_moved=0
+Step 984, Regular, local moved: 0, time: 6.44801 ms
+STEP_TIMING step=984 solver=Regular step_ms=6.44801 local_moved=0
+Step 985, Regular, local moved: 0, time: 6.33817 ms
+STEP_TIMING step=985 solver=Regular step_ms=6.33817 local_moved=0
+Step 986, Regular, local moved: 0, time: 6.46416 ms
+STEP_TIMING step=986 solver=Regular step_ms=6.46416 local_moved=0
+Step 987, Regular, local moved: 0, time: 6.4396 ms
+STEP_TIMING step=987 solver=Regular step_ms=6.4396 local_moved=0
+Step 988, Regular, local moved: 0, time: 6.37568 ms
+STEP_TIMING step=988 solver=Regular step_ms=6.37568 local_moved=0
+Step 989, Regular, local moved: 0, time: 6.40724 ms
+STEP_TIMING step=989 solver=Regular step_ms=6.40724 local_moved=0
+Step 990, Regular, local moved: 0, time: 6.38421 ms
+STEP_TIMING step=990 solver=Regular step_ms=6.38421 local_moved=0
+Step 991, Regular, local moved: 0, time: 6.30814 ms
+STEP_TIMING step=991 solver=Regular step_ms=6.30814 local_moved=0
+Step 992, Regular, local moved: 0, time: 6.46287 ms
+STEP_TIMING step=992 solver=Regular step_ms=6.46287 local_moved=0
+Step 993, Regular, local moved: 0, time: 6.32278 ms
+STEP_TIMING step=993 solver=Regular step_ms=6.32278 local_moved=0
+Step 994, Regular, local moved: 0, time: 6.37606 ms
+STEP_TIMING step=994 solver=Regular step_ms=6.37606 local_moved=0
+Step 995, Regular, local moved: 0, time: 6.4717 ms
+STEP_TIMING step=995 solver=Regular step_ms=6.4717 local_moved=0
+Step 996, Regular, local moved: 0, time: 6.41781 ms
+STEP_TIMING step=996 solver=Regular step_ms=6.41781 local_moved=0
+Step 997, Regular, local moved: 0, time: 7.43318 ms
+STEP_TIMING step=997 solver=Regular step_ms=7.43318 local_moved=0
+Step 998, Regular, local moved: 0, time: 6.30215 ms
+STEP_TIMING step=998 solver=Regular step_ms=6.30215 local_moved=0
+Step 999, Regular, local moved: 0, time: 6.43764 ms
+STEP_TIMING step=999 solver=Regular step_ms=6.43764 local_moved=0
+Step 1000, Regular, local moved: 0, time: 6.53049 ms
+STEP_TIMING step=1000 solver=Regular step_ms=6.53049 local_moved=0
+[shutdown] starting final snapshot write
+[shutdown] finished final snapshot write
+Total runtime: 00:00:56
+Total prepare data time: 00:00:00
+Total put tensor time: 00:00:00
+Total run model time: 00:00:00
+Total unpack time: 00:00:00
+Total cleanup time: 00:00:00
+Total ML step wall time: 00:00:00
+Step 1000/1000 | mass=3.3867e+06 | drift=0.0631978 | moved_this_step=29311.7 | min_water=0 | min_positive_water=1.13458e-08 | max_water=320.123 | runtime=00:00:56 | eta=00:00:00
+[shutdown] starting trajectory writer close
+[shutdown] finished trajectory writer close
+Finished. Saved snapshots: 1001 to /hpcwork/thes2181/mini_app/circle_r60_d300_s1000_periodic_2160x1080_devel_1n_16t_1c__rank0_gather_none/world_trajectory.h5
+[shutdown] entering MPI_Comm_free / MPI_Finalize

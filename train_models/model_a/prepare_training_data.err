@@ -1,0 +1,15 @@
+[INFO] Module OpenSSL/1.1 loaded.
+[WARN] This node does not have a GPU installed. CUDA will not work.
+[WARN] Please refer to https://help.itc.rwth-aachen.de for information on which
+nodes feature GPUs. 
+[INFO] Module CUDA/12.4.0 loaded.
+[INFO] Module GCCcore/11.3.0 loaded.
+[INFO] Module Clang/15.0.5 loaded.
+[INFO] Module GCC/11.3.0 loaded.
+[INFO] Module OpenMPI/4.1.4 loaded.
+[INFO] Module FFTW.MPI/3.3.10 loaded.
+[INFO] Module HDF5/1.12.2 loaded.
+[INFO] Module PnetCDF/1.12.3 loaded.
+[INFO] Module cuDNN/8.9.7.29-CUDA-12.4.0 loaded.
+[INFO] Module imkl/2024.2.0 loaded.
+mkdir: cannot create directory ‘/mnt/beegfs’: Permission denied

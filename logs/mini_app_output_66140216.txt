@@ -1,0 +1,1259 @@
+Calculated MPI_RANKS=24 from _nodes=1, _ntasks_per_node=24, SLURM_NTASKS=24, and _solver_ntasks_var=
+Using preliminary job name: circle_r500_d300_s100_periodic_2160x1080_c23mm_1n_24t_c__rank0_gather_none
+Calculated REDUCED_HEIGHT=135 to achieve 16:9 aspect ratio in final video with TARGET_WIDTH=2160 and TARGET_HEIGHT=1080
+Using CUSTOM_JOB_NAME_SUFFIX from environment variable: _1gpu_perfect_model
+Warning: OVERWRITE_JOB_NAME_ENV is set to 1 but neither JOB_NAME_ENV nor JOB_NAME_TEMPLATE_ENV is set. Using default naming scheme with template: circle_r${RADIUS}_d${INIT_DEPTH}_s${TOTAL_STEPS}_${SAVE_MODE}_${TARGET_WIDTH}x${TARGET_HEIGHT}_${_partition}_${_nodes}n_${_ntasks_per_node}t_${_cpus_per_task}c__${IO_MODE}_${MPI_SYNC_MODE}${CUSTOM_JOB_NAME_SUFFIX}
+Module OpenSSL/1.1 is not loaded. Purging and loading required modules.
+Purging and loading required modules for SmartSim...
+Loading required modules...
+[INFO] Module OpenSSL/1.1 loaded.
+[WARN] This node does not have a GPU installed. CUDA will not work.
+[WARN] Please refer to https://help.itc.rwth-aachen.de for information on which
+nodes feature GPUs. 
+[INFO] Module CUDA/12.4.0 loaded.
+[INFO] Module GCCcore/11.3.0 loaded.
+[INFO] Module Clang/15.0.5 loaded.
+[INFO] Module GCC/11.3.0 loaded.
+[INFO] Module OpenMPI/4.1.4 loaded.
+[INFO] Module FFTW.MPI/3.3.10 loaded.
+[INFO] Module HDF5/1.12.2 loaded.
+[INFO] Module PnetCDF/1.12.3 loaded.
+[INFO] Module cuDNN/8.9.7.29-CUDA-12.4.0 loaded.
+[INFO] Module imkl/2024.2.0 loaded.
+Overriding devices via argument: cpu
+
+=== Installing SmartSim for device: cpu ===
+Including backend: torch
+Including backend: onnxruntime
+Including backend: tensorflow
+SmartSim build command: smart build --device cpu
+Install location: ./python/smartsim_cpu/
+Base directory for SmartSim installation: /hpcwork/ro092286/smartsim/
+Python virtual environment already exists at ./python/smartsim_cpu/
+/hpcwork/ro092286/smartsim/install.sh:75: VIRTUAL_ENV: parameter not set
+OpenSSL/1.1
+CUDA/12.4.0
+GCCcore/11.3.0
+zlib/1.2.12
+binutils/2.38
+numactl/2.0.14
+XZ/5.2.5
+libxml2/2.9.13
+libpciaccess/0.16
+hwloc/2.7.1
+ncurses/6.3
+GMP/6.2.1
+Z3/4.10.2
+Clang/15.0.5
+GCC/11.3.0
+libevent/2.1.12
+UCX/1.12.1
+PMIx/4.1.2
+UCC/1.0.0
+OpenMPI/4.1.4
+FFTW/3.3.10
+FFTW.MPI/3.3.10
+Szip/2.1.1
+HDF5/1.12.2
+PnetCDF/1.12.3
+cuDNN/8.9.7.29-CUDA-12.4.0
+imkl/2024.2.0
+Warning: /hpcwork/thes2181/mini_app is not empty.
+No existing trajectory found. Starting fresh...
+Prepared dataset: terrain=(1080, 2160) water_nonzero=785349 output=/hpcwork/thes2181/mini_app/circle_r500_d300_s100_periodic_2160x1080_c23mm_1n_24t_c__rank0_gather_none_1gpu_perfect_model/world_init.h5
+Preparation time: 11 seconds
+Compiling solver...
+-- The CXX compiler identification is GNU 11.3.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/11.3.0/bin/g++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found MPI_CXX: /cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/OpenMPI/4.1.4-GCC-11.3.0/lib/libmpi.so (found version "3.1") 
+-- Found MPI: TRUE (found version "3.1") found components: CXX 
+-- Found HDF5: /cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/HDF5/1.12.2-gompi-2022a/lib/libhdf5.so;/usr/lib64/libpthread.a;/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/Szip/2.1.1-GCCcore-11.3.0/lib/libsz.so;/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/zlib/1.2.12-GCCcore-11.3.0/lib/libz.so;/usr/lib64/libdl.a;/usr/lib64/libm.so;/usr/lib64/libm.so;/usr/lib64/libpthread.a (found version "1.12.2") found components: C 
+-- HDF5 parallel support: YES
+-- Configuring done (3.8s)
+-- Generating done (0.1s)
+-- Build files have been written to: /hpcwork/ro092286/smartsim/mini_app/solver_cpp/build
+[ 50%] Building CXX object CMakeFiles/terrain_solver.dir/terrain_solver.cpp.o
+[100%] Linking CXX executable terrain_solver
+[100%] Built target terrain_solver
+Compilation time: 7 seconds
+Starting SmartSim controller in the background...
+Using Python interpreter at /hpcwork/ro092286/smartsim/python/smartsim_cuda-12/bin/python3 for SmartSim controller
+Wait until database hostname file db_hostname_66140216.txt is created by the SmartSim controller...(at most 300 seconds)
+Database hostname obtained from SmartSim controller: 134.61.46.211:6780
+A
+B
+--device GPU
+C
+Expecting smartsim database/orchestrator at 134.61.46.211:6780
+Expecting smartsim database/orchestrator at 134.61.46.211:6780
+Expecting smartsim database/orchestrator at 134.61.46.211:6780
+Expecting smartsim database/orchestrator at 134.61.46.211:6780
+Expecting smartsim database/orchestrator at 134.61.46.211:6780
+Expecting smartsim database/orchestrator at 134.61.46.211:6780
+Expecting smartsim database/orchestrator at 134.61.46.211:6780
+Expecting smartsim database/orchestrator at 134.61.46.211:6780
+Expecting smartsim database/orchestrator at 134.61.46.211:6780
+Expecting smartsim database/orchestrator at 134.61.46.211:6780
+Expecting smartsim database/orchestrator at 134.61.46.211:6780
+Expecting smartsim database/orchestrator at 134.61.46.211:6780
+Expecting smartsim database/orchestrator at 134.61.46.211:6780
+Expecting smartsim database/orchestrator at 134.61.46.211:6780
+Expecting smartsim database/orchestrator at 134.61.46.211:6780
+Expecting smartsim database/orchestrator at 134.61.46.211:6780
+Expecting smartsim database/orchestrator at 134.61.46.211:6780
+Expecting smartsim database/orchestrator at 134.61.46.211:6780
+Expecting smartsim database/orchestrator at 134.61.46.211:6780
+Expecting smartsim database/orchestrator at 134.61.46.211:6780
+Expecting smartsim database/orchestrator at 134.61.46.211:6780
+Expecting smartsim database/orchestrator at 134.61.46.211:6780
+Expecting smartsim database/orchestrator at 134.61.46.211:6780
+Expecting smartsim database/orchestrator at 134.61.46.211:6780
+Successfully connected to SmartRedis database as terrain_solver_10
+Successfully connected to SmartRedis database as terrain_solver_11
+Successfully connected to SmartRedis database as terrain_solver_17
+Successfully connected to SmartRedis database as terrain_solver_4
+Successfully connected to SmartRedis database as terrain_solver_16
+Successfully connected to SmartRedis database as terrain_solver_8
+Successfully connected to SmartRedis database as terrain_solver_14
+Successfully connected to SmartRedis database as terrain_solver_20
+Successfully connected to SmartRedis database as terrain_solver_22
+Successfully connected to SmartRedis database as terrain_solver_7
+Successfully connected to SmartRedis database as terrain_solver_0
+Successfully connected to SmartRedis database as terrain_solver_19
+Successfully connected to SmartRedis database as terrain_solver_15
+Successfully connected to SmartRedis database as terrain_solver_21
+Successfully connected to SmartRedis database as terrain_solver_23
+Successfully connected to SmartRedis database as terrain_solver_12
+Successfully connected to SmartRedis database as terrain_solver_2
+Successfully connected to SmartRedis database as terrain_solver_18
+Successfully connected to SmartRedis database as terrain_solver_5
+Successfully connected to SmartRedis database as terrain_solver_9
+Successfully connected to SmartRedis database as terrain_solver_1
+Successfully connected to SmartRedis database as terrain_solver_3
+Successfully connected to SmartRedis database as terrain_solver_13
+Successfully connected to SmartRedis database as terrain_solver_6
+Loaded grid metadata: nx=2160, nz=1080, chunk_size=60, chunks_x=36, chunks_z=18, ranks_x=4, ranks_z=6, world_size=24, io_mode=rank0_gather, save_mode=periodic, triangular_scale=1, hdf5_xfer_mode=independent, sync_mode=none
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Initial water mass: 2.35605e+08
+Step 1, Regular, local moved: 0, time: 6.51572 ms
+STEP_TIMING step=1 solver=Regular step_ms=6.51572 local_moved=0
+Rank 2 processing cell (0, 0) with global coords (0, 1080) and tile_key_suffix = 0_1080
+Rank 9 processing cell (0, 0) with global coords (360, 540) and tile_key_suffix = 360_540
+Rank 10 processing cell (0, 0) with global coords (360, 1080) and tile_key_suffix = 360_1080
+Rank 13 processing cell (0, 0) with global coords (540, 540) and tile_key_suffix = 540_540
+Rank 11 processing cell (0, 0) with global coords (360, 1620) and tile_key_suffix = 360_1620
+Rank 14 processing cell (0, 0) with global coords (540, 1080) and tile_key_suffix = 540_1080
+Rank 3 processing cell (0, 0) with global coords (0, 1620) and tile_key_suffix = 0_1620
+Rank 5 processing cell (0, 0) with global coords (180, 540) and tile_key_suffix = 180_540
+Rank 12 processing cell (0, 0) with global coords (540, 0) and tile_key_suffix = 540_0
+Rank 21 processing cell (0, 0) with global coords (900, 540) and tile_key_suffix = 900_540
+Rank 23 processing cell (0, 0) with global coords (900, 1620) and tile_key_suffix = 900_1620
+Rank 15 processing cell (0, 0) with global coords (540, 1620) and tile_key_suffix = 540_1620
+Rank 22 processing cell (0, 0) with global coords (900, 1080) and tile_key_suffix = 900_1080
+Rank 16 processing cell (0, 0) with global coords (720, 0) and tile_key_suffix = 720_0
+Rank 17 processing cell (0, 0) with global coords (720, 540) and tile_key_suffix = 720_540
+Rank 19 processing cell (0, 0) with global coords (720, 1620) and tile_key_suffix = 720_1620
+Rank 7 processing cell (0, 0) with global coords (180, 1620) and tile_key_suffix = 180_1620
+Rank 8 processing cell (0, 0) with global coords (360, 0) and tile_key_suffix = 360_0
+Rank 6 processing cell (0, 0) with global coords (180, 1080) and tile_key_suffix = 180_1080
+Rank 1 processing cell (0, 0) with global coords (0, 540) and tile_key_suffix = 0_540
+Rank 20 processing cell (0, 0) with global coords (900, 0) and tile_key_suffix = 900_0
+Rank 18 processing cell (0, 0) with global coords (720, 1080) and tile_key_suffix = 720_1080
+Rank 4 processing cell (0, 0) with global coords (180, 0) and tile_key_suffix = 180_0
+Rank 0 processing cell (0, 0) with global coords (0, 0) and tile_key_suffix = 0_0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.027126
+Put tensor time (seconds): 0.06264
+Run model time (seconds): 3.76692
+Unpack time (seconds): 0.00166
+Current real-world time (hh:mm:ss): 14:15:07
+ML timing accounting (seconds): total=3.86881, accounted=3.86878, cleanup=0.010435
+Step 2, ML, local moved: 0, time: 3868.99 ms
+STEP_TIMING step=2 solver=ML step_ms=3868.99 local_moved=0
+Step 3, Regular, local moved: 0, time: 6.20127 ms
+STEP_TIMING step=3 solver=Regular step_ms=6.20127 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.023858
+Put tensor time (seconds): 0.163288
+Run model time (seconds): 0.002514
+Unpack time (seconds): 0.003535
+Current real-world time (hh:mm:ss): 14:15:08
+ML timing accounting (seconds): total=0.203605, accounted=0.203571, cleanup=0.010376
+Step 4, ML, local moved: 0, time: 203.696 ms
+STEP_TIMING step=4 solver=ML step_ms=203.696 local_moved=0
+Step 5, Regular, local moved: 0, time: 6.09996 ms
+STEP_TIMING step=5 solver=Regular step_ms=6.09996 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.024202
+Put tensor time (seconds): 0.149408
+Run model time (seconds): 0.002192
+Unpack time (seconds): 0.002017
+Current real-world time (hh:mm:ss): 14:15:08
+ML timing accounting (seconds): total=0.19105, accounted=0.191017, cleanup=0.013198
+Step 6, ML, local moved: 0, time: 191.113 ms
+STEP_TIMING step=6 solver=ML step_ms=191.113 local_moved=0
+Step 7, Regular, local moved: 0, time: 7.22054 ms
+STEP_TIMING step=7 solver=Regular step_ms=7.22054 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.025035
+Put tensor time (seconds): 0.140116
+Run model time (seconds): 0.001688
+Unpack time (seconds): 0.002961
+Current real-world time (hh:mm:ss): 14:15:09
+ML timing accounting (seconds): total=0.180297, accounted=0.180263, cleanup=0.010463
+Step 8, ML, local moved: 0, time: 180.527 ms
+STEP_TIMING step=8 solver=ML step_ms=180.527 local_moved=0
+Step 9, Regular, local moved: 0, time: 6.07021 ms
+STEP_TIMING step=9 solver=Regular step_ms=6.07021 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.024295
+Put tensor time (seconds): 0.11232
+Run model time (seconds): 0.016906
+Unpack time (seconds): 0.010209
+Current real-world time (hh:mm:ss): 14:15:09
+ML timing accounting (seconds): total=0.174828, accounted=0.174789, cleanup=0.011059
+Step 10, ML, local moved: 0, time: 174.999 ms
+STEP_TIMING step=10 solver=ML step_ms=174.999 local_moved=0
+Step 10/100 | mass=2.35605e+08 | drift=-0.00832939 | moved_this_step=153522 | min_water=0 | min_positive_water=1.04904e-05 | max_water=351.797 | runtime=00:00:05 | eta=00:00:45
+Step 11, Regular, local moved: 0, time: 6.07628 ms
+STEP_TIMING step=11 solver=Regular step_ms=6.07628 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.024332
+Put tensor time (seconds): 0.088696
+Run model time (seconds): 0.028124
+Unpack time (seconds): 0.015874
+Current real-world time (hh:mm:ss): 14:15:09
+ML timing accounting (seconds): total=0.168041, accounted=0.168008, cleanup=0.010982
+Step 12, ML, local moved: 0, time: 168.218 ms
+STEP_TIMING step=12 solver=ML step_ms=168.218 local_moved=0
+Step 13, Regular, local moved: 0, time: 6.09321 ms
+STEP_TIMING step=13 solver=Regular step_ms=6.09321 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.024242
+Put tensor time (seconds): 0.082579
+Run model time (seconds): 0.029704
+Unpack time (seconds): 0.020254
+Current real-world time (hh:mm:ss): 14:15:10
+ML timing accounting (seconds): total=0.167888, accounted=0.167856, cleanup=0.011077
+Step 14, ML, local moved: 0, time: 168.045 ms
+STEP_TIMING step=14 solver=ML step_ms=168.045 local_moved=0
+Step 15, Regular, local moved: 0, time: 6.07671 ms
+STEP_TIMING step=15 solver=Regular step_ms=6.07671 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.023524
+Put tensor time (seconds): 0.108242
+Run model time (seconds): 0.021729
+Unpack time (seconds): 0.008792
+Current real-world time (hh:mm:ss): 14:15:10
+ML timing accounting (seconds): total=0.173163, accounted=0.173129, cleanup=0.010842
+Step 16, ML, local moved: 0, time: 173.357 ms
+STEP_TIMING step=16 solver=ML step_ms=173.357 local_moved=0
+Step 17, Regular, local moved: 0, time: 6.08397 ms
+STEP_TIMING step=17 solver=Regular step_ms=6.08397 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.023676
+Put tensor time (seconds): 0.114662
+Run model time (seconds): 0.022124
+Unpack time (seconds): 0.009492
+Current real-world time (hh:mm:ss): 14:15:10
+ML timing accounting (seconds): total=0.180699, accounted=0.180663, cleanup=0.010709
+Step 18, ML, local moved: 0, time: 180.868 ms
+STEP_TIMING step=18 solver=ML step_ms=180.868 local_moved=0
+Step 19, Regular, local moved: 0, time: 6.64708 ms
+STEP_TIMING step=19 solver=Regular step_ms=6.64708 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.023457
+Put tensor time (seconds): 0.035743
+Run model time (seconds): 0.076253
+Unpack time (seconds): 0.013852
+Current real-world time (hh:mm:ss): 14:15:11
+ML timing accounting (seconds): total=0.159842, accounted=0.159805, cleanup=0.0105
+Step 20, ML, local moved: 0, time: 160.011 ms
+STEP_TIMING step=20 solver=ML step_ms=160.011 local_moved=0
+Step 20/100 | mass=2.35605e+08 | drift=0.00139275 | moved_this_step=110334 | min_water=0 | min_positive_water=1.60981e-09 | max_water=363.708 | runtime=00:00:07 | eta=00:00:28
+Step 21, Regular, local moved: 0, time: 6.73519 ms
+STEP_TIMING step=21 solver=Regular step_ms=6.73519 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.024722
+Put tensor time (seconds): 0.080861
+Run model time (seconds): 0.027234
+Unpack time (seconds): 0.019232
+Current real-world time (hh:mm:ss): 14:15:11
+ML timing accounting (seconds): total=0.16264, accounted=0.162601, cleanup=0.010552
+Step 22, ML, local moved: 0, time: 162.8 ms
+STEP_TIMING step=22 solver=ML step_ms=162.8 local_moved=0
+Step 23, Regular, local moved: 0, time: 6.1072 ms
+STEP_TIMING step=23 solver=Regular step_ms=6.1072 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.024964
+Put tensor time (seconds): 0.037878
+Run model time (seconds): 0.080118
+Unpack time (seconds): 0.013637
+Current real-world time (hh:mm:ss): 14:15:11
+ML timing accounting (seconds): total=0.16748, accounted=0.167446, cleanup=0.010849
+Step 24, ML, local moved: 0, time: 167.547 ms
+STEP_TIMING step=24 solver=ML step_ms=167.547 local_moved=0
+Step 25, Regular, local moved: 0, time: 6.12377 ms
+STEP_TIMING step=25 solver=Regular step_ms=6.12377 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.024777
+Put tensor time (seconds): 0.078877
+Run model time (seconds): 0.035821
+Unpack time (seconds): 0.018752
+Current real-world time (hh:mm:ss): 14:15:11
+ML timing accounting (seconds): total=0.168679, accounted=0.168641, cleanup=0.010414
+Step 26, ML, local moved: 0, time: 168.755 ms
+STEP_TIMING step=26 solver=ML step_ms=168.755 local_moved=0
+Step 27, Regular, local moved: 0, time: 6.08832 ms
+STEP_TIMING step=27 solver=Regular step_ms=6.08832 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.024995
+Put tensor time (seconds): 0.086556
+Run model time (seconds): 0.027452
+Unpack time (seconds): 0.017854
+Current real-world time (hh:mm:ss): 14:15:12
+ML timing accounting (seconds): total=0.16752, accounted=0.167485, cleanup=0.010628
+Step 28, ML, local moved: 0, time: 167.691 ms
+STEP_TIMING step=28 solver=ML step_ms=167.691 local_moved=0
+Step 29, Regular, local moved: 0, time: 6.06517 ms
+STEP_TIMING step=29 solver=Regular step_ms=6.06517 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.023584
+Put tensor time (seconds): 0.035942
+Run model time (seconds): 0.076032
+Unpack time (seconds): 0.009761
+Current real-world time (hh:mm:ss): 14:15:12
+ML timing accounting (seconds): total=0.155829, accounted=0.155796, cleanup=0.010477
+Step 30, ML, local moved: 0, time: 155.896 ms
+STEP_TIMING step=30 solver=ML step_ms=155.896 local_moved=0
+Step 30/100 | mass=2.35605e+08 | drift=0.0486037 | moved_this_step=91740.8 | min_water=0 | min_positive_water=1.29932e-09 | max_water=370.393 | runtime=00:00:08 | eta=00:00:19
+Step 31, Regular, local moved: 0, time: 6.25394 ms
+STEP_TIMING step=31 solver=Regular step_ms=6.25394 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.023545
+Put tensor time (seconds): 0.025912
+Run model time (seconds): 0.053992
+Unpack time (seconds): 0.035811
+Current real-world time (hh:mm:ss): 14:15:12
+ML timing accounting (seconds): total=0.149546, accounted=0.149515, cleanup=0.010255
+Step 32, ML, local moved: 0, time: 149.619 ms
+STEP_TIMING step=32 solver=ML step_ms=149.619 local_moved=0
+Step 33, Regular, local moved: 0, time: 6.09442 ms
+STEP_TIMING step=33 solver=Regular step_ms=6.09442 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.024913
+Put tensor time (seconds): 0.086089
+Run model time (seconds): 0.03456
+Unpack time (seconds): 0.009515
+Current real-world time (hh:mm:ss): 14:15:13
+ML timing accounting (seconds): total=0.165984, accounted=0.165951, cleanup=0.010874
+Step 34, ML, local moved: 0, time: 166.05 ms
+STEP_TIMING step=34 solver=ML step_ms=166.05 local_moved=0
+Step 35, Regular, local moved: 0, time: 6.12441 ms
+STEP_TIMING step=35 solver=Regular step_ms=6.12441 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.024045
+Put tensor time (seconds): 0.026649
+Run model time (seconds): 0.057429
+Unpack time (seconds): 0.027537
+Current real-world time (hh:mm:ss): 14:15:13
+ML timing accounting (seconds): total=0.146029, accounted=0.145999, cleanup=0.010339
+Step 36, ML, local moved: 0, time: 146.096 ms
+STEP_TIMING step=36 solver=ML step_ms=146.096 local_moved=0
+Step 37, Regular, local moved: 0, time: 6.4467 ms
+STEP_TIMING step=37 solver=Regular step_ms=6.4467 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.024976
+Put tensor time (seconds): 0.115401
+Run model time (seconds): 0.018818
+Unpack time (seconds): 0.011838
+Current real-world time (hh:mm:ss): 14:15:13
+ML timing accounting (seconds): total=0.181695, accounted=0.181655, cleanup=0.010622
+Step 38, ML, local moved: 0, time: 181.846 ms
+STEP_TIMING step=38 solver=ML step_ms=181.846 local_moved=0
+Step 39, Regular, local moved: 0, time: 7.35719 ms
+STEP_TIMING step=39 solver=Regular step_ms=7.35719 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.0235
+Put tensor time (seconds): 0.029868
+Run model time (seconds): 0.051882
+Unpack time (seconds): 0.033583
+Current real-world time (hh:mm:ss): 14:15:14
+ML timing accounting (seconds): total=0.149129, accounted=0.149096, cleanup=0.010263
+Step 40, ML, local moved: 0, time: 149.19 ms
+STEP_TIMING step=40 solver=ML step_ms=149.19 local_moved=0
+Step 40/100 | mass=2.35605e+08 | drift=0.0215171 | moved_this_step=80604.1 | min_water=0 | min_positive_water=2.92405e-10 | max_water=374.636 | runtime=00:00:10 | eta=00:00:15
+Step 41, Regular, local moved: 0, time: 6.22194 ms
+STEP_TIMING step=41 solver=Regular step_ms=6.22194 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.023636
+Put tensor time (seconds): 0.080439
+Run model time (seconds): 0.03352
+Unpack time (seconds): 0.014807
+Current real-world time (hh:mm:ss): 14:15:14
+ML timing accounting (seconds): total=0.163035, accounted=0.162999, cleanup=0.010597
+Step 42, ML, local moved: 0, time: 163.189 ms
+STEP_TIMING step=42 solver=ML step_ms=163.189 local_moved=0
+Step 43, Regular, local moved: 0, time: 6.22556 ms
+STEP_TIMING step=43 solver=Regular step_ms=6.22556 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.023721
+Put tensor time (seconds): 0.030174
+Run model time (seconds): 0.056886
+Unpack time (seconds): 0.031795
+Current real-world time (hh:mm:ss): 14:15:14
+ML timing accounting (seconds): total=0.152871, accounted=0.152842, cleanup=0.010266
+Step 44, ML, local moved: 0, time: 152.934 ms
+STEP_TIMING step=44 solver=ML step_ms=152.934 local_moved=0
+Step 45, Regular, local moved: 0, time: 6.09488 ms
+STEP_TIMING step=45 solver=Regular step_ms=6.09488 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.024827
+Put tensor time (seconds): 0.085986
+Run model time (seconds): 0.028657
+Unpack time (seconds): 0.016659
+Current real-world time (hh:mm:ss): 14:15:15
+ML timing accounting (seconds): total=0.167012, accounted=0.166979, cleanup=0.01085
+Step 46, ML, local moved: 0, time: 167.21 ms
+STEP_TIMING step=46 solver=ML step_ms=167.21 local_moved=0
+Step 47, Regular, local moved: 0, time: 6.31857 ms
+STEP_TIMING step=47 solver=Regular step_ms=6.31857 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.023622
+Put tensor time (seconds): 0.111254
+Run model time (seconds): 0.017026
+Unpack time (seconds): 0.017061
+Current real-world time (hh:mm:ss): 14:15:15
+ML timing accounting (seconds): total=0.179359, accounted=0.179328, cleanup=0.010365
+Step 48, ML, local moved: 0, time: 179.516 ms
+STEP_TIMING step=48 solver=ML step_ms=179.516 local_moved=0
+Step 49, Regular, local moved: 0, time: 6.57748 ms
+STEP_TIMING step=49 solver=Regular step_ms=6.57748 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.02472
+Put tensor time (seconds): 0.081384
+Run model time (seconds): 0.032215
+Unpack time (seconds): 0.018359
+Current real-world time (hh:mm:ss): 14:15:15
+ML timing accounting (seconds): total=0.16732, accounted=0.167288, cleanup=0.01061
+Step 50, ML, local moved: 0, time: 167.389 ms
+STEP_TIMING step=50 solver=ML step_ms=167.389 local_moved=0
+Step 50/100 | mass=2.35605e+08 | drift=-0.00166678 | moved_this_step=72877.2 | min_water=0 | min_positive_water=3.5028e-11 | max_water=377.534 | runtime=00:00:11 | eta=00:00:11
+Step 51, Regular, local moved: 0, time: 7.4715 ms
+STEP_TIMING step=51 solver=Regular step_ms=7.4715 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.02351
+Put tensor time (seconds): 0.114811
+Run model time (seconds): 0.017871
+Unpack time (seconds): 0.010069
+Current real-world time (hh:mm:ss): 14:15:16
+ML timing accounting (seconds): total=0.176977, accounted=0.176941, cleanup=0.01068
+Step 52, ML, local moved: 0, time: 177.133 ms
+STEP_TIMING step=52 solver=ML step_ms=177.133 local_moved=0
+Step 53, Regular, local moved: 0, time: 6.0861 ms
+STEP_TIMING step=53 solver=Regular step_ms=6.0861 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.023662
+Put tensor time (seconds): 0.028133
+Run model time (seconds): 0.055401
+Unpack time (seconds): 0.027995
+Current real-world time (hh:mm:ss): 14:15:16
+ML timing accounting (seconds): total=0.145494, accounted=0.145464, cleanup=0.010273
+Step 54, ML, local moved: 0, time: 145.57 ms
+STEP_TIMING step=54 solver=ML step_ms=145.57 local_moved=0
+Step 55, Regular, local moved: 0, time: 6.08849 ms
+STEP_TIMING step=55 solver=Regular step_ms=6.08849 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.023742
+Put tensor time (seconds): 0.088907
+Run model time (seconds): 0.034729
+Unpack time (seconds): 0.010391
+Current real-world time (hh:mm:ss): 14:15:16
+ML timing accounting (seconds): total=0.168016, accounted=0.167985, cleanup=0.010216
+Step 56, ML, local moved: 0, time: 168.083 ms
+STEP_TIMING step=56 solver=ML step_ms=168.083 local_moved=0
+Step 57, Regular, local moved: 0, time: 6.08131 ms
+STEP_TIMING step=57 solver=Regular step_ms=6.08131 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.023698
+Put tensor time (seconds): 0.026558
+Run model time (seconds): 0.014994
+Unpack time (seconds): 0.083376
+Current real-world time (hh:mm:ss): 14:15:17
+ML timing accounting (seconds): total=0.158965, accounted=0.158937, cleanup=0.010311
+Step 58, ML, local moved: 0, time: 159.027 ms
+STEP_TIMING step=58 solver=ML step_ms=159.027 local_moved=0
+Step 59, Regular, local moved: 0, time: 6.09443 ms
+STEP_TIMING step=59 solver=Regular step_ms=6.09443 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.023707
+Put tensor time (seconds): 0.024952
+Run model time (seconds): 0.012689
+Unpack time (seconds): 0.078062
+Current real-world time (hh:mm:ss): 14:15:17
+ML timing accounting (seconds): total=0.149725, accounted=0.149693, cleanup=0.010283
+Step 60, ML, local moved: 0, time: 149.789 ms
+STEP_TIMING step=60 solver=ML step_ms=149.789 local_moved=0
+Step 60/100 | mass=2.35605e+08 | drift=-0.0478791 | moved_this_step=67026.7 | min_water=0 | min_positive_water=3.4207e-14 | max_water=379.611 | runtime=00:00:13 | eta=00:00:09
+Step 61, Regular, local moved: 0, time: 6.15632 ms
+STEP_TIMING step=61 solver=Regular step_ms=6.15632 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.023593
+Put tensor time (seconds): 0.02473
+Run model time (seconds): 0.012613
+Unpack time (seconds): 0.082985
+Current real-world time (hh:mm:ss): 14:15:17
+ML timing accounting (seconds): total=0.154131, accounted=0.154102, cleanup=0.010181
+Step 62, ML, local moved: 0, time: 154.192 ms
+STEP_TIMING step=62 solver=ML step_ms=154.192 local_moved=0
+Step 63, Regular, local moved: 0, time: 6.24201 ms
+STEP_TIMING step=63 solver=Regular step_ms=6.24201 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.023603
+Put tensor time (seconds): 0.024915
+Run model time (seconds): 0.049855
+Unpack time (seconds): 0.04068
+Current real-world time (hh:mm:ss): 14:15:18
+ML timing accounting (seconds): total=0.149348, accounted=0.149318, cleanup=0.010265
+Step 64, ML, local moved: 0, time: 149.419 ms
+STEP_TIMING step=64 solver=ML step_ms=149.419 local_moved=0
+Step 65, Regular, local moved: 0, time: 6.08208 ms
+STEP_TIMING step=65 solver=Regular step_ms=6.08208 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.023659
+Put tensor time (seconds): 0.080691
+Run model time (seconds): 0.033281
+Unpack time (seconds): 0.026487
+Current real-world time (hh:mm:ss): 14:15:18
+ML timing accounting (seconds): total=0.175185, accounted=0.175154, cleanup=0.011036
+Step 66, ML, local moved: 0, time: 175.359 ms
+STEP_TIMING step=66 solver=ML step_ms=175.359 local_moved=0
+Step 67, Regular, local moved: 0, time: 6.10291 ms
+STEP_TIMING step=67 solver=Regular step_ms=6.10291 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.025478
+Put tensor time (seconds): 0.11433
+Run model time (seconds): 0.0169
+Unpack time (seconds): 0.008119
+Current real-world time (hh:mm:ss): 14:15:18
+ML timing accounting (seconds): total=0.175871, accounted=0.175558, cleanup=0.010731
+Step 68, ML, local moved: 0, time: 175.995 ms
+STEP_TIMING step=68 solver=ML step_ms=175.995 local_moved=0
+Step 69, Regular, local moved: 0, time: 6.65867 ms
+STEP_TIMING step=69 solver=Regular step_ms=6.65867 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.023592
+Put tensor time (seconds): 0.038395
+Run model time (seconds): 0.078293
+Unpack time (seconds): 0.012767
+Current real-world time (hh:mm:ss): 14:15:19
+ML timing accounting (seconds): total=0.163882, accounted=0.163852, cleanup=0.010805
+Step 70, ML, local moved: 0, time: 164.077 ms
+STEP_TIMING step=70 solver=ML step_ms=164.077 local_moved=0
+Step 70/100 | mass=2.35605e+08 | drift=-0.0391495 | moved_this_step=62350.6 | min_water=-4.54747e-13 | min_positive_water=5.41292e-13 | max_water=381.152 | runtime=00:00:15 | eta=00:00:06
+Step 71, Regular, local moved: 0, time: 6.73571 ms
+STEP_TIMING step=71 solver=Regular step_ms=6.73571 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.023398
+Put tensor time (seconds): 0.118075
+Run model time (seconds): 0.018145
+Unpack time (seconds): 0.009113
+Current real-world time (hh:mm:ss): 14:15:19
+ML timing accounting (seconds): total=0.180002, accounted=0.179516, cleanup=0.010785
+Step 72, ML, local moved: 0, time: 180.166 ms
+STEP_TIMING step=72 solver=ML step_ms=180.166 local_moved=0
+Step 73, Regular, local moved: 0, time: 6.11711 ms
+STEP_TIMING step=73 solver=Regular step_ms=6.11711 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.023419
+Put tensor time (seconds): 0.020052
+Run model time (seconds): 0.010124
+Unpack time (seconds): 0.083407
+Current real-world time (hh:mm:ss): 14:15:19
+ML timing accounting (seconds): total=0.147295, accounted=0.147266, cleanup=0.010264
+Step 74, ML, local moved: 0, time: 147.356 ms
+STEP_TIMING step=74 solver=ML step_ms=147.356 local_moved=0
+Step 75, Regular, local moved: 0, time: 6.07101 ms
+STEP_TIMING step=75 solver=Regular step_ms=6.07101 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.023566
+Put tensor time (seconds): 0.025566
+Run model time (seconds): 0.050906
+Unpack time (seconds): 0.04527
+Current real-world time (hh:mm:ss): 14:15:20
+ML timing accounting (seconds): total=0.155449, accounted=0.15542, cleanup=0.010112
+Step 76, ML, local moved: 0, time: 155.508 ms
+STEP_TIMING step=76 solver=ML step_ms=155.508 local_moved=0
+Step 77, Regular, local moved: 0, time: 6.09841 ms
+STEP_TIMING step=77 solver=Regular step_ms=6.09841 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.025092
+Put tensor time (seconds): 0.070547
+Run model time (seconds): 0.036995
+Unpack time (seconds): 0.025399
+Current real-world time (hh:mm:ss): 14:15:20
+ML timing accounting (seconds): total=0.168419, accounted=0.168389, cleanup=0.010356
+Step 78, ML, local moved: 0, time: 168.489 ms
+STEP_TIMING step=78 solver=ML step_ms=168.489 local_moved=0
+Step 79, Regular, local moved: 0, time: 6.09162 ms
+STEP_TIMING step=79 solver=Regular step_ms=6.09162 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.023535
+Put tensor time (seconds): 0.120897
+Run model time (seconds): 0.023068
+Unpack time (seconds): 0.009664
+Current real-world time (hh:mm:ss): 14:15:20
+ML timing accounting (seconds): total=0.187866, accounted=0.187826, cleanup=0.010662
+Step 80, ML, local moved: 0, time: 188.023 ms
+STEP_TIMING step=80 solver=ML step_ms=188.023 local_moved=0
+Step 80/100 | mass=2.35605e+08 | drift=-0.100391 | moved_this_step=58478.3 | min_water=-4.54747e-13 | min_positive_water=3.46667e-14 | max_water=382.326 | runtime=00:00:16 | eta=00:00:04
+Step 81, Regular, local moved: 0, time: 6.43357 ms
+STEP_TIMING step=81 solver=Regular step_ms=6.43357 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.025012
+Put tensor time (seconds): 0.140561
+Run model time (seconds): 0.00652
+Unpack time (seconds): 0.001614
+Current real-world time (hh:mm:ss): 14:15:21
+ML timing accounting (seconds): total=0.18487, accounted=0.184346, cleanup=0.010639
+Step 82, ML, local moved: 0, time: 185.03 ms
+STEP_TIMING step=82 solver=ML step_ms=185.03 local_moved=0
+Step 83, Regular, local moved: 0, time: 6.09799 ms
+STEP_TIMING step=83 solver=Regular step_ms=6.09799 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.023438
+Put tensor time (seconds): 0.152622
+Run model time (seconds): 0.012638
+Unpack time (seconds): 0.006749
+Current real-world time (hh:mm:ss): 14:15:21
+ML timing accounting (seconds): total=0.206452, accounted=0.205954, cleanup=0.010507
+Step 84, ML, local moved: 0, time: 206.617 ms
+STEP_TIMING step=84 solver=ML step_ms=206.617 local_moved=0
+Step 85, Regular, local moved: 0, time: 6.35982 ms
+STEP_TIMING step=85 solver=Regular step_ms=6.35982 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.023581
+Put tensor time (seconds): 0.128329
+Run model time (seconds): 0.017861
+Unpack time (seconds): 0.008911
+Current real-world time (hh:mm:ss): 14:15:21
+ML timing accounting (seconds): total=0.189124, accounted=0.18909, cleanup=0.010408
+Step 86, ML, local moved: 0, time: 189.288 ms
+STEP_TIMING step=86 solver=ML step_ms=189.288 local_moved=0
+Step 87, Regular, local moved: 0, time: 6.72684 ms
+STEP_TIMING step=87 solver=Regular step_ms=6.72684 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.024803
+Put tensor time (seconds): 0.11681
+Run model time (seconds): 0.016226
+Unpack time (seconds): 0.009531
+Current real-world time (hh:mm:ss): 14:15:22
+ML timing accounting (seconds): total=0.178192, accounted=0.178155, cleanup=0.010785
+Step 88, ML, local moved: 0, time: 178.427 ms
+STEP_TIMING step=88 solver=ML step_ms=178.427 local_moved=0
+Step 89, Regular, local moved: 0, time: 6.66416 ms
+STEP_TIMING step=89 solver=Regular step_ms=6.66416 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.023577
+Put tensor time (seconds): 0.137989
+Run model time (seconds): 0.010472
+Unpack time (seconds): 0.001361
+Current real-world time (hh:mm:ss): 14:15:22
+ML timing accounting (seconds): total=0.184371, accounted=0.183908, cleanup=0.010509
+Step 90, ML, local moved: 0, time: 184.545 ms
+STEP_TIMING step=90 solver=ML step_ms=184.545 local_moved=0
+Step 90/100 | mass=2.35605e+08 | drift=-0.0252191 | moved_this_step=55207.2 | min_water=-4.54747e-13 | min_positive_water=2.27374e-13 | max_water=383.234 | runtime=00:00:18 | eta=00:00:02
+Step 91, Regular, local moved: 0, time: 6.10394 ms
+STEP_TIMING step=91 solver=Regular step_ms=6.10394 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.024948
+Put tensor time (seconds): 0.117808
+Run model time (seconds): 0.019288
+Unpack time (seconds): 0.009268
+Current real-world time (hh:mm:ss): 14:15:22
+ML timing accounting (seconds): total=0.182064, accounted=0.18161, cleanup=0.010298
+Step 92, ML, local moved: 0, time: 182.239 ms
+STEP_TIMING step=92 solver=ML step_ms=182.239 local_moved=0
+Step 93, Regular, local moved: 0, time: 6.27855 ms
+STEP_TIMING step=93 solver=Regular step_ms=6.27855 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.023514
+Put tensor time (seconds): 0.112782
+Run model time (seconds): 0.015392
+Unpack time (seconds): 0.010063
+Current real-world time (hh:mm:ss): 14:15:23
+ML timing accounting (seconds): total=0.173061, accounted=0.172576, cleanup=0.010825
+Step 94, ML, local moved: 0, time: 173.23 ms
+STEP_TIMING step=94 solver=ML step_ms=173.23 local_moved=0
+Step 95, Regular, local moved: 0, time: 6.09622 ms
+STEP_TIMING step=95 solver=Regular step_ms=6.09622 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.0236
+Put tensor time (seconds): 0.126897
+Run model time (seconds): 0.02178
+Unpack time (seconds): 0.001281
+Current real-world time (hh:mm:ss): 14:15:23
+ML timing accounting (seconds): total=0.184257, accounted=0.183795, cleanup=0.010237
+Step 96, ML, local moved: 0, time: 184.442 ms
+STEP_TIMING step=96 solver=ML step_ms=184.442 local_moved=0
+Step 97, Regular, local moved: 0, time: 6.05434 ms
+STEP_TIMING step=97 solver=Regular step_ms=6.05434 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.023848
+Put tensor time (seconds): 0.112751
+Run model time (seconds): 0.017048
+Unpack time (seconds): 0.009939
+Current real-world time (hh:mm:ss): 14:15:23
+ML timing accounting (seconds): total=0.174432, accounted=0.174395, cleanup=0.010809
+Step 98, ML, local moved: 0, time: 174.673 ms
+STEP_TIMING step=98 solver=ML step_ms=174.673 local_moved=0
+Step 99, Regular, local moved: 0, time: 6.08622 ms
+STEP_TIMING step=99 solver=Regular step_ms=6.08622 local_moved=0
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 64 ,65 65 65 ,) and ran model for cell (0, 0) and got prediction 0 for cell (0, 0)
+Finished local step with ML model. Timings for this step (seconds):
+Prepare data time (seconds): 0.024678
+Put tensor time (seconds): 0.117727
+Run model time (seconds): 0.009029
+Unpack time (seconds): 0.014569
+Current real-world time (hh:mm:ss): 14:15:24
+ML timing accounting (seconds): total=0.177083, accounted=0.176617, cleanup=0.010614
+Step 100, ML, local moved: 0, time: 177.257 ms
+STEP_TIMING step=100 solver=ML step_ms=177.257 local_moved=0
+[shutdown] starting final snapshot write
+[shutdown] finished final snapshot write
+Total runtime: 00:00:20
+Total prepare data time: 00:00:01
+Total put tensor time: 00:00:04
+Total run model time: 00:00:05
+Total unpack time: 00:00:01
+Total cleanup time: 00:00:00
+Total ML step wall time: 00:00:12
+Step 100/100 | mass=2.35605e+08 | drift=-0.0234649 | moved_this_step=52399.6 | min_water=-4.54747e-13 | min_positive_water=1.18834e-14 | max_water=383.942 | runtime=00:00:20 | eta=00:00:00
+[shutdown] starting trajectory writer close
+[shutdown] finished trajectory writer close
+Finished. Saved snapshots: 101 to /hpcwork/thes2181/mini_app/circle_r500_d300_s100_periodic_2160x1080_c23mm_1n_24t_c__rank0_gather_none_1gpu_perfect_model/world_trajectory.h5
+[shutdown] entering MPI_Comm_free / MPI_Finalize
+Solving time: 95 seconds
+Creating 'close_driver_66140216.txt' file to signal SmartSim controller to shut down...
+Waiting 10s before killing driver to allow for graceful shutdown...
+Driver process with PID 151657 has already exited.
+Post-processing on batch host n23m0234.hpc.itc.rwth-aachen.de with RENDER_CPUS=24, FFMPEG_THREADS=16
+/rwthfs/rz/cluster/hpcwork/ro092286/smartsim/mini_app/render.py:334: DeprecationWarning: 'mode' parameter is deprecated and will be removed in Pillow 13 (2026-10-15)
+  img = Image.fromarray(rgb, mode="RGB")
+Rendered full-size step 100 -> /hpcwork/thes2181/mini_app/circle_r500_d300_s100_periodic_2160x1080_c23mm_1n_24t_c__rank0_gather_none_1gpu_perfect_model/world_last_step.png
+/rwthfs/rz/cluster/hpcwork/ro092286/smartsim/mini_app/render.py:334: DeprecationWarning: 'mode' parameter is deprecated and will be removed in Pillow 13 (2026-10-15)
+  img = Image.fromarray(rgb, mode="RGB")
+Rendering all 101 saved steps.
+[render] rendering 101 frames with 24 threads...
+[render] progress: 1/101 (1.0%)
+[render] progress: 5/101 (5.0%)
+[render] progress: 10/101 (9.9%)
+[render] progress: 15/101 (14.9%)
+[render] progress: 20/101 (19.8%)
+[render] progress: 25/101 (24.8%)
+[render] progress: 30/101 (29.7%)
+[render] progress: 35/101 (34.7%)
+[render] progress: 40/101 (39.6%)
+[render] progress: 45/101 (44.6%)
+[render] progress: 50/101 (49.5%)
+[render] progress: 55/101 (54.5%)
+[render] progress: 60/101 (59.4%)
+[render] progress: 65/101 (64.4%)
+[render] progress: 70/101 (69.3%)
+[render] progress: 75/101 (74.3%)
+[render] progress: 80/101 (79.2%)
+[render] progress: 85/101 (84.2%)
+[render] progress: 90/101 (89.1%)
+[render] progress: 95/101 (94.1%)
+[render] progress: 100/101 (99.0%)
+[render] progress: 101/101 (100.0%)
+Rendered 101 full-size frames (threads=24) into /hpcwork/thes2181/mini_app/circle_r500_d300_s100_periodic_2160x1080_c23mm_1n_24t_c__rank0_gather_none_1gpu_perfect_model/rendered_frames
+Top view rendering time: 4 seconds
+/rwthfs/rz/cluster/hpcwork/ro092286/smartsim/mini_app/render_slice.py:190: DeprecationWarning: 'mode' parameter is deprecated and will be removed in Pillow 13 (2026-10-15)
+  img = Image.fromarray(canvas, mode="RGB")
+[render_slice] rendering 101 frames with 24 threads...
+[render_slice] progress: 1/101 (1.0%)
+[render_slice] progress: 5/101 (5.0%)
+[render_slice] progress: 10/101 (9.9%)
+[render_slice] progress: 15/101 (14.9%)
+[render_slice] progress: 20/101 (19.8%)
+[render_slice] progress: 25/101 (24.8%)
+[render_slice] progress: 30/101 (29.7%)
+[render_slice] progress: 35/101 (34.7%)
+[render_slice] progress: 40/101 (39.6%)
+[render_slice] progress: 45/101 (44.6%)
+[render_slice] progress: 50/101 (49.5%)
+[render_slice] progress: 55/101 (54.5%)
+[render_slice] progress: 60/101 (59.4%)
+[render_slice] progress: 65/101 (64.4%)
+[render_slice] progress: 70/101 (69.3%)
+[render_slice] progress: 75/101 (74.3%)
+[render_slice] progress: 80/101 (79.2%)
+[render_slice] progress: 85/101 (84.2%)
+[render_slice] progress: 90/101 (89.1%)
+[render_slice] progress: 95/101 (94.1%)
+[render_slice] progress: 100/101 (99.0%)
+[render_slice] progress: 101/101 (100.0%)
+Rendered 101 side-view full-size frames (width=2160, height=1080, height_min=0.0, slice_z=540, threads=24) into /hpcwork/thes2181/mini_app/circle_r500_d300_s100_periodic_2160x1080_c23mm_1n_24t_c__rank0_gather_none_1gpu_perfect_model/rendered_slices
+Slice (full height) rendering time: 1 seconds
+/rwthfs/rz/cluster/hpcwork/ro092286/smartsim/mini_app/render_slice.py:190: DeprecationWarning: 'mode' parameter is deprecated and will be removed in Pillow 13 (2026-10-15)
+  img = Image.fromarray(canvas, mode="RGB")
+[render_slice] rendering 101 frames with 24 threads...
+[render_slice] progress: 1/101 (1.0%)
+[render_slice] progress: 5/101 (5.0%)
+[render_slice] progress: 10/101 (9.9%)
+[render_slice] progress: 15/101 (14.9%)
+[render_slice] progress: 20/101 (19.8%)
+[render_slice] progress: 25/101 (24.8%)
+[render_slice] progress: 30/101 (29.7%)
+[render_slice] progress: 35/101 (34.7%)
+[render_slice] progress: 40/101 (39.6%)
+[render_slice] progress: 45/101 (44.6%)
+[render_slice] progress: 50/101 (49.5%)
+[render_slice] progress: 55/101 (54.5%)
+[render_slice] progress: 60/101 (59.4%)
+[render_slice] progress: 65/101 (64.4%)
+[render_slice] progress: 70/101 (69.3%)
+[render_slice] progress: 75/101 (74.3%)
+[render_slice] progress: 80/101 (79.2%)
+[render_slice] progress: 85/101 (84.2%)
+[render_slice] progress: 90/101 (89.1%)
+[render_slice] progress: 95/101 (94.1%)
+[render_slice] progress: 100/101 (99.0%)
+[render_slice] progress: 101/101 (100.0%)
+Rendered 101 side-view full-size frames (width=2160, height=135, height_min=40.0, slice_z=540, threads=24) into /hpcwork/thes2181/mini_app/circle_r500_d300_s100_periodic_2160x1080_c23mm_1n_24t_c__rank0_gather_none_1gpu_perfect_model/rendered_slices_reduced_height
+Slice (reduced height) rendering time: 1 seconds
+Currently loaded GCC module: GCC/11.3.0
+Unloading currently loaded GCC module to avoid conflicts with FFmpeg's dependencies...
+
+Inactive Modules:
+  1) FFTW.MPI/3.3.10     3) HDF5/1.12.2       5) PnetCDF/1.12.3
+  2) FFTW/3.3.10         4) OpenMPI/4.1.4
+
+[INFO] Module zlib/1.2.12 loaded.
+[INFO] Module binutils/2.38 loaded.
+[INFO] Module ncurses/6.3 loaded.
+[INFO] Module GCCcore/14.2.0 loaded.
+[INFO] Module libevent/2.1.12 loaded.
+[INFO] Module Szip/2.1.1 loaded.
+
+Inactive Modules:
+  1) Clang/15.0.5     4) UCC/1.0.0      7) Z3/4.10.2            10) libxml2/2.9.13
+  2) GMP/6.2.1        5) UCX/1.12.1     8) hwloc/2.7.1          11) numactl/2.0.14
+  3) PMIx/4.1.2       6) XZ/5.2.5       9) libpciaccess/0.16
+
+Due to MODULEPATH changes, the following have been reloaded:
+  1) Szip/2.1.1     2) binutils/2.38     3) libevent/2.1.12     4) ncurses/6.3
+
+The following have been reloaded with a version change:
+  1) GCCcore/11.3.0 => GCCcore/14.2.0     3) zlib/1.2.12 => zlib/1.3.1
+  2) OpenSSL/1.1 => OpenSSL/3
+
+[INFO] Module FFmpeg/7.1.1 loaded.
+
+Activating Modules:
+  1) libpciaccess/0.18.1
+
+The following have been reloaded with a version change:
+  1) ncurses/6.3 => ncurses/6.5
+
+ffmpeg version 7.1.1 Copyright (c) 2000-2025 the FFmpeg developers
+  built with gcc 14.2.0 (GCC)
+  configuration: --prefix=/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/FFmpeg/7.1.1-GCCcore-14.2.0 --enable-pic --enable-shared --enable-gpl --enable-version3 --enable-nonfree --cc=gcc --cxx=g++ --enable-libx264 --enable-libx265 --enable-libmp3lame --enable-libfreetype --enable-fontconfig --enable-libfribidi --enable-sdl2 --disable-htmlpages
+  libavutil      59. 39.100 / 59. 39.100
+  libavcodec     61. 19.101 / 61. 19.101
+  libavformat    61.  7.100 / 61.  7.100
+  libavdevice    61.  3.100 / 61.  3.100
+  libavfilter    10.  4.100 / 10.  4.100
+  libswscale      8.  3.100 /  8.  3.100
+  libswresample   5.  3.100 /  5.  3.100
+  libpostproc    58.  3.100 / 58.  3.100
+Input #0, image2, from 'rendered_frames/frame_*.png':
+  Duration: 00:00:01.68, start: 0.000000, bitrate: N/A
+  Stream #0:0: Video: png, rgb24(pc, gbr/unknown/unknown), 2160x1080, 60 fps, 60 tbr, 60 tbn
+Stream mapping:
+  Stream #0:0 -> #0:0 (png (native) -> hevc (libx265))
+Press [q] to stop, [?] for help
+x265 [info]: HEVC encoder version 4.1+1-1d117be
+x265 [info]: build info [Linux][GCC 14.2.0][64 bit][noasm] 8bit
+x265 [info]: using cpu capabilities: none!
+x265 [warning]: halving the quality when psy-rd is enabled for 444 input. Setting cbQpOffset = 6 and crQpOffset = 6
+x265 [info]: Main 4:4:4 profile, Level-5 (Main tier)
+x265 [info]: Thread pool created using 64 threads
+x265 [info]: Thread pool created using 32 threads
+x265 [info]: Slices                              : 1
+x265 [info]: frame threads / pool features       : 16 / wpp(17 rows)
+x265 [info]: Coding QT: max CU size, min CU size : 64 / 8
+x265 [info]: Residual QT: max TU size, max depth : 32 / 1 inter / 1 intra
+x265 [info]: ME / range / subpel / merge         : star / 57 / 3 / 3
+x265 [info]: Keyframe min / max / scenecut / bias  : 25 / 250 / 40 / 5.00 
+x265 [info]: Cb/Cr QP Offset                     : 6 / 6
+x265 [info]: Lookahead / bframes / badapt        : 25 / 4 / 2
+x265 [info]: b-pyramid / weightp / weightb       : 1 / 1 / 0
+x265 [info]: References / ref-limit  cu / depth  : 4 / on / on
+x265 [info]: AQ: mode / str / qg-size / cu-tree  : 2 / 1.0 / 32 / 1
+x265 [info]: Rate Control / qCompress            : CRF-23.0 / 0.60
+x265 [info]: tools: rect limit-modes rd=4 psy-rd=2.00 rdoq=2 psy-rdoq=1.00
+x265 [info]: tools: rskip mode=1 signhide tmvp strong-intra-smoothing lslices=4
+x265 [info]: tools: deblock sao
+Output #0, mp4, to 'top_view.mp4':
+  Metadata:
+    encoder         : Lavf61.7.100
+  Stream #0:0: Video: hevc (hev1 / 0x31766568), gbrp(pc, gbr/unknown/unknown, progressive), 2160x1080, q=2-31, 60 fps, 15360 tbn
+      Metadata:
+        encoder         : Lavc61.19.101 libx265
+      Side data:
+        cpb: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
+frame=    0 fps=0.0 q=0.0 size=       0KiB time=N/A bitrate=N/A speed=N/A    frame=    0 fps=0.0 q=0.0 size=       0KiB time=N/A bitrate=N/A speed=N/A    frame=    0 fps=0.0 q=0.0 size=       0KiB time=N/A bitrate=N/A speed=N/A    frame=    6 fps=3.0 q=31.4 size=     256KiB time=00:00:00.06 bitrate=31462.4kbits/s speed=0.0333x    frame=   12 fps=4.8 q=34.1 size=     256KiB time=00:00:00.16 bitrate=12585.0kbits/s speed=0.0666x    frame=   18 fps=6.0 q=32.6 size=     256KiB time=00:00:00.26 bitrate=7865.6kbits/s speed=0.0889x    frame=   25 fps=7.1 q=26.9 size=     256KiB time=00:00:00.38 bitrate=5471.8kbits/s speed=0.109x    frame=   30 fps=7.5 q=32.8 size=     256KiB time=00:00:00.46 bitrate=4494.6kbits/s speed=0.117x    frame=   37 fps=8.2 q=26.8 size=     256KiB time=00:00:00.58 bitrate=3595.7kbits/s speed=0.13x    frame=   42 fps=8.4 q=32.7 size=     256KiB time=00:00:00.66 bitrate=3146.3kbits/s speed=0.133x    frame=   49 fps=8.9 q=26.9 size=     256KiB time=00:00:00.78 bitrate=2677.7kbits/s speed=0.142x    frame=   54 fps=9.0 q=32.8 size=     512KiB time=00:00:00.86 bitrate=4840.0kbits/s speed=0.144x    frame=   62 fps=9.5 q=32.9 size=     512KiB time=00:00:01.00 bitrate=4194.7kbits/s speed=0.154x    frame=   69 fps=9.9 q=26.8 size=     512KiB time=00:00:01.11 bitrate=3756.4kbits/s speed=0.159x    frame=   75 fps= 10 q=26.7 size=     512KiB time=00:00:01.21 bitrate=3447.7kbits/s speed=0.162x    frame=   81 fps= 10 q=33.1 size=     512KiB time=00:00:01.31 bitrate=3185.8kbits/s speed=0.165x    frame=   89 fps= 10 q=28.0 size=     512KiB time=00:00:01.45 bitrate=2892.9kbits/s speed=0.171x    frame=   95 fps= 11 q=32.8 size=     512KiB time=00:00:01.55 bitrate=2706.2kbits/s speed=0.172x    [out#0/mp4 @ 0x46c940] video:661KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:2KiB muxing overhead: 0.670989%
+frame=  101 fps= 11 q=34.1 Lsize=     666KiB time=00:00:01.65 bitrate=3305.5kbits/s speed=0.177x    
+x265 [info]: frame I:      1, Avg QP:23.45  kb/s: 144914.40
+x265 [info]: frame P:     25, Avg QP:27.26  kb/s: 4726.33 
+x265 [info]: frame B:     75, Avg QP:33.63  kb/s: 823.92  
+x265 [info]: Weighted P-Frames: Y:0.0% UV:0.0%
+
+encoded 101 frames in 9.14s (11.06 fps), 3216.50 kb/s, Avg QP:31.95
+Top view video rendering time: 10 seconds
+ffmpeg version 7.1.1 Copyright (c) 2000-2025 the FFmpeg developers
+  built with gcc 14.2.0 (GCC)
+  configuration: --prefix=/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/FFmpeg/7.1.1-GCCcore-14.2.0 --enable-pic --enable-shared --enable-gpl --enable-version3 --enable-nonfree --cc=gcc --cxx=g++ --enable-libx264 --enable-libx265 --enable-libmp3lame --enable-libfreetype --enable-fontconfig --enable-libfribidi --enable-sdl2 --disable-htmlpages
+  libavutil      59. 39.100 / 59. 39.100
+  libavcodec     61. 19.101 / 61. 19.101
+  libavformat    61.  7.100 / 61.  7.100
+  libavdevice    61.  3.100 / 61.  3.100
+  libavfilter    10.  4.100 / 10.  4.100
+  libswscale      8.  3.100 /  8.  3.100
+  libswresample   5.  3.100 /  5.  3.100
+  libpostproc    58.  3.100 / 58.  3.100
+Input #0, image2, from 'rendered_slices/frame_*.png':
+  Duration: 00:00:01.68, start: 0.000000, bitrate: N/A
+  Stream #0:0: Video: png, rgb24(pc, gbr/unknown/unknown), 2160x1080, 60 fps, 60 tbr, 60 tbn
+Stream mapping:
+  Stream #0:0 -> #0:0 (png (native) -> hevc (libx265))
+Press [q] to stop, [?] for help
+x265 [info]: HEVC encoder version 4.1+1-1d117be
+x265 [info]: build info [Linux][GCC 14.2.0][64 bit][noasm] 8bit
+x265 [info]: using cpu capabilities: none!
+x265 [warning]: halving the quality when psy-rd is enabled for 444 input. Setting cbQpOffset = 6 and crQpOffset = 6
+x265 [info]: Main 4:4:4 profile, Level-5 (Main tier)
+x265 [info]: Thread pool created using 64 threads
+x265 [info]: Thread pool created using 32 threads
+x265 [info]: Slices                              : 1
+x265 [info]: frame threads / pool features       : 16 / wpp(17 rows)
+x265 [info]: Coding QT: max CU size, min CU size : 64 / 8
+x265 [info]: Residual QT: max TU size, max depth : 32 / 1 inter / 1 intra
+x265 [info]: ME / range / subpel / merge         : star / 57 / 3 / 3
+x265 [info]: Keyframe min / max / scenecut / bias  : 25 / 250 / 40 / 5.00 
+x265 [info]: Cb/Cr QP Offset                     : 6 / 6
+x265 [info]: Lookahead / bframes / badapt        : 25 / 4 / 2
+x265 [info]: b-pyramid / weightp / weightb       : 1 / 1 / 0
+x265 [info]: References / ref-limit  cu / depth  : 4 / on / on
+x265 [info]: AQ: mode / str / qg-size / cu-tree  : 2 / 1.0 / 32 / 1
+x265 [info]: Rate Control / qCompress            : CRF-23.0 / 0.60
+x265 [info]: tools: rect limit-modes rd=4 psy-rd=2.00 rdoq=2 psy-rdoq=1.00
+x265 [info]: tools: rskip mode=1 signhide tmvp strong-intra-smoothing lslices=4
+x265 [info]: tools: deblock sao
+Output #0, mp4, to 'slice_full_height.mp4':
+  Metadata:
+    encoder         : Lavf61.7.100
+  Stream #0:0: Video: hevc (hev1 / 0x31766568), gbrp(pc, gbr/unknown/unknown, progressive), 2160x1080, q=2-31, 60 fps, 15360 tbn
+      Metadata:
+        encoder         : Lavc61.19.101 libx265
+      Side data:
+        cpb: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
+frame=    0 fps=0.0 q=0.0 size=       0KiB time=N/A bitrate=N/A speed=N/A    frame=    0 fps=0.0 q=0.0 size=       0KiB time=N/A bitrate=N/A speed=N/A    frame=    6 fps=4.0 q=32.4 size=       0KiB time=00:00:00.06 bitrate=   5.3kbits/s speed=0.0444x    frame=   15 fps=7.5 q=32.7 size=       0KiB time=00:00:00.21 bitrate=   1.6kbits/s speed=0.108x    frame=   24 fps=9.6 q=32.6 size=       0KiB time=00:00:00.36 bitrate=   1.0kbits/s speed=0.147x    frame=   33 fps= 11 q=32.8 size=       0KiB time=00:00:00.51 bitrate=   0.7kbits/s speed=0.172x    frame=   42 fps= 12 q=32.4 size=       0KiB time=00:00:00.66 bitrate=   0.5kbits/s speed=0.19x    frame=   50 fps= 12 q=32.7 size=       0KiB time=00:00:00.80 bitrate=   0.4kbits/s speed= 0.2x    frame=   58 fps= 13 q=32.6 size=     256KiB time=00:00:00.93 bitrate=2247.3kbits/s speed=0.207x    frame=   70 fps= 14 q=28.6 size=     256KiB time=00:00:01.13 bitrate=1850.7kbits/s speed=0.227x    frame=   80 fps= 15 q=28.9 size=     256KiB time=00:00:01.30 bitrate=1613.5kbits/s speed=0.236x    frame=   92 fps= 15 q=29.8 size=     256KiB time=00:00:01.50 bitrate=1398.3kbits/s speed=0.25x    [out#0/mp4 @ 0x468f00] video:341KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:2KiB muxing overhead: 1.281120%
+frame=  101 fps= 16 q=33.9 Lsize=     346KiB time=00:00:01.65 bitrate=1717.2kbits/s speed=0.259x    
+x265 [info]: frame I:      1, Avg QP:26.69  kb/s: 46394.88
+x265 [info]: frame P:     23, Avg QP:28.89  kb/s: 2377.27 
+x265 [info]: frame B:     77, Avg QP:33.48  kb/s: 864.77  
+x265 [info]: Weighted P-Frames: Y:0.0% UV:0.0%
+
+encoded 101 frames in 6.24s (16.17 fps), 1659.99 kb/s, Avg QP:32.37
+Slice (full height) video rendering time: 7 seconds
+Building dual-view video:
+  top-pattern:   /hpcwork/thes2181/mini_app/circle_r500_d300_s100_periodic_2160x1080_c23mm_1n_24t_c__rank0_gather_none_1gpu_perfect_model/rendered_frames/frame_*.png
+  slice-pattern: /hpcwork/thes2181/mini_app/circle_r500_d300_s100_periodic_2160x1080_c23mm_1n_24t_c__rank0_gather_none_1gpu_perfect_model/rendered_slices/frame_*.png
+  output:        /hpcwork/thes2181/mini_app/circle_r500_d300_s100_periodic_2160x1080_c23mm_1n_24t_c__rank0_gather_none_1gpu_perfect_model/dual_1x1.mp4
+  fps:           60
+  size:          2160x2160 (top=1080, bottom=1080)
+  encoded size:  2160x2160 (pix_fmt=yuv420p)
+ffmpeg version 7.1.1 Copyright (c) 2000-2025 the FFmpeg developers
+  built with gcc 14.2.0 (GCC)
+  configuration: --prefix=/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/FFmpeg/7.1.1-GCCcore-14.2.0 --enable-pic --enable-shared --enable-gpl --enable-version3 --enable-nonfree --cc=gcc --cxx=g++ --enable-libx264 --enable-libx265 --enable-libmp3lame --enable-libfreetype --enable-fontconfig --enable-libfribidi --enable-sdl2 --disable-htmlpages
+  libavutil      59. 39.100 / 59. 39.100
+  libavcodec     61. 19.101 / 61. 19.101
+  libavformat    61.  7.100 / 61.  7.100
+  libavdevice    61.  3.100 / 61.  3.100
+  libavfilter    10.  4.100 / 10.  4.100
+  libswscale      8.  3.100 /  8.  3.100
+  libswresample   5.  3.100 /  5.  3.100
+  libpostproc    58.  3.100 / 58.  3.100
+Input #0, image2, from '/hpcwork/thes2181/mini_app/circle_r500_d300_s100_periodic_2160x1080_c23mm_1n_24t_c__rank0_gather_none_1gpu_perfect_model/rendered_frames/frame_*.png':
+  Duration: 00:00:01.68, start: 0.000000, bitrate: N/A
+  Stream #0:0: Video: png, rgb24(pc, gbr/unknown/unknown), 2160x1080, 60 fps, 60 tbr, 60 tbn
+Input #1, image2, from '/hpcwork/thes2181/mini_app/circle_r500_d300_s100_periodic_2160x1080_c23mm_1n_24t_c__rank0_gather_none_1gpu_perfect_model/rendered_slices/frame_*.png':
+  Duration: 00:00:01.68, start: 0.000000, bitrate: N/A
+  Stream #1:0: Video: png, rgb24(pc, gbr/unknown/unknown), 2160x1080, 60 fps, 60 tbr, 60 tbn
+Stream mapping:
+  Stream #0:0 (png) -> scale:default
+  Stream #1:0 (png) -> scale:default
+  vstack:default -> Stream #0:0 (libx265)
+Press [q] to stop, [?] for help
+x265 [info]: HEVC encoder version 4.1+1-1d117be
+x265 [info]: build info [Linux][GCC 14.2.0][64 bit][noasm] 8bit
+x265 [info]: using cpu capabilities: none!
+x265 [info]: Main profile, Level-5.1 (Main tier)
+x265 [info]: Thread pool created using 64 threads
+x265 [info]: Thread pool created using 32 threads
+x265 [info]: Slices                              : 1
+x265 [info]: frame threads / pool features       : 16 / wpp(34 rows)
+x265 [info]: Coding QT: max CU size, min CU size : 64 / 8
+x265 [info]: Residual QT: max TU size, max depth : 32 / 1 inter / 1 intra
+x265 [info]: ME / range / subpel / merge         : star / 57 / 3 / 3
+x265 [info]: Keyframe min / max / scenecut / bias  : 25 / 250 / 40 / 5.00 
+x265 [info]: Lookahead / bframes / badapt        : 25 / 4 / 2
+x265 [info]: b-pyramid / weightp / weightb       : 1 / 1 / 0
+x265 [info]: References / ref-limit  cu / depth  : 4 / on / on
+x265 [info]: AQ: mode / str / qg-size / cu-tree  : 2 / 1.0 / 32 / 1
+x265 [info]: Rate Control / qCompress            : CRF-23.0 / 0.60
+x265 [info]: tools: rect limit-modes rd=4 psy-rd=2.00 rdoq=2 psy-rdoq=1.00
+x265 [info]: tools: rskip mode=1 signhide tmvp strong-intra-smoothing lslices=4
+x265 [info]: tools: deblock sao
+Output #0, mp4, to '/hpcwork/thes2181/mini_app/circle_r500_d300_s100_periodic_2160x1080_c23mm_1n_24t_c__rank0_gather_none_1gpu_perfect_model/dual_1x1.mp4':
+  Metadata:
+    encoder         : Lavf61.7.100
+  Stream #0:0: Video: hevc (hev1 / 0x31766568), yuv420p(tv, progressive), 2160x2160, q=2-31, 60 fps, 15360 tbn
+      Metadata:
+        encoder         : Lavc61.19.101 libx265
+      Side data:
+        cpb: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
+frame=    0 fps=0.0 q=0.0 size=       0KiB time=N/A bitrate=N/A speed=N/A    frame=    0 fps=0.0 q=0.0 size=       0KiB time=N/A bitrate=N/A speed=N/A    frame=    0 fps=0.0 q=0.0 size=       0KiB time=N/A bitrate=N/A speed=N/A    frame=    6 fps=3.0 q=31.7 size=     256KiB time=00:00:00.06 bitrate=31462.4kbits/s speed=0.0333x    frame=   14 fps=5.6 q=27.4 size=     256KiB time=00:00:00.20 bitrate=10487.5kbits/s speed=0.08x    frame=   20 fps=6.7 q=32.4 size=     256KiB time=00:00:00.30 bitrate=6991.7kbits/s speed= 0.1x    frame=   27 fps=7.7 q=27.3 size=     256KiB time=00:00:00.41 bitrate=5034.0kbits/s speed=0.119x    frame=   36 fps=9.0 q=33.9 size=     256KiB time=00:00:00.56 bitrate=3701.5kbits/s speed=0.142x    frame=   40 fps=8.9 q=33.8 size=     256KiB time=00:00:00.63 bitrate=3311.9kbits/s speed=0.141x    frame=   48 fps=9.6 q=33.9 size=     256KiB time=00:00:00.76 bitrate=2735.9kbits/s speed=0.153x    frame=   58 fps= 11 q=32.5 size=     256KiB time=00:00:00.93 bitrate=2247.3kbits/s speed=0.17x    frame=   70 fps= 12 q=27.2 size=     512KiB time=00:00:01.13 bitrate=3701.2kbits/s speed=0.189x    frame=   80 fps= 12 q=27.3 size=     512KiB time=00:00:01.30 bitrate=3226.7kbits/s speed= 0.2x    frame=   87 fps= 12 q=33.9 size=     512KiB time=00:00:01.41 bitrate=2960.9kbits/s speed=0.202x    frame=   98 fps= 13 q=30.8 size=     512KiB time=00:00:01.60 bitrate=2621.7kbits/s speed=0.213x    [out#0/mp4 @ 0x47ba40] video:618KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:2KiB muxing overhead: 0.710586%
+frame=  101 fps= 13 q=33.9 Lsize=     622KiB time=00:00:01.65 bitrate=3088.1kbits/s speed=0.217x    
+x265 [info]: frame I:      1, Avg QP:24.46  kb/s: 116726.40
+x265 [info]: frame P:     23, Avg QP:27.58  kb/s: 4409.34 
+x265 [info]: frame B:     77, Avg QP:33.49  kb/s: 1106.94 
+x265 [info]: Weighted P-Frames: Y:0.0% UV:0.0%
+
+encoded 101 frames in 7.37s (13.70 fps), 3003.72 kb/s, Avg QP:32.05
+Combined video (1:1) rendering time: 8 seconds
+INFO: padded output to even size 2160x1216 for pix_fmt=yuv420p.
+Building dual-view video:
+  top-pattern:   /hpcwork/thes2181/mini_app/circle_r500_d300_s100_periodic_2160x1080_c23mm_1n_24t_c__rank0_gather_none_1gpu_perfect_model/rendered_frames/frame_*.png
+  slice-pattern: /hpcwork/thes2181/mini_app/circle_r500_d300_s100_periodic_2160x1080_c23mm_1n_24t_c__rank0_gather_none_1gpu_perfect_model/rendered_slices_reduced_height/frame_*.png
+  output:        /hpcwork/thes2181/mini_app/circle_r500_d300_s100_periodic_2160x1080_c23mm_1n_24t_c__rank0_gather_none_1gpu_perfect_model/dual_16x9.mp4
+  fps:           60
+  size:          2160x1215 (top=1080, bottom=135)
+  encoded size:  2160x1216 (pix_fmt=yuv420p)
+ffmpeg version 7.1.1 Copyright (c) 2000-2025 the FFmpeg developers
+  built with gcc 14.2.0 (GCC)
+  configuration: --prefix=/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/FFmpeg/7.1.1-GCCcore-14.2.0 --enable-pic --enable-shared --enable-gpl --enable-version3 --enable-nonfree --cc=gcc --cxx=g++ --enable-libx264 --enable-libx265 --enable-libmp3lame --enable-libfreetype --enable-fontconfig --enable-libfribidi --enable-sdl2 --disable-htmlpages
+  libavutil      59. 39.100 / 59. 39.100
+  libavcodec     61. 19.101 / 61. 19.101
+  libavformat    61.  7.100 / 61.  7.100
+  libavdevice    61.  3.100 / 61.  3.100
+  libavfilter    10.  4.100 / 10.  4.100
+  libswscale      8.  3.100 /  8.  3.100
+  libswresample   5.  3.100 /  5.  3.100
+  libpostproc    58.  3.100 / 58.  3.100
+Input #0, image2, from '/hpcwork/thes2181/mini_app/circle_r500_d300_s100_periodic_2160x1080_c23mm_1n_24t_c__rank0_gather_none_1gpu_perfect_model/rendered_frames/frame_*.png':
+  Duration: 00:00:01.68, start: 0.000000, bitrate: N/A
+  Stream #0:0: Video: png, rgb24(pc, gbr/unknown/unknown), 2160x1080, 60 fps, 60 tbr, 60 tbn
+Input #1, image2, from '/hpcwork/thes2181/mini_app/circle_r500_d300_s100_periodic_2160x1080_c23mm_1n_24t_c__rank0_gather_none_1gpu_perfect_model/rendered_slices_reduced_height/frame_*.png':
+  Duration: 00:00:01.68, start: 0.000000, bitrate: N/A
+  Stream #1:0: Video: png, rgb24(pc, gbr/unknown/unknown), 2160x135, 60 fps, 60 tbr, 60 tbn
+Stream mapping:
+  Stream #0:0 (png) -> scale:default
+  Stream #1:0 (png) -> scale:default
+  pad:default -> Stream #0:0 (libx265)
+Press [q] to stop, [?] for help
+x265 [info]: HEVC encoder version 4.1+1-1d117be
+x265 [info]: build info [Linux][GCC 14.2.0][64 bit][noasm] 8bit
+x265 [info]: using cpu capabilities: none!
+x265 [info]: Main profile, Level-5 (Main tier)
+x265 [info]: Thread pool created using 64 threads
+x265 [info]: Thread pool created using 32 threads
+x265 [info]: Slices                              : 1
+x265 [info]: frame threads / pool features       : 16 / wpp(19 rows)
+x265 [info]: Coding QT: max CU size, min CU size : 64 / 8
+x265 [info]: Residual QT: max TU size, max depth : 32 / 1 inter / 1 intra
+x265 [info]: ME / range / subpel / merge         : star / 57 / 3 / 3
+x265 [info]: Keyframe min / max / scenecut / bias  : 25 / 250 / 40 / 5.00 
+x265 [info]: Lookahead / bframes / badapt        : 25 / 4 / 2
+x265 [info]: b-pyramid / weightp / weightb       : 1 / 1 / 0
+x265 [info]: References / ref-limit  cu / depth  : 4 / on / on
+x265 [info]: AQ: mode / str / qg-size / cu-tree  : 2 / 1.0 / 32 / 1
+x265 [info]: Rate Control / qCompress            : CRF-23.0 / 0.60
+x265 [info]: tools: rect limit-modes rd=4 psy-rd=2.00 rdoq=2 psy-rdoq=1.00
+x265 [info]: tools: rskip mode=1 signhide tmvp strong-intra-smoothing lslices=4
+x265 [info]: tools: deblock sao
+Output #0, mp4, to '/hpcwork/thes2181/mini_app/circle_r500_d300_s100_periodic_2160x1080_c23mm_1n_24t_c__rank0_gather_none_1gpu_perfect_model/dual_16x9.mp4':
+  Metadata:
+    encoder         : Lavf61.7.100
+  Stream #0:0: Video: hevc (hev1 / 0x31766568), yuv420p(tv, progressive), 2160x1216, q=2-31, 60 fps, 15360 tbn
+      Metadata:
+        encoder         : Lavc61.19.101 libx265
+      Side data:
+        cpb: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
+frame=    0 fps=0.0 q=0.0 size=       0KiB time=N/A bitrate=N/A speed=N/A    frame=    0 fps=0.0 q=0.0 size=       0KiB time=N/A bitrate=N/A speed=N/A    frame=    6 fps=4.0 q=31.5 size=       0KiB time=00:00:00.06 bitrate=   5.3kbits/s speed=0.0444x    frame=   15 fps=7.5 q=32.8 size=       0KiB time=00:00:00.21 bitrate=   1.6kbits/s speed=0.108x    frame=   27 fps= 11 q=26.1 size=     256KiB time=00:00:00.41 bitrate=5034.0kbits/s speed=0.167x    frame=   38 fps= 13 q=32.6 size=     256KiB time=00:00:00.60 bitrate=3495.8kbits/s speed= 0.2x    frame=   49 fps= 14 q=26.2 size=     256KiB time=00:00:00.78 bitrate=2677.7kbits/s speed=0.224x    frame=   58 fps= 14 q=32.7 size=     256KiB time=00:00:00.93 bitrate=2247.3kbits/s speed=0.233x    frame=   70 fps= 16 q=25.8 size=     256KiB time=00:00:01.13 bitrate=1850.7kbits/s speed=0.252x    frame=   81 fps= 16 q=33.0 size=     256KiB time=00:00:01.31 bitrate=1593.0kbits/s speed=0.263x    frame=   94 fps= 17 q=28.8 size=     256KiB time=00:00:01.53 bitrate=1367.9kbits/s speed=0.279x    [out#0/mp4 @ 0x471680] video:420KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:2KiB muxing overhead: 1.044508%
+frame=  101 fps= 18 q=34.0 Lsize=     424KiB time=00:00:01.65 bitrate=2106.9kbits/s speed=0.287x    
+x265 [info]: frame I:      1, Avg QP:22.50  kb/s: 96832.80
+x265 [info]: frame P:     23, Avg QP:26.57  kb/s: 2950.16 
+x265 [info]: frame B:     77, Avg QP:33.57  kb/s: 539.58  
+x265 [info]: Weighted P-Frames: Y:0.0% UV:0.0%
+
+encoded 101 frames in 5.55s (18.20 fps), 2041.92 kb/s, Avg QP:31.87
+Combined video (16:9) rendering time: 6 seconds
+[INFO] Module zlib/1.3.1 loaded.
+[INFO] Module OpenSSL/3 loaded.
+
+Inactive Modules:
+  1) Szip/2.1.1     2) libevent/2.1.12     3) zlib/1.3.1
+
+[INFO] Module GCC/11.3.0 loaded.
+[INFO] Module binutils/2.38 loaded.
+[INFO] Module libevent/2.1.12 loaded.
+[INFO] Module Szip/2.1.1 loaded.
+[INFO] Module numactl/2.0.14 loaded.
+[INFO] Module XZ/5.2.5 loaded.
+[INFO] Module libxml2/2.9.13 loaded.
+[INFO] Module hwloc/2.7.1 loaded.
+[INFO] Module GMP/6.2.1 loaded.
+[INFO] Module Z3/4.10.2 loaded.
+[INFO] Module Clang/15.0.5 loaded.
+[INFO] Module UCX/1.12.1 loaded.
+[INFO] Module PMIx/4.1.2 loaded.
+[INFO] Module UCC/1.0.0 loaded.
+[INFO] Module OpenMPI/4.1.4 loaded.
+[INFO] Module FFTW/3.3.10 loaded.
+[INFO] Module FFTW.MPI/3.3.10 loaded.
+[INFO] Module HDF5/1.12.2 loaded.
+[INFO] Module PnetCDF/1.12.3 loaded.
+
+Activating Modules:
+  1) Clang/15.0.5        6) OpenMPI/4.1.4     11) UCX/1.12.1         16) libxml2/2.9.13
+  2) FFTW.MPI/3.3.10     7) PMIx/4.1.2        12) XZ/5.2.5           17) numactl/2.0.14
+  3) FFTW/3.3.10         8) PnetCDF/1.12.3    13) Z3/4.10.2          18) zlib/1.2.12
+  4) GMP/6.2.1           9) Szip/2.1.1        14) hwloc/2.7.1
+  5) HDF5/1.12.2        10) UCC/1.0.0         15) libevent/2.1.12
+
+Due to MODULEPATH changes, the following have been reloaded:
+  1) binutils/2.38
+
+The following have been reloaded with a version change:
+  1) OpenSSL/3 => OpenSSL/1.1
+
+Now using GCC/11.3.0 as the GCC module after loading FFmpeg
+Timing and parameters saved to: /hpcwork/thes2181/mini_app/circle_r500_d300_s100_periodic_2160x1080_c23mm_1n_24t_c__rank0_gather_none_1gpu_perfect_model/timing_and_parameters.txt
+
+================================
+Preparation time: 11 seconds
+Compilation time: 7 seconds
+Solving time: 95 seconds
+Top view rendering time: 4 seconds
+Slice (full height) rendering time: 1 seconds
+Slice (reduced height) rendering time: 1 seconds
+Top view video rendering time: 10 seconds
+Slice (full height) video rendering time: 7 seconds
+Combined video (1:1) rendering time: 8 seconds
+Combined video (16:9) rendering time: 6 seconds
+================================
+Total time: 150 seconds

@@ -1,0 +1,192 @@
+Using preliminary job name: circle_r30_d300_s10000_periodic_216x108_devel_1n_16t_1c__rank0_gather_none
+Module OpenSSL/1.1 is not loaded. Purging and loading required modules.
+Purging and loading required modules for SmartSim...
+Loading required modules...
+[INFO] Module OpenSSL/1.1 loaded.
+[WARN] This node does not have a GPU installed. CUDA will not work.
+[WARN] Please refer to https://help.itc.rwth-aachen.de for information on which
+nodes feature GPUs. 
+[INFO] Module CUDA/12.4.0 loaded.
+[INFO] Module GCCcore/11.3.0 loaded.
+[INFO] Module Clang/15.0.5 loaded.
+[INFO] Module GCC/11.3.0 loaded.
+[INFO] Module OpenMPI/4.1.4 loaded.
+[INFO] Module FFTW.MPI/3.3.10 loaded.
+[INFO] Module HDF5/1.12.2 loaded.
+[INFO] Module PnetCDF/1.12.3 loaded.
+[INFO] Module cuDNN/8.9.7.29-CUDA-12.4.0 loaded.
+[INFO] Module imkl/2024.2.0 loaded.
+
+=== Installing SmartSim for device: cpu ===
+Including backend: torch
+Including backend: onnxruntime
+Including backend: tensorflow
+SmartSim build command: smart build --device cpu
+Install location: ./python/smartsim_cpu/
+Base directory for SmartSim installation: /hpcwork/ro092286/smartsim/
+Python virtual environment already exists at ./python/smartsim_cpu/
+/hpcwork/ro092286/smartsim/install.sh:68: VIRTUAL_ENV: parameter not set
+Module CUDA/12.3.0 is not loaded. Purging and loading required modules.
+Purging and loading required modules for SmartSim (CUDA11 + MPI + HDF5)...
+Loading required modules...
+[INFO] Module OpenSSL/1.1 loaded.
+[WARN] This node does not have a GPU installed. CUDA will not work.
+[WARN] Please refer to https://help.itc.rwth-aachen.de for information on which
+nodes feature GPUs. 
+[INFO] Module CUDA/12.3.0 loaded.
+[INFO] Module GCCcore/11.3.0 loaded.
+[INFO] Module Clang/15.0.5 loaded.
+[INFO] Module GCC/11.3.0 loaded.
+[INFO] Module OpenMPI/4.1.4 loaded.
+[INFO] Module FFTW.MPI/3.3.10 loaded.
+[INFO] Module HDF5/1.12.2 loaded.
+[INFO] Module PnetCDF/1.12.3 loaded.
+[INFO] Module cuDNN/8.9.7.29-CUDA-12.3.0 loaded.
+[INFO] Module imkl/2025.1.0 loaded.
+OpenSSL/1.1
+CUDA/12.3.0
+GCCcore/11.3.0
+zlib/1.2.12
+binutils/2.38
+numactl/2.0.14
+XZ/5.2.5
+libxml2/2.9.13
+libpciaccess/0.16
+hwloc/2.7.1
+ncurses/6.3
+GMP/6.2.1
+Z3/4.10.2
+Clang/15.0.5
+GCC/11.3.0
+libevent/2.1.12
+UCX/1.12.1
+PMIx/4.1.2
+UCC/1.0.0
+OpenMPI/4.1.4
+FFTW/3.3.10
+FFTW.MPI/3.3.10
+Szip/2.1.1
+HDF5/1.12.2
+PnetCDF/1.12.3
+cuDNN/8.9.7.29-CUDA-12.3.0
+imkl/2025.1.0
+Warning: /hpcwork/thes2181/mini_app is not empty.
+Warning: /hpcwork/thes2181/mini_app/circle_r30_d300_s10000_periodic_216x108_devel_1n_16t_1c__rank0_gather_none is not empty.
+No existing trajectory found. Starting fresh...
+Prepared dataset: terrain=(108, 216) water_nonzero=2821 output=/hpcwork/thes2181/mini_app/circle_r30_d300_s10000_periodic_216x108_devel_1n_16t_1c__rank0_gather_none/world_init.h5
+Preparation time: 8 seconds
+Compiling solver...
+-- The CXX compiler identification is Clang 15.0.5
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/Clang/15.0.5-GCCcore-11.3.0/bin/clang++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found MPI_CXX: /cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/OpenMPI/4.1.4-GCC-11.3.0/lib/libmpi.so (found version "3.1") 
+-- Found MPI: TRUE (found version "3.1") found components: CXX 
+-- Found HDF5: /cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/HDF5/1.12.2-gompi-2022a/lib/libhdf5.so;/usr/lib64/libpthread.a;/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/Szip/2.1.1-GCCcore-11.3.0/lib/libsz.so;/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/zlib/1.2.12-GCCcore-11.3.0/lib/libz.so;/usr/lib64/libdl.a;/usr/lib64/libm.so;/usr/lib64/libm.so;/usr/lib64/libpthread.a (found version "1.12.2") found components: C 
+-- HDF5 parallel support: YES
+-- Configuring done (1.9s)
+-- Generating done (0.0s)
+-- Build files have been written to: /hpcwork/ro092286/smartsim/mini_app/solver_cpp/build
+[ 50%] Building CXX object CMakeFiles/terrain_solver.dir/terrain_solver.cpp.o
+/hpcwork/ro092286/smartsim/mini_app/solver_cpp/terrain_solver.cpp:1419:225: error: invalid operands to binary expression ('basic_string<char, std::char_traits<char>, std::allocator<char>>' and 'int')
+    require(dims[0] <= d.chunks_z, "Rank grid Z is larger than chunk grid Z; would create empty ranks. Got dims[0]=" + std::to_string(dims[0]) + " and d.chunks_z=" + std::to_string(d.chunks_z) + ". In total we have ranks: " + dims[0] + "x" + dims[1] + " which doesnt fit " + d.chunks_z + "x" + d.chunks_x);
+                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ^ ~~~~~~~
+/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/11.3.0/lib/gcc/x86_64-pc-linux-gnu/11.3.0/../../../../include/c++/11.3.0/bits/basic_string.h:6148:5: note: candidate template ignored: deduced conflicting types for parameter '_CharT' ('char' vs. 'int')
+    operator+(const basic_string<_CharT, _Traits, _Alloc>& __lhs, _CharT __rhs)
+    ^
+/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/11.3.0/lib/gcc/x86_64-pc-linux-gnu/11.3.0/../../../../include/c++/11.3.0/bits/basic_string.h:6212:5: note: candidate template ignored: deduced conflicting types for parameter '_CharT' ('char' vs. 'int')
+    operator+(basic_string<_CharT, _Traits, _Alloc>&& __lhs,
+    ^
+/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/11.3.0/lib/gcc/x86_64-pc-linux-gnu/11.3.0/../../../../include/c++/11.3.0/bits/stl_iterator.h:568:5: note: candidate template ignored: could not match 'reverse_iterator<_Iterator>' against 'int'
+    operator+(typename reverse_iterator<_Iterator>::difference_type __n,
+    ^
+/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/11.3.0/lib/gcc/x86_64-pc-linux-gnu/11.3.0/../../../../include/c++/11.3.0/bits/stl_iterator.h:1242:5: note: candidate template ignored: could not match '__normal_iterator<_Iterator, _Container>' against 'int'
+    operator+(typename __normal_iterator<_Iterator, _Container>::difference_type
+    ^
+/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/11.3.0/lib/gcc/x86_64-pc-linux-gnu/11.3.0/../../../../include/c++/11.3.0/bits/stl_iterator.h:1646:5: note: candidate template ignored: could not match 'move_iterator<_Iterator>' against 'int'
+    operator+(typename move_iterator<_Iterator>::difference_type __n,
+    ^
+/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/11.3.0/lib/gcc/x86_64-pc-linux-gnu/11.3.0/../../../../include/c++/11.3.0/bits/basic_string.h:6095:5: note: candidate template ignored: could not match 'basic_string<_CharT, _Traits, _Alloc>' against 'int'
+    operator+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+    ^
+/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/11.3.0/lib/gcc/x86_64-pc-linux-gnu/11.3.0/../../../../include/c++/11.3.0/bits/basic_string.h:6132:5: note: candidate template ignored: could not match 'const _CharT *' against 'int'
+    operator+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+    ^
+/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/11.3.0/lib/gcc/x86_64-pc-linux-gnu/11.3.0/../../../../include/c++/11.3.0/bits/basic_string.h:6160:5: note: candidate template ignored: could not match 'basic_string<_CharT, _Traits, _Alloc>' against 'int'
+    operator+(basic_string<_CharT, _Traits, _Alloc>&& __lhs,
+    ^
+/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/11.3.0/lib/gcc/x86_64-pc-linux-gnu/11.3.0/../../../../include/c++/11.3.0/bits/basic_string.h:6166:5: note: candidate template ignored: could not match 'basic_string<_CharT, _Traits, _Alloc>' against 'int'
+    operator+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+    ^
+/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/11.3.0/lib/gcc/x86_64-pc-linux-gnu/11.3.0/../../../../include/c++/11.3.0/bits/basic_string.h:6172:5: note: candidate template ignored: could not match 'basic_string<_CharT, _Traits, _Alloc>' against 'int'
+    operator+(basic_string<_CharT, _Traits, _Alloc>&& __lhs,
+    ^
+/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/11.3.0/lib/gcc/x86_64-pc-linux-gnu/11.3.0/../../../../include/c++/11.3.0/bits/basic_string.h:6194:5: note: candidate template ignored: could not match 'const _CharT *' against 'basic_string<char, std::char_traits<char>, std::allocator<char>>'
+    operator+(const _CharT* __lhs,
+    ^
+/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/11.3.0/lib/gcc/x86_64-pc-linux-gnu/11.3.0/../../../../include/c++/11.3.0/bits/basic_string.h:6200:5: note: candidate template ignored: could not match 'basic_string<_CharT, _Traits, _Alloc>' against 'int'
+    operator+(_CharT __lhs,
+    ^
+/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/11.3.0/lib/gcc/x86_64-pc-linux-gnu/11.3.0/../../../../include/c++/11.3.0/bits/basic_string.h:6206:5: note: candidate template ignored: could not match 'const _CharT *' against 'int'
+    operator+(basic_string<_CharT, _Traits, _Alloc>&& __lhs,
+    ^
+/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/11.3.0/lib/gcc/x86_64-pc-linux-gnu/11.3.0/../../../../include/c++/11.3.0/bits/basic_string.tcc:1169:5: note: candidate template ignored: could not match 'const _CharT *' against 'basic_string<char, std::char_traits<char>, std::allocator<char>>'
+    operator+(const _CharT* __lhs,
+    ^
+/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/11.3.0/lib/gcc/x86_64-pc-linux-gnu/11.3.0/../../../../include/c++/11.3.0/bits/basic_string.tcc:1189:5: note: candidate template ignored: could not match 'basic_string<_CharT, _Traits, _Alloc>' against 'int'
+    operator+(_CharT __lhs, const basic_string<_CharT, _Traits, _Alloc>& __rhs)
+    ^
+/hpcwork/ro092286/smartsim/mini_app/solver_cpp/terrain_solver.cpp:1420:225: error: invalid operands to binary expression ('basic_string<char, std::char_traits<char>, std::allocator<char>>' and 'int')
+    require(dims[1] <= d.chunks_x, "Rank grid X is larger than chunk grid X; would create empty ranks. Got dims[1]=" + std::to_string(dims[1]) + " and d.chunks_x=" + std::to_string(d.chunks_x) + ". In total we have ranks: " + dims[0] + "x" + dims[1] + " which doesnt fit " + d.chunks_z + "x" + d.chunks_x);
+                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ^ ~~~~~~~
+/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/11.3.0/lib/gcc/x86_64-pc-linux-gnu/11.3.0/../../../../include/c++/11.3.0/bits/basic_string.h:6148:5: note: candidate template ignored: deduced conflicting types for parameter '_CharT' ('char' vs. 'int')
+    operator+(const basic_string<_CharT, _Traits, _Alloc>& __lhs, _CharT __rhs)
+    ^
+/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/11.3.0/lib/gcc/x86_64-pc-linux-gnu/11.3.0/../../../../include/c++/11.3.0/bits/basic_string.h:6212:5: note: candidate template ignored: deduced conflicting types for parameter '_CharT' ('char' vs. 'int')
+    operator+(basic_string<_CharT, _Traits, _Alloc>&& __lhs,
+    ^
+/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/11.3.0/lib/gcc/x86_64-pc-linux-gnu/11.3.0/../../../../include/c++/11.3.0/bits/stl_iterator.h:568:5: note: candidate template ignored: could not match 'reverse_iterator<_Iterator>' against 'int'
+    operator+(typename reverse_iterator<_Iterator>::difference_type __n,
+    ^
+/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/11.3.0/lib/gcc/x86_64-pc-linux-gnu/11.3.0/../../../../include/c++/11.3.0/bits/stl_iterator.h:1242:5: note: candidate template ignored: could not match '__normal_iterator<_Iterator, _Container>' against 'int'
+    operator+(typename __normal_iterator<_Iterator, _Container>::difference_type
+    ^
+/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/11.3.0/lib/gcc/x86_64-pc-linux-gnu/11.3.0/../../../../include/c++/11.3.0/bits/stl_iterator.h:1646:5: note: candidate template ignored: could not match 'move_iterator<_Iterator>' against 'int'
+    operator+(typename move_iterator<_Iterator>::difference_type __n,
+    ^
+/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/11.3.0/lib/gcc/x86_64-pc-linux-gnu/11.3.0/../../../../include/c++/11.3.0/bits/basic_string.h:6095:5: note: candidate template ignored: could not match 'basic_string<_CharT, _Traits, _Alloc>' against 'int'
+    operator+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+    ^
+/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/11.3.0/lib/gcc/x86_64-pc-linux-gnu/11.3.0/../../../../include/c++/11.3.0/bits/basic_string.h:6132:5: note: candidate template ignored: could not match 'const _CharT *' against 'int'
+    operator+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+    ^
+/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/11.3.0/lib/gcc/x86_64-pc-linux-gnu/11.3.0/../../../../include/c++/11.3.0/bits/basic_string.h:6160:5: note: candidate template ignored: could not match 'basic_string<_CharT, _Traits, _Alloc>' against 'int'
+    operator+(basic_string<_CharT, _Traits, _Alloc>&& __lhs,
+    ^
+/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/11.3.0/lib/gcc/x86_64-pc-linux-gnu/11.3.0/../../../../include/c++/11.3.0/bits/basic_string.h:6166:5: note: candidate template ignored: could not match 'basic_string<_CharT, _Traits, _Alloc>' against 'int'
+    operator+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+    ^
+/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/11.3.0/lib/gcc/x86_64-pc-linux-gnu/11.3.0/../../../../include/c++/11.3.0/bits/basic_string.h:6172:5: note: candidate template ignored: could not match 'basic_string<_CharT, _Traits, _Alloc>' against 'int'
+    operator+(basic_string<_CharT, _Traits, _Alloc>&& __lhs,
+    ^
+/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/11.3.0/lib/gcc/x86_64-pc-linux-gnu/11.3.0/../../../../include/c++/11.3.0/bits/basic_string.h:6194:5: note: candidate template ignored: could not match 'const _CharT *' against 'basic_string<char, std::char_traits<char>, std::allocator<char>>'
+    operator+(const _CharT* __lhs,
+    ^
+/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/11.3.0/lib/gcc/x86_64-pc-linux-gnu/11.3.0/../../../../include/c++/11.3.0/bits/basic_string.h:6200:5: note: candidate template ignored: could not match 'basic_string<_CharT, _Traits, _Alloc>' against 'int'
+    operator+(_CharT __lhs,
+    ^
+/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/11.3.0/lib/gcc/x86_64-pc-linux-gnu/11.3.0/../../../../include/c++/11.3.0/bits/basic_string.h:6206:5: note: candidate template ignored: could not match 'const _CharT *' against 'int'
+    operator+(basic_string<_CharT, _Traits, _Alloc>&& __lhs,
+    ^
+/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/11.3.0/lib/gcc/x86_64-pc-linux-gnu/11.3.0/../../../../include/c++/11.3.0/bits/basic_string.tcc:1169:5: note: candidate template ignored: could not match 'const _CharT *' against 'basic_string<char, std::char_traits<char>, std::allocator<char>>'
+    operator+(const _CharT* __lhs,
+    ^
+/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/11.3.0/lib/gcc/x86_64-pc-linux-gnu/11.3.0/../../../../include/c++/11.3.0/bits/basic_string.tcc:1189:5: note: candidate template ignored: could not match 'basic_string<_CharT, _Traits, _Alloc>' against 'int'
+    operator+(_CharT __lhs, const basic_string<_CharT, _Traits, _Alloc>& __rhs)
+    ^
+2 errors generated.
+gmake[2]: *** [CMakeFiles/terrain_solver.dir/build.make:76: CMakeFiles/terrain_solver.dir/terrain_solver.cpp.o] Error 1
+gmake[1]: *** [CMakeFiles/Makefile2:83: CMakeFiles/terrain_solver.dir/all] Error 2
+gmake: *** [Makefile:91: all] Error 2

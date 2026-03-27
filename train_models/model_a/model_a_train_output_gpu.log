@@ -1,0 +1,158 @@
+Module OpenSSL/1.1 is not loaded. Purging and loading required modules.
+Purging and loading required modules for SmartSim...
+Loading required modules...
+Overriding devices via argument: cuda-12
+
+=== Installing SmartSim for device: cuda-12 ===
+Including backend: torch
+Excluding torch backend for device cuda-12 to avoid CUDA 12.4 compatibility issues with PyTorch. We will install it separately using pip after the smartsim build.
+Including backend: onnxruntime
+Including backend: tensorflow
+SmartSim build command: smart build --device cuda-12 --skip-torch
+Install location: ./python/smartsim_cuda-12/
+Base directory for SmartSim installation: /hpcwork/ro092286/smartsim/
+Python virtual environment already exists at ./python/smartsim_cuda-12/
+Activating Python virtual environment for device: cuda-12
+smartsim is already installed in the virtual environment.
+Checking SmartSim build status...
+command succeeded
+SmartSim' redis is already built and available.
+SmartSim' has TensorFlow support.
+SmartSim is already fully built with all backends.
+Installation of the smartsim 'backend' complete. This includes the SmartRedis Python client. The Fortran/C/C++ clients can be built from source as needed.
+
+--- Installing SmartRedis C/C++ client ---
+SmartRedis directory already exists. Skipping clone.
+Already on the correct branch: develop
+Already at the correct commit: 552d05b3a59bdd79fc119c25eb75126ebba41b14
+Current directory: /hpcwork/ro092286/smartsim
+CUDA SDP backend: math (flash/mem-efficient disabled for compatibility)
+Distributed: True  world_size: 2  device: cuda:0
+Model architecture: transformer_mlp
+Train/Val split: 90.0% / 10.0%
+CPU threads: 1  DataLoader workers: 0
+Cache mode: window  window_steps: 50
+Loading metadata …
+Datasets in HDF5 file: ['drift', 'mass', 'max_water', 'min_positive_water', 'min_water', 'moved_this_step', 'runtime_seconds', 'solver_type', 'step_index', 'surface', 'terrain', 'water']
+  Water shape: (10001, 1080, 2160)
+  Terrain shape: (1080, 2160)
+  Train steps: 9000, Val steps: 1000
+Loading 50 time-steps into cache …
+  → actually loading 100 unique time-steps (including t+1) …
+Loading 50 time-steps into cache …
+  → actually loading 100 unique time-steps (including t+1) …
+  → loaded in 17.3s
+  → loaded in 17.7s
+Loading 50 time-steps into cache …
+  → actually loading 100 unique time-steps (including t+1) …
+Loading 50 time-steps into cache …
+  → actually loading 100 unique time-steps (including t+1) …
+  → loaded in 17.6s
+  → loaded in 17.8s
+Model has 186241 parameters (727.50 KB in fp32)
+Parameter breakdown:
+  module.pos_embed: 576 params (2.25 KB)
+  module.input_proj.weight: 128 params (0.50 KB)
+  module.input_proj.bias: 64 params (0.25 KB)
+  module.encoder.layers.0.self_attn.in_proj_weight: 12288 params (48.00 KB)
+  module.encoder.layers.0.self_attn.in_proj_bias: 192 params (0.75 KB)
+  module.encoder.layers.0.self_attn.out_proj.weight: 4096 params (16.00 KB)
+  module.encoder.layers.0.self_attn.out_proj.bias: 64 params (0.25 KB)
+  module.encoder.layers.0.linear1.weight: 16384 params (64.00 KB)
+  module.encoder.layers.0.linear1.bias: 256 params (1.00 KB)
+  module.encoder.layers.0.linear2.weight: 16384 params (64.00 KB)
+  module.encoder.layers.0.linear2.bias: 64 params (0.25 KB)
+  module.encoder.layers.0.norm1.weight: 64 params (0.25 KB)
+  module.encoder.layers.0.norm1.bias: 64 params (0.25 KB)
+  module.encoder.layers.0.norm2.weight: 64 params (0.25 KB)
+  module.encoder.layers.0.norm2.bias: 64 params (0.25 KB)
+  module.encoder.layers.1.self_attn.in_proj_weight: 12288 params (48.00 KB)
+  module.encoder.layers.1.self_attn.in_proj_bias: 192 params (0.75 KB)
+  module.encoder.layers.1.self_attn.out_proj.weight: 4096 params (16.00 KB)
+  module.encoder.layers.1.self_attn.out_proj.bias: 64 params (0.25 KB)
+  module.encoder.layers.1.linear1.weight: 16384 params (64.00 KB)
+  module.encoder.layers.1.linear1.bias: 256 params (1.00 KB)
+  module.encoder.layers.1.linear2.weight: 16384 params (64.00 KB)
+  module.encoder.layers.1.linear2.bias: 64 params (0.25 KB)
+  module.encoder.layers.1.norm1.weight: 64 params (0.25 KB)
+  module.encoder.layers.1.norm1.bias: 64 params (0.25 KB)
+  module.encoder.layers.1.norm2.weight: 64 params (0.25 KB)
+  module.encoder.layers.1.norm2.bias: 64 params (0.25 KB)
+  module.encoder.layers.2.self_attn.in_proj_weight: 12288 params (48.00 KB)
+  module.encoder.layers.2.self_attn.in_proj_bias: 192 params (0.75 KB)
+  module.encoder.layers.2.self_attn.out_proj.weight: 4096 params (16.00 KB)
+  module.encoder.layers.2.self_attn.out_proj.bias: 64 params (0.25 KB)
+  module.encoder.layers.2.linear1.weight: 16384 params (64.00 KB)
+  module.encoder.layers.2.linear1.bias: 256 params (1.00 KB)
+  module.encoder.layers.2.linear2.weight: 16384 params (64.00 KB)
+  module.encoder.layers.2.linear2.bias: 64 params (0.25 KB)
+  module.encoder.layers.2.norm1.weight: 64 params (0.25 KB)
+  module.encoder.layers.2.norm1.bias: 64 params (0.25 KB)
+  module.encoder.layers.2.norm2.weight: 64 params (0.25 KB)
+  module.encoder.layers.2.norm2.bias: 64 params (0.25 KB)
+  module.global_mlp.0.weight: 2304 params (9.00 KB)
+  module.global_mlp.0.bias: 128 params (0.50 KB)
+  module.global_mlp.2.weight: 8192 params (32.00 KB)
+  module.global_mlp.2.bias: 64 params (0.25 KB)
+  module.head.0.weight: 16384 params (64.00 KB)
+  module.head.0.bias: 128 params (0.50 KB)
+  module.head.2.weight: 8192 params (32.00 KB)
+  module.head.2.bias: 64 params (0.25 KB)
+  module.head.4.weight: 64 params (0.25 KB)
+  module.head.4.bias: 1 params (0.00 KB)
+Resumed training from best_model_transformer_mlp.pt at epoch 6.
+  Restored best val loss: 0.113342
+
+Starting training …
+  Data resolution: 1080x2160
+  Train steps per epoch: 9000 (global), 4500 (per-rank)
+  Val steps per epoch: 1000 (global), 500 (per-rank)
+  Samples per epoch: 233280000 (global), 116640000 (per-rank)
+  Train dataset size: 116640000 samples (0 GB)
+  Val dataset size: 116640000 samples (0 GB)
+  Batch size: 131072, Epochs this run: 995
+  Field inference export: best_model_field_jit_transformer_mlp.pt
+  Window scaling: sqrt(train_steps/window_steps)=13 -> patience=65, early_stop=130
+Loading 50 time-steps into cache …
+Loading 50 time-steps into cache …
+  → actually loading 100 unique time-steps (including t+1) …
+  → actually loading 100 unique time-steps (including t+1) …
+  → loaded in 19.5s
+  → loaded in 19.5s
+Loading 50 time-steps into cache …
+  → actually loading 100 unique time-steps (including t+1) …
+Loading 50 time-steps into cache …
+  → actually loading 100 unique time-steps (including t+1) …
+  → loaded in 17.5s
+  → loaded in 17.9s
+  [Train] Epoch 6/1000 | Batch 89/890 | Samples: 23330816 | Loss: 0.104383 | Rate: 51035 samples/s
+  [Train] Epoch 6/1000 | Batch 178/890 | Samples: 46661632 | Loss: 0.091283 | Rate: 48904 samples/s
+  [Train] Epoch 6/1000 | Batch 267/890 | Samples: 69992448 | Loss: 0.091616 | Rate: 48523 samples/s
+  [Train] Epoch 6/1000 | Batch 356/890 | Samples: 93323264 | Loss: 0.172904 | Rate: 49399 samples/s
+  [Train] Epoch 6/1000 | Batch 445/890 | Samples: 116654080 | Loss: 0.188732 | Rate: 49817 samples/s
+  [Train] Epoch 6/1000 | Batch 534/890 | Samples: 139984896 | Loss: 0.222694 | Rate: 50342 samples/s
+  [Train] Epoch 6/1000 | Batch 623/890 | Samples: 163315712 | Loss: 0.209985 | Rate: 50635 samples/s
+  [Train] Epoch 6/1000 | Batch 712/890 | Samples: 186646528 | Loss: 0.204826 | Rate: 50459 samples/s
+  [Train] Epoch 6/1000 | Batch 801/890 | Samples: 209977344 | Loss: 0.220957 | Rate: 50849 samples/s
+  [Train] Epoch 6/1000 | Batch 890/890 | Samples: 233280000 | Loss: 0.222174 | Rate: 51149 samples/s
+  [Val] Epoch 6/1000 | Batch 89/890 | Samples: 23330816 | Loss: 0.791760 | Rate: 202472 samples/s
+  [Val] Epoch 6/1000 | Batch 178/890 | Samples: 46661632 | Loss: 0.791419 | Rate: 202949 samples/s
+  [Val] Epoch 6/1000 | Batch 267/890 | Samples: 69992448 | Loss: 0.791176 | Rate: 203832 samples/s
+  [Val] Epoch 6/1000 | Batch 356/890 | Samples: 93323264 | Loss: 0.790918 | Rate: 204002 samples/s
+  [Val] Epoch 6/1000 | Batch 445/890 | Samples: 116654080 | Loss: 0.790602 | Rate: 204193 samples/s
+  [Val] Epoch 6/1000 | Batch 534/890 | Samples: 139984896 | Loss: 0.790290 | Rate: 204210 samples/s
+  [Val] Epoch 6/1000 | Batch 623/890 | Samples: 163315712 | Loss: 0.789983 | Rate: 204210 samples/s
+  [Val] Epoch 6/1000 | Batch 712/890 | Samples: 186646528 | Loss: 0.789668 | Rate: 204072 samples/s
+  [Val] Epoch 6/1000 | Batch 801/890 | Samples: 209977344 | Loss: 0.789335 | Rate: 202915 samples/s
+  [Val] Epoch 6/1000 | Batch 890/890 | Samples: 233280000 | Loss: 0.789115 | Rate: 203152 samples/s
+Epoch   6/1000  train_loss=0.220782  val_loss=0.788962  lr=1.00e-03  improve=False  time=5761.9s  ETA=5727303.4s
+Loading 50 time-steps into cache …
+Loading 50 time-steps into cache …
+  → actually loading 100 unique time-steps (including t+1) …  → actually loading 100 unique time-steps (including t+1) …
+
+  → loaded in 19.6s  → loaded in 19.6s
+
+Loading 50 time-steps into cache …
+Loading 50 time-steps into cache …
+  → actually loading 100 unique time-steps (including t+1) …
+  → actually loading 100 unique time-steps (including t+1) …

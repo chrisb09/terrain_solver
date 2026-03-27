@@ -1,0 +1,13 @@
+.*
+!.gitignore
+!.gitmodules
+!.gitattributes
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+_cmake_deps/
+
+compression_test/

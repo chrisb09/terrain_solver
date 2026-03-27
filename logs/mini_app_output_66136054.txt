@@ -1,0 +1,227 @@
+Calculated MPI_RANKS=24 from _nodes=1, _ntasks_per_node=24, SLURM_NTASKS=24, and _solver_ntasks_var=
+Using preliminary job name: circle_r500_d300_s100_periodic_8640x4320_c23mm_1n_24t_c__rank0_gather_none
+Calculated REDUCED_HEIGHT=540 to achieve 16:9 aspect ratio in final video with TARGET_WIDTH=8640 and TARGET_HEIGHT=4320
+Using CUSTOM_JOB_NAME_SUFFIX from environment variable: _1cpu_perfect_model
+Warning: OVERWRITE_JOB_NAME_ENV is set to 1 but neither JOB_NAME_ENV nor JOB_NAME_TEMPLATE_ENV is set. Using default naming scheme with template: circle_r${RADIUS}_d${INIT_DEPTH}_s${TOTAL_STEPS}_${SAVE_MODE}_${TARGET_WIDTH}x${TARGET_HEIGHT}_${_partition}_${_nodes}n_${_ntasks_per_node}t_${_cpus_per_task}c__${IO_MODE}_${MPI_SYNC_MODE}${CUSTOM_JOB_NAME_SUFFIX}
+Module OpenSSL/1.1 is not loaded. Purging and loading required modules.
+Purging and loading required modules for SmartSim...
+Loading required modules...
+[INFO] Module OpenSSL/1.1 loaded.
+[WARN] This node does not have a GPU installed. CUDA will not work.
+[WARN] Please refer to https://help.itc.rwth-aachen.de for information on which
+nodes feature GPUs. 
+[INFO] Module CUDA/12.4.0 loaded.
+[INFO] Module GCCcore/11.3.0 loaded.
+[INFO] Module Clang/15.0.5 loaded.
+[INFO] Module GCC/11.3.0 loaded.
+[INFO] Module OpenMPI/4.1.4 loaded.
+[INFO] Module FFTW.MPI/3.3.10 loaded.
+[INFO] Module HDF5/1.12.2 loaded.
+[INFO] Module PnetCDF/1.12.3 loaded.
+[INFO] Module cuDNN/8.9.7.29-CUDA-12.4.0 loaded.
+[INFO] Module imkl/2024.2.0 loaded.
+Overriding devices via argument: cpu
+
+=== Installing SmartSim for device: cpu ===
+Including backend: torch
+Including backend: onnxruntime
+Including backend: tensorflow
+SmartSim build command: smart build --device cpu
+Install location: ./python/smartsim_cpu/
+Base directory for SmartSim installation: /hpcwork/ro092286/smartsim/
+Python virtual environment already exists at ./python/smartsim_cpu/
+/hpcwork/ro092286/smartsim/install.sh:75: VIRTUAL_ENV: parameter not set
+OpenSSL/1.1
+CUDA/12.4.0
+GCCcore/11.3.0
+zlib/1.2.12
+binutils/2.38
+numactl/2.0.14
+XZ/5.2.5
+libxml2/2.9.13
+libpciaccess/0.16
+hwloc/2.7.1
+ncurses/6.3
+GMP/6.2.1
+Z3/4.10.2
+Clang/15.0.5
+GCC/11.3.0
+libevent/2.1.12
+UCX/1.12.1
+PMIx/4.1.2
+UCC/1.0.0
+OpenMPI/4.1.4
+FFTW/3.3.10
+FFTW.MPI/3.3.10
+Szip/2.1.1
+HDF5/1.12.2
+PnetCDF/1.12.3
+cuDNN/8.9.7.29-CUDA-12.4.0
+imkl/2024.2.0
+Warning: /hpcwork/thes2181/mini_app is not empty.
+No existing trajectory found. Starting fresh...
+Prepared dataset: terrain=(4320, 8640) water_nonzero=785349 output=/hpcwork/thes2181/mini_app/circle_r500_d300_s100_periodic_8640x4320_c23mm_1n_24t_c__rank0_gather_none_1cpu_perfect_model/world_init.h5
+Preparation time: 10 seconds
+Compiling solver...
+-- The CXX compiler identification is GNU 11.3.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/11.3.0/bin/g++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found MPI_CXX: /cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/OpenMPI/4.1.4-GCC-11.3.0/lib/libmpi.so (found version "3.1") 
+-- Found MPI: TRUE (found version "3.1") found components: CXX 
+-- Found HDF5: /cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/HDF5/1.12.2-gompi-2022a/lib/libhdf5.so;/usr/lib64/libpthread.a;/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/Szip/2.1.1-GCCcore-11.3.0/lib/libsz.so;/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/zlib/1.2.12-GCCcore-11.3.0/lib/libz.so;/usr/lib64/libdl.a;/usr/lib64/libm.so;/usr/lib64/libm.so;/usr/lib64/libpthread.a (found version "1.12.2") found components: C 
+-- HDF5 parallel support: YES
+-- Configuring done (3.8s)
+-- Generating done (0.0s)
+-- Build files have been written to: /hpcwork/ro092286/smartsim/mini_app/solver_cpp/build
+[ 50%] Building CXX object CMakeFiles/terrain_solver.dir/terrain_solver.cpp.o
+[100%] Linking CXX executable terrain_solver
+[100%] Built target terrain_solver
+Compilation time: 7 seconds
+Starting SmartSim controller in the background...
+Using Python interpreter at /hpcwork/ro092286/smartsim/python/smartsim_cpu/bin/python3 for SmartSim controller
+Wait until database hostname file db_hostname_66136054.txt is created by the SmartSim controller...(at most 300 seconds)
+Database hostname obtained from SmartSim controller: 134.61.45.16:6780
+A
+B
+--device CPU
+C
+Expecting smartsim database/orchestrator at 134.61.45.16:6780
+Expecting smartsim database/orchestrator at 134.61.45.16:6780
+Expecting smartsim database/orchestrator at 134.61.45.16:6780
+Expecting smartsim database/orchestrator at 134.61.45.16:6780
+Expecting smartsim database/orchestrator at 134.61.45.16:6780
+Expecting smartsim database/orchestrator at 134.61.45.16:6780
+Expecting smartsim database/orchestrator at 134.61.45.16:6780
+Expecting smartsim database/orchestrator at 134.61.45.16:6780
+Expecting smartsim database/orchestrator at 134.61.45.16:6780
+Expecting smartsim database/orchestrator at 134.61.45.16:6780
+Expecting smartsim database/orchestrator at 134.61.45.16:6780
+Expecting smartsim database/orchestrator at 134.61.45.16:6780
+Expecting smartsim database/orchestrator at 134.61.45.16:6780
+Expecting smartsim database/orchestrator at 134.61.45.16:6780
+Expecting smartsim database/orchestrator at 134.61.45.16:6780
+Expecting smartsim database/orchestrator at 134.61.45.16:6780
+Expecting smartsim database/orchestrator at 134.61.45.16:6780
+Expecting smartsim database/orchestrator at 134.61.45.16:6780
+Expecting smartsim database/orchestrator at 134.61.45.16:6780
+Expecting smartsim database/orchestrator at 134.61.45.16:6780
+Expecting smartsim database/orchestrator at 134.61.45.16:6780
+Expecting smartsim database/orchestrator at 134.61.45.16:6780
+Expecting smartsim database/orchestrator at 134.61.45.16:6780
+Expecting smartsim database/orchestrator at 134.61.45.16:6780
+Successfully connected to SmartRedis database as terrain_solver_0
+Successfully connected to SmartRedis database as terrain_solver_4
+Successfully connected to SmartRedis database as terrain_solver_23
+Successfully connected to SmartRedis database as terrain_solver_11
+Successfully connected to SmartRedis database as terrain_solver_13
+Successfully connected to SmartRedis database as terrain_solver_2
+Successfully connected to SmartRedis database as terrain_solver_8
+Successfully connected to SmartRedis database as terrain_solver_17
+Successfully connected to SmartRedis database as terrain_solver_1
+Successfully connected to SmartRedis database as terrain_solver_3
+Successfully connected to SmartRedis database as terrain_solver_21
+Successfully connected to SmartRedis database as terrain_solver_9
+Successfully connected to SmartRedis database as terrain_solver_15
+Successfully connected to SmartRedis database as terrain_solver_14
+Successfully connected to SmartRedis database as terrain_solver_16
+Successfully connected to SmartRedis database as terrain_solver_6
+Successfully connected to SmartRedis database as terrain_solver_10
+Successfully connected to SmartRedis database as terrain_solver_18
+Successfully connected to SmartRedis database as terrain_solver_20
+Successfully connected to SmartRedis database as terrain_solver_5
+Successfully connected to SmartRedis database as terrain_solver_7
+Successfully connected to SmartRedis database as terrain_solver_12
+Successfully connected to SmartRedis database as terrain_solver_19
+Successfully connected to SmartRedis database as terrain_solver_22
+Loaded grid metadata: nx=8640, nz=4320, chunk_size=60, chunks_x=144, chunks_z=72, ranks_x=4, ranks_z=6, world_size=24, io_mode=rank0_gather, save_mode=periodic, triangular_scale=1, hdf5_xfer_mode=independent, sync_mode=none
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Finished preparing terrain tiles for ML model
+Initial water mass: 2.35605e+08
+Step 1, Regular, local moved: 0, time: 110.362 ms
+STEP_TIMING step=1 solver=Regular step_ms=110.362 local_moved=0
+Rank 12 processing cell (0, 0) with global coords (2160, 0) and tile_key_suffix = 2160_0
+Rank 19 processing cell (0, 0) with global coords (2880, 6480) and tile_key_suffix = 2880_6480
+Rank 4 processing cell (0, 0) with global coords (720, 0) and tile_key_suffix = 720_0
+Rank 10 processing cell (0, 0) with global coords (1440, 4320) and tile_key_suffix = 1440_4320
+Rank 23 processing cell (0, 0) with global coords (3600, 6480) and tile_key_suffix = 3600_6480
+Rank 20 processing cell (0, 0) with global coords (3600, 0) and tile_key_suffix = 3600_0
+Rank 2 processing cell (0, 0) with global coords (0, 4320) and tile_key_suffix = 0_4320
+Rank 14 processing cell (0, 0) with global coords (2160, 4320) and tile_key_suffix = 2160_4320
+Rank 6 processing cell (0, 0) with global coords (720, 4320) and tile_key_suffix = 720_4320
+Rank 8 processing cell (0, 0) with global coords (1440, 0) and tile_key_suffix = 1440_0
+Rank 7 processing cell (0, 0) with global coords (720, 6480) and tile_key_suffix = 720_6480
+Rank 3 processing cell (0, 0) with global coords (0, 6480) and tile_key_suffix = 0_6480
+Rank 11 processing cell (0, 0) with global coords (1440, 6480) and tile_key_suffix = 1440_6480
+Rank 21 processing cell (0, 0) with global coords (3600, 2160) and tile_key_suffix = 3600_2160
+Rank 16 processing cell (0, 0) with global coords (2880, 0) and tile_key_suffix = 2880_0
+Rank 22 processing cell (0, 0) with global coords (3600, 4320) and tile_key_suffix = 3600_4320
+Rank 0 processing cell (0, 0) with global coords (0, 0) and tile_key_suffix = 0_0
+Rank 15 processing cell (0, 0) with global coords (2160, 6480) and tile_key_suffix = 2160_6480
+Rank 13 processing cell (0, 0) with global coords (2160, 2160) and tile_key_suffix = 2160_2160
+Rank 5 processing cell (0, 0) with global coords (720, 2160) and tile_key_suffix = 720_2160
+Rank 1 processing cell (0, 0) with global coords (0, 2160) and tile_key_suffix = 0_2160
+Rank 9 processing cell (0, 0) with global coords (1440, 2160) and tile_key_suffix = 1440_2160
+Rank 17 processing cell (0, 0) with global coords (2880, 2160) and tile_key_suffix = 2880_2160
+Rank 18 processing cell (0, 0) with global coords (2880, 4320) and tile_key_suffix = 2880_4320
+ERROR: Redis IO error when executing command: Failed to get reply: Resource temporarily unavailable, err: 1, errno: 11
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 7 in communicator MPI_COMM_WORLD
+with errorcode 1.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------
+srun: Job step aborted: Waiting up to 92 seconds for job step to finish.
+[2026-03-23T11:52:36.442] error: *** STEP 66136054.1 ON n23m0146 CANCELLED AT 2026-03-23T11:52:36 DUE to SIGNAL Killed ***
+Rank 0 put tensor for cell (0, 0) with values water=(0 0 0 ,0 0 0 ,0 0 0 ,) terrain=(0 194 194 ,64 64 65 ,64 64 64 ,)srun: error: n23m0146: tasks 0-6,8-23: Killed
+srun: error: n23m0146: task 7: Exited with exit code 1

@@ -1,0 +1,34 @@
+Using device: GPU (device=GPU, python_env=/hpcwork/ro092286/smartsim/python/smartsim_cuda-12, queue=c23g)
+18:04:21 n23m0012.hpc.itc.rwth-aachen.de SmartSim[66521:MainThread] INFO 
+
+=== Launch Summary ===
+Experiment: smartsim_experiments/66148272
+Experiment Path: /rwthfs/rz/cluster/hpcwork/ro092286/smartsim/mini_app/smartsim_experiments/66148272
+Launcher: slurm
+Database Status: launching
+
+=== Database ===
+Shards: 1
+Port: 6780
+Network: ['ib0']
+Batch Launch: None
+
+
+Traceback (most recent call last):
+  File "/rwthfs/rz/cluster/hpcwork/ro092286/smartsim/mini_app/smartsim_controller.py", line 53, in <module>
+    exp.start(db, block=False, summary=True)
+  File "/hpcwork/ro092286/smartsim/python/smartsim_cuda-12/lib64/python3.9/site-packages/smartsim/log.py", line 353, in _contextual
+    return ctx.run(_ctx_modifier)
+  File "/hpcwork/ro092286/smartsim/python/smartsim_cuda-12/lib64/python3.9/site-packages/smartsim/log.py", line 348, in _ctx_modifier
+    result = fn(self, *args, **kwargs)
+  File "/hpcwork/ro092286/smartsim/python/smartsim_cuda-12/lib64/python3.9/site-packages/smartsim/experiment.py", line 243, in start
+    self._control.start(
+  File "/hpcwork/ro092286/smartsim/python/smartsim_cuda-12/lib64/python3.9/site-packages/smartsim/_core/control/controller.py", line 138, in start
+    launched = self._launch(exp_name, exp_path, manifest)
+  File "/hpcwork/ro092286/smartsim/python/smartsim_cuda-12/lib64/python3.9/site-packages/smartsim/_core/control/controller.py", line 427, in _launch
+    self._launch_orchestrator(orchestrator, manifest_builder)
+  File "/hpcwork/ro092286/smartsim/python/smartsim_cuda-12/lib64/python3.9/site-packages/smartsim/_core/control/controller.py", line 568, in _launch_orchestrator
+    self._save_orchestrator(orchestrator)
+  File "/hpcwork/ro092286/smartsim/python/smartsim_cuda-12/lib64/python3.9/site-packages/smartsim/_core/control/controller.py", line 755, in _save_orchestrator
+    raise Exception("Orchestrator is not running")
+Exception: Orchestrator is not running

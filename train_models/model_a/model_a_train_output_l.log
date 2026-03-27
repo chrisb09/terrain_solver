@@ -1,0 +1,38 @@
+Module OpenSSL/1.1 is not loaded. Purging and loading required modules.
+Purging and loading required modules for SmartSim...
+Loading required modules...
+Overriding devices via argument: cpu
+
+=== Installing SmartSim for device: cpu ===
+Including backend: torch
+Including backend: onnxruntime
+Including backend: tensorflow
+SmartSim build command: smart build --device cpu
+Install location: ./python/smartsim_cpu/
+Base directory for SmartSim installation: /hpcwork/ro092286/smartsim/
+Python virtual environment already exists at ./python/smartsim_cpu/
+Activating Python virtual environment for device: cpu
+smartsim is already installed in the virtual environment.
+Checking SmartSim build status...
+command succeeded
+SmartSim' redis is already built and available.
+SmartSim' has TensorFlow support.
+SmartSim is already fully built with all backends.
+Installation of the smartsim 'backend' complete. This includes the SmartRedis Python client. The Fortran/C/C++ clients can be built from source as needed.
+
+--- Installing SmartRedis C/C++ client ---
+SmartRedis directory already exists. Skipping clone.
+Already on the correct branch: develop
+Already at the correct commit: 552d05b3a59bdd79fc119c25eb75126ebba41b14
+Current directory: /hpcwork/ro092286/smartsim
+Single-node CPU training detected. Disabling DDP to avoid Gloo TCP issues.
+Distributed: False  world_size: 1  device: cpu
+CPU threads: 1  DataLoader workers: 2
+Cache mode: cache
+Loading metadata …
+Datasets in HDF5 file: ['drift', 'mass', 'max_water', 'min_positive_water', 'min_water', 'moved_this_step', 'runtime_seconds', 'solver_type', 'step_index', 'surface', 'terrain', 'water']
+  Water shape: (10001, 1080, 2160)
+  Terrain shape: (1080, 2160)
+  Train steps: 9000, Val steps: 1000
+Loading 9000 time-steps into cache …
+  → actually loading 9001 unique time-steps (including t+1) …

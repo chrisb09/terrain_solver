@@ -1,0 +1,1919 @@
+Module OpenSSL/1.1 is not loaded. Purging and loading required modules.
+Purging and loading required modules for SmartSim...
+Loading required modules...
+
+=== Installing SmartSim for device: cpu ===
+Including backend: torch
+Including backend: onnxruntime
+Including backend: tensorflow
+SmartSim build command: smart build --device cpu
+Install location: ./python/smartsim_cpu/
+Base directory for SmartSim installation: /hpcwork/ro092286/smartsim/
+Python virtual environment already exists at ./python/smartsim_cpu/
+Not activating virtual environment for device: cpu to avoid pointless long loading times. Please activate it manually if you want to use it.
+
+=== Installing SmartSim for device: cuda-12 ===
+Including backend: torch
+Including backend: onnxruntime
+Including backend: tensorflow
+SmartSim build command: smart build --device cuda-12
+Install location: ./python/smartsim_cuda-12/
+Base directory for SmartSim installation: /hpcwork/ro092286/smartsim/
+Python virtual environment already exists at ./python/smartsim_cuda-12/
+Activating Python virtual environment for device: cuda-12
+smartsim is already installed in the virtual environment.
+Checking SmartSim build status...
+command succeeded
+SmartSim' redis is already built and available.
+SmartSim' has TensorFlow support.
+SmartSim is already fully built with all backends.
+Installation of the smartsim 'backend' complete. This includes the SmartRedis Python client. The Fortran/C/C++ clients can be built from source as needed.
+
+--- Installing SmartRedis C/C++ client ---
+SmartRedis directory already exists. Skipping clone.
+Already on the correct branch: develop
+Already at the correct commit: 552d05b3a59bdd79fc119c25eb75126ebba41b14
+Current directory: /hpcwork/ro092286/smartsim
+Single-node CPU training detected. Disabling DDP to avoid Gloo TCP issues.
+Distributed: False  world_size: 1  device: cpu
+CPU threads: 1  DataLoader workers: 2
+Cache mode: window  window_steps: 100
+Loading metadata …
+Datasets in HDF5 file: ['drift', 'mass', 'max_water', 'min_positive_water', 'min_water', 'moved_this_step', 'runtime_seconds', 'step_index', 'surface', 'terrain', 'water']
+  Water shape: (1000001, 108, 216)
+  Terrain shape: (108, 216)
+  Train steps: 9000, Val steps: 1000
+Loading 100 time-steps into cache …
+  → actually loading 199 unique time-steps (including t+1) …
+  → loaded in 3.4s
+Loading 100 time-steps into cache …
+  → actually loading 191 unique time-steps (including t+1) …
+  → loaded in 1.7s
+Model has 1897 parameters (7.41 KB in fp32)
+Parameter breakdown:
+  water_conv.weight: 72 params (0.28 KB)
+  water_conv.bias: 8 params (0.03 KB)
+  terrain_conv.weight: 72 params (0.28 KB)
+  terrain_conv.bias: 8 params (0.03 KB)
+  combine_1x1.weight: 16 params (0.06 KB)
+  combine_1x1.bias: 8 params (0.03 KB)
+  combine_3x3.weight: 1152 params (4.50 KB)
+  combine_3x3.bias: 16 params (0.06 KB)
+  fc.0.weight: 512 params (2.00 KB)
+  fc.0.bias: 16 params (0.06 KB)
+  fc.2.weight: 16 params (0.06 KB)
+  fc.2.bias: 1 params (0.00 KB)
+Resumed training from best_model.pt at epoch 128.
+  Restored best val loss: 0.008098
+
+Starting training …
+  Data resolution: 108x216
+  Train steps per epoch: 9000 (global), 9000 (per-rank)
+  Val steps per epoch: 1000 (global), 1000 (per-rank)
+  Samples per epoch: 2332800 (global), 2332800 (per-rank)
+  Train dataset size: 2332800 samples (0 GB)
+  Val dataset size: 2332800 samples (0 GB)
+  Batch size: 2048, Epochs this run: 373
+  Window scaling: sqrt(train_steps/window_steps)=9 -> patience=45, early_stop=90
+Loading 100 time-steps into cache …
+  → actually loading 200 unique time-steps (including t+1) …
+  → loaded in 2.7s
+Loading 100 time-steps into cache …
+  → actually loading 194 unique time-steps (including t+1) …
+  → loaded in 0.6s
+  [Train] Epoch 128/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.011665 | Rate: 43625 samples/s
+  [Train] Epoch 128/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.011656 | Rate: 77443 samples/s
+  [Train] Epoch 128/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.011756 | Rate: 104372 samples/s
+  [Train] Epoch 128/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.011511 | Rate: 126221 samples/s
+  [Train] Epoch 128/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.011429 | Rate: 144483 samples/s
+  [Train] Epoch 128/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.011403 | Rate: 160647 samples/s
+  [Train] Epoch 128/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.011355 | Rate: 173779 samples/s
+  [Train] Epoch 128/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.011324 | Rate: 185224 samples/s
+  [Train] Epoch 128/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.011328 | Rate: 193831 samples/s
+  [Train] Epoch 128/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.011421 | Rate: 200887 samples/s
+  [Val] Epoch 128/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.017673 | Rate: 291879 samples/s
+  [Val] Epoch 128/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.017699 | Rate: 314320 samples/s
+  [Val] Epoch 128/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.017746 | Rate: 315329 samples/s
+  [Val] Epoch 128/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.017837 | Rate: 308128 samples/s
+  [Val] Epoch 128/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.017933 | Rate: 308436 samples/s
+  [Val] Epoch 128/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.018034 | Rate: 308543 samples/s
+  [Val] Epoch 128/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.018147 | Rate: 308726 samples/s
+  [Val] Epoch 128/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.018256 | Rate: 308976 samples/s
+  [Val] Epoch 128/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.018358 | Rate: 308333 samples/s
+  [Val] Epoch 128/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.018453 | Rate: 309415 samples/s
+Epoch 128/500  train_loss=0.011421  val_loss=0.018453  lr=2.50e-04  improve=False  time=22.8s  ETA=8468.7s
+Loading 100 time-steps into cache …
+  → actually loading 199 unique time-steps (including t+1) …
+  → loaded in 2.2s
+Loading 100 time-steps into cache …
+  → actually loading 188 unique time-steps (including t+1) …
+  → loaded in 0.4s
+  [Train] Epoch 129/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.011146 | Rate: 248370 samples/s
+  [Train] Epoch 129/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.011053 | Rate: 280135 samples/s
+  [Train] Epoch 129/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.011355 | Rate: 282963 samples/s
+  [Train] Epoch 129/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.011312 | Rate: 284226 samples/s
+  [Train] Epoch 129/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.011386 | Rate: 284353 samples/s
+  [Train] Epoch 129/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.011223 | Rate: 291594 samples/s
+  [Train] Epoch 129/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.011259 | Rate: 293294 samples/s
+  [Train] Epoch 129/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.011324 | Rate: 295370 samples/s
+  [Train] Epoch 129/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.011234 | Rate: 297154 samples/s
+  [Train] Epoch 129/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.011303 | Rate: 296310 samples/s
+  [Val] Epoch 129/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.017861 | Rate: 288985 samples/s
+  [Val] Epoch 129/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.017902 | Rate: 299272 samples/s
+  [Val] Epoch 129/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.017962 | Rate: 300998 samples/s
+  [Val] Epoch 129/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.018035 | Rate: 300341 samples/s
+  [Val] Epoch 129/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.018152 | Rate: 301377 samples/s
+  [Val] Epoch 129/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.018261 | Rate: 305268 samples/s
+  [Val] Epoch 129/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.018372 | Rate: 308102 samples/s
+  [Val] Epoch 129/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.018481 | Rate: 305537 samples/s
+  [Val] Epoch 129/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.018589 | Rate: 305670 samples/s
+  [Val] Epoch 129/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.018697 | Rate: 307580 samples/s
+Epoch 129/500  train_loss=0.011303  val_loss=0.018697  lr=2.50e-04  improve=False  time=41.0s  ETA=7604.5s
+Loading 100 time-steps into cache …
+  → actually loading 198 unique time-steps (including t+1) …
+  → loaded in 2.3s
+Loading 100 time-steps into cache …
+  → actually loading 188 unique time-steps (including t+1) …
+  → loaded in 0.4s
+  [Train] Epoch 130/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.010391 | Rate: 243964 samples/s
+  [Train] Epoch 130/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.009911 | Rate: 269298 samples/s
+  [Train] Epoch 130/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.009697 | Rate: 276173 samples/s
+  [Train] Epoch 130/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.009484 | Rate: 277234 samples/s
+  [Train] Epoch 130/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.009487 | Rate: 276495 samples/s
+  [Train] Epoch 130/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.009562 | Rate: 281880 samples/s
+  [Train] Epoch 130/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.009662 | Rate: 281126 samples/s
+  [Train] Epoch 130/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.009700 | Rate: 280111 samples/s
+  [Train] Epoch 130/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.009949 | Rate: 280279 samples/s
+  [Train] Epoch 130/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.009813 | Rate: 278348 samples/s
+  [Val] Epoch 130/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.008430 | Rate: 295528 samples/s
+  [Val] Epoch 130/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.008460 | Rate: 315945 samples/s
+  [Val] Epoch 130/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.008527 | Rate: 314828 samples/s
+  [Val] Epoch 130/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.008641 | Rate: 314251 samples/s
+  [Val] Epoch 130/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.008761 | Rate: 319879 samples/s
+  [Val] Epoch 130/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.008861 | Rate: 323907 samples/s
+  [Val] Epoch 130/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.008963 | Rate: 326554 samples/s
+  [Val] Epoch 130/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.009076 | Rate: 329146 samples/s
+  [Val] Epoch 130/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.009183 | Rate: 330209 samples/s
+  [Val] Epoch 130/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.009290 | Rate: 333959 samples/s
+Epoch 130/500  train_loss=0.009813  val_loss=0.009290  lr=2.50e-04  improve=False  time=59.3s  ETA=7316.7s
+Loading 100 time-steps into cache …
+  → actually loading 199 unique time-steps (including t+1) …
+  → loaded in 2.2s
+Loading 100 time-steps into cache …
+  → actually loading 192 unique time-steps (including t+1) …
+  → loaded in 0.4s
+  [Train] Epoch 131/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.013867 | Rate: 246377 samples/s
+  [Train] Epoch 131/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.013224 | Rate: 281287 samples/s
+  [Train] Epoch 131/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.013295 | Rate: 290442 samples/s
+  [Train] Epoch 131/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.013881 | Rate: 295789 samples/s
+  [Train] Epoch 131/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.013557 | Rate: 297955 samples/s
+  [Train] Epoch 131/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.013353 | Rate: 301377 samples/s
+  [Train] Epoch 131/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.013238 | Rate: 304581 samples/s
+  [Train] Epoch 131/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.013005 | Rate: 305261 samples/s
+  [Train] Epoch 131/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.013027 | Rate: 304771 samples/s
+  [Train] Epoch 131/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.013055 | Rate: 301427 samples/s
+  [Val] Epoch 131/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.008440 | Rate: 308441 samples/s
+  [Val] Epoch 131/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.008496 | Rate: 332577 samples/s
+  [Val] Epoch 131/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.008586 | Rate: 335081 samples/s
+  [Val] Epoch 131/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.008685 | Rate: 334967 samples/s
+  [Val] Epoch 131/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.008798 | Rate: 332727 samples/s
+  [Val] Epoch 131/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.008890 | Rate: 334861 samples/s
+  [Val] Epoch 131/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.008990 | Rate: 333964 samples/s
+  [Val] Epoch 131/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.009100 | Rate: 332714 samples/s
+  [Val] Epoch 131/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.009207 | Rate: 333666 samples/s
+  [Val] Epoch 131/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.009310 | Rate: 335291 samples/s
+Epoch 131/500  train_loss=0.013055  val_loss=0.009310  lr=2.50e-04  improve=False  time=76.9s  ETA=7091.4s
+Loading 100 time-steps into cache …
+  → actually loading 198 unique time-steps (including t+1) …
+  → loaded in 2.2s
+Loading 100 time-steps into cache …
+  → actually loading 189 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 132/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.023271 | Rate: 237443 samples/s
+  [Train] Epoch 132/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.026778 | Rate: 269972 samples/s
+  [Train] Epoch 132/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.027672 | Rate: 277276 samples/s
+  [Train] Epoch 132/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.026740 | Rate: 284243 samples/s
+  [Train] Epoch 132/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.026203 | Rate: 286438 samples/s
+  [Train] Epoch 132/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.025483 | Rate: 291114 samples/s
+  [Train] Epoch 132/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.026485 | Rate: 292023 samples/s
+  [Train] Epoch 132/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.026199 | Rate: 292095 samples/s
+  [Train] Epoch 132/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.025988 | Rate: 293049 samples/s
+  [Train] Epoch 132/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.025723 | Rate: 291173 samples/s
+  [Val] Epoch 132/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.012297 | Rate: 289092 samples/s
+  [Val] Epoch 132/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.012388 | Rate: 314293 samples/s
+  [Val] Epoch 132/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.012517 | Rate: 309995 samples/s
+  [Val] Epoch 132/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.012661 | Rate: 314674 samples/s
+  [Val] Epoch 132/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.012783 | Rate: 317083 samples/s
+  [Val] Epoch 132/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.012882 | Rate: 323426 samples/s
+  [Val] Epoch 132/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.012979 | Rate: 323712 samples/s
+  [Val] Epoch 132/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.013071 | Rate: 323540 samples/s
+  [Val] Epoch 132/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.013161 | Rate: 324159 samples/s
+  [Val] Epoch 132/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.013251 | Rate: 327299 samples/s
+Epoch 132/500  train_loss=0.025723  val_loss=0.013251  lr=2.50e-04  improve=False  time=94.8s  ETA=6976.4s
+Loading 100 time-steps into cache …
+  → actually loading 200 unique time-steps (including t+1) …
+  → loaded in 2.0s
+Loading 100 time-steps into cache …
+  → actually loading 184 unique time-steps (including t+1) …
+  → loaded in 0.3s
+  [Train] Epoch 133/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.012010 | Rate: 228440 samples/s
+  [Train] Epoch 133/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.012534 | Rate: 257423 samples/s
+  [Train] Epoch 133/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.013118 | Rate: 263688 samples/s
+  [Train] Epoch 133/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.012916 | Rate: 266742 samples/s
+  [Train] Epoch 133/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.012857 | Rate: 270490 samples/s
+  [Train] Epoch 133/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.013132 | Rate: 277851 samples/s
+  [Train] Epoch 133/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.013248 | Rate: 280941 samples/s
+  [Train] Epoch 133/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.013147 | Rate: 283754 samples/s
+  [Train] Epoch 133/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.013200 | Rate: 286151 samples/s
+  [Train] Epoch 133/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.013150 | Rate: 285970 samples/s
+  [Val] Epoch 133/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.008515 | Rate: 257788 samples/s
+  [Val] Epoch 133/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.008579 | Rate: 290681 samples/s
+  [Val] Epoch 133/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.008629 | Rate: 299700 samples/s
+  [Val] Epoch 133/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.008685 | Rate: 304088 samples/s
+  [Val] Epoch 133/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.008797 | Rate: 303928 samples/s
+  [Val] Epoch 133/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.008909 | Rate: 305398 samples/s
+  [Val] Epoch 133/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.009008 | Rate: 308553 samples/s
+  [Val] Epoch 133/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.009118 | Rate: 310775 samples/s
+  [Val] Epoch 133/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.009237 | Rate: 313091 samples/s
+  [Val] Epoch 133/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.009346 | Rate: 316389 samples/s
+Epoch 133/500  train_loss=0.013150  val_loss=0.009346  lr=1.25e-04  improve=False  time=113.0s  ETA=6909.8s
+Loading 100 time-steps into cache …
+  → actually loading 199 unique time-steps (including t+1) …
+  → loaded in 2.0s
+Loading 100 time-steps into cache …
+  → actually loading 191 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 134/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.010345 | Rate: 242963 samples/s
+  [Train] Epoch 134/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.010488 | Rate: 276002 samples/s
+  [Train] Epoch 134/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.010536 | Rate: 283154 samples/s
+  [Train] Epoch 134/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.010549 | Rate: 287498 samples/s
+  [Train] Epoch 134/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.010499 | Rate: 288941 samples/s
+  [Train] Epoch 134/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.010463 | Rate: 293489 samples/s
+  [Train] Epoch 134/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.010371 | Rate: 293458 samples/s
+  [Train] Epoch 134/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.010337 | Rate: 294325 samples/s
+  [Train] Epoch 134/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.010383 | Rate: 294610 samples/s
+  [Train] Epoch 134/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.010366 | Rate: 292893 samples/s
+  [Val] Epoch 134/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.008029 | Rate: 296178 samples/s
+  [Val] Epoch 134/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.008096 | Rate: 310925 samples/s
+  [Val] Epoch 134/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.008169 | Rate: 319993 samples/s
+  [Val] Epoch 134/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.008271 | Rate: 324904 samples/s
+  [Val] Epoch 134/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.008388 | Rate: 327262 samples/s
+  [Val] Epoch 134/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.008488 | Rate: 333251 samples/s
+  [Val] Epoch 134/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.008576 | Rate: 333698 samples/s
+  [Val] Epoch 134/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.008685 | Rate: 332916 samples/s
+  [Val] Epoch 134/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.008786 | Rate: 332796 samples/s
+  [Val] Epoch 134/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.008885 | Rate: 336350 samples/s
+Epoch 134/500  train_loss=0.010366  val_loss=0.008885  lr=1.25e-04  improve=False  time=130.4s  ETA=6817.2s
+Loading 100 time-steps into cache …
+  → actually loading 199 unique time-steps (including t+1) …
+  → loaded in 1.8s
+Loading 100 time-steps into cache …
+  → actually loading 188 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 135/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.009118 | Rate: 243173 samples/s
+  [Train] Epoch 135/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.009629 | Rate: 277915 samples/s
+  [Train] Epoch 135/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.009594 | Rate: 284930 samples/s
+  [Train] Epoch 135/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.009594 | Rate: 289722 samples/s
+  [Train] Epoch 135/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.009659 | Rate: 293193 samples/s
+  [Train] Epoch 135/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.009662 | Rate: 295730 samples/s
+  [Train] Epoch 135/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.009666 | Rate: 296805 samples/s
+  [Train] Epoch 135/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.009733 | Rate: 298345 samples/s
+  [Train] Epoch 135/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.009789 | Rate: 299503 samples/s
+  [Train] Epoch 135/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.009818 | Rate: 296358 samples/s
+  [Val] Epoch 135/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.008643 | Rate: 311694 samples/s
+  [Val] Epoch 135/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.008702 | Rate: 330871 samples/s
+  [Val] Epoch 135/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.008795 | Rate: 323270 samples/s
+  [Val] Epoch 135/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.008940 | Rate: 325125 samples/s
+  [Val] Epoch 135/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.009055 | Rate: 327935 samples/s
+  [Val] Epoch 135/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.009145 | Rate: 333381 samples/s
+  [Val] Epoch 135/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.009237 | Rate: 332928 samples/s
+  [Val] Epoch 135/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.009340 | Rate: 325107 samples/s
+  [Val] Epoch 135/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.009438 | Rate: 323049 samples/s
+  [Val] Epoch 135/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.009528 | Rate: 325207 samples/s
+Epoch 135/500  train_loss=0.009818  val_loss=0.009528  lr=1.25e-04  improve=False  time=147.8s  ETA=6745.1s
+Loading 100 time-steps into cache …
+  → actually loading 200 unique time-steps (including t+1) …
+  → loaded in 1.8s
+Loading 100 time-steps into cache …
+  → actually loading 188 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 136/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.009527 | Rate: 235183 samples/s
+  [Train] Epoch 136/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.009271 | Rate: 267660 samples/s
+  [Train] Epoch 136/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.009483 | Rate: 275451 samples/s
+  [Train] Epoch 136/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.009450 | Rate: 281534 samples/s
+  [Train] Epoch 136/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.009354 | Rate: 283808 samples/s
+  [Train] Epoch 136/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.009424 | Rate: 288887 samples/s
+  [Train] Epoch 136/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.009334 | Rate: 288546 samples/s
+  [Train] Epoch 136/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.009306 | Rate: 289077 samples/s
+  [Train] Epoch 136/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.009387 | Rate: 289214 samples/s
+  [Train] Epoch 136/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.009355 | Rate: 287613 samples/s
+  [Val] Epoch 136/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.008213 | Rate: 277710 samples/s
+  [Val] Epoch 136/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.008262 | Rate: 306676 samples/s
+  [Val] Epoch 136/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.008325 | Rate: 304555 samples/s
+  [Val] Epoch 136/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.008402 | Rate: 301546 samples/s
+  [Val] Epoch 136/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.008518 | Rate: 302128 samples/s
+  [Val] Epoch 136/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.008611 | Rate: 304233 samples/s
+  [Val] Epoch 136/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.008691 | Rate: 303933 samples/s
+  [Val] Epoch 136/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.008783 | Rate: 301885 samples/s
+  [Val] Epoch 136/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.008884 | Rate: 302530 samples/s
+  [Val] Epoch 136/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.008987 | Rate: 303175 samples/s
+Epoch 136/500  train_loss=0.009355  val_loss=0.008987  lr=1.25e-04  improve=False  time=165.9s  ETA=6710.6s
+Loading 100 time-steps into cache …
+  → actually loading 199 unique time-steps (including t+1) …
+  → loaded in 1.9s
+Loading 100 time-steps into cache …
+  → actually loading 187 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 137/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.009061 | Rate: 240995 samples/s
+  [Train] Epoch 137/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.009423 | Rate: 273180 samples/s
+  [Train] Epoch 137/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.009367 | Rate: 277679 samples/s
+  [Train] Epoch 137/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.009597 | Rate: 285213 samples/s
+  [Train] Epoch 137/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.009629 | Rate: 287102 samples/s
+  [Train] Epoch 137/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.009716 | Rate: 292341 samples/s
+  [Train] Epoch 137/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.009687 | Rate: 291222 samples/s
+  [Train] Epoch 137/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.009703 | Rate: 292659 samples/s
+  [Train] Epoch 137/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.009703 | Rate: 294868 samples/s
+  [Train] Epoch 137/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.009742 | Rate: 294668 samples/s
+  [Val] Epoch 137/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.008576 | Rate: 298999 samples/s
+  [Val] Epoch 137/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.008642 | Rate: 314643 samples/s
+  [Val] Epoch 137/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.008699 | Rate: 315317 samples/s
+  [Val] Epoch 137/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.008788 | Rate: 314118 samples/s
+  [Val] Epoch 137/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.008892 | Rate: 312300 samples/s
+  [Val] Epoch 137/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.008979 | Rate: 316186 samples/s
+  [Val] Epoch 137/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.009063 | Rate: 314645 samples/s
+  [Val] Epoch 137/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.009147 | Rate: 312953 samples/s
+  [Val] Epoch 137/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.009228 | Rate: 312668 samples/s
+  [Val] Epoch 137/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.009323 | Rate: 315365 samples/s
+Epoch 137/500  train_loss=0.009742  val_loss=0.009323  lr=1.25e-04  improve=False  time=183.6s  ETA=6665.0s
+Loading 100 time-steps into cache …
+  → actually loading 200 unique time-steps (including t+1) …
+  → loaded in 1.9s
+Loading 100 time-steps into cache …
+  → actually loading 191 unique time-steps (including t+1) …
+  → loaded in 0.3s
+  [Train] Epoch 138/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.009724 | Rate: 228663 samples/s
+  [Train] Epoch 138/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.009569 | Rate: 265927 samples/s
+  [Train] Epoch 138/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.009687 | Rate: 272486 samples/s
+  [Train] Epoch 138/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.009778 | Rate: 275815 samples/s
+  [Train] Epoch 138/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.009765 | Rate: 279078 samples/s
+  [Train] Epoch 138/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.009740 | Rate: 283889 samples/s
+  [Train] Epoch 138/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.009818 | Rate: 290594 samples/s
+  [Train] Epoch 138/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.009863 | Rate: 293739 samples/s
+  [Train] Epoch 138/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.009829 | Rate: 295924 samples/s
+  [Train] Epoch 138/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.009797 | Rate: 295552 samples/s
+  [Val] Epoch 138/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.007305 | Rate: 274068 samples/s
+  [Val] Epoch 138/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.007348 | Rate: 290951 samples/s
+  [Val] Epoch 138/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.007399 | Rate: 308111 samples/s
+  [Val] Epoch 138/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.007461 | Rate: 308039 samples/s
+  [Val] Epoch 138/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.007553 | Rate: 299732 samples/s
+  [Val] Epoch 138/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.007650 | Rate: 299899 samples/s
+  [Val] Epoch 138/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007756 | Rate: 301157 samples/s
+  [Val] Epoch 138/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007863 | Rate: 300572 samples/s
+  [Val] Epoch 138/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007958 | Rate: 303710 samples/s
+  [Val] Epoch 138/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.008052 | Rate: 307259 samples/s
+Epoch 138/500  train_loss=0.009797  val_loss=0.008052  lr=1.25e-04  improve=True  time=201.6s  ETA=6633.0s
+  → New best val loss 0.008052, checkpoint saved to best_model.pt, inference model saved to best_model_jit.pt
+Loading 100 time-steps into cache …
+  → actually loading 199 unique time-steps (including t+1) …
+  → loaded in 1.7s
+Loading 100 time-steps into cache …
+  → actually loading 187 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 139/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.008976 | Rate: 251081 samples/s
+  [Train] Epoch 139/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.009017 | Rate: 283901 samples/s
+  [Train] Epoch 139/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.009025 | Rate: 288526 samples/s
+  [Train] Epoch 139/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.009018 | Rate: 291883 samples/s
+  [Train] Epoch 139/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.009034 | Rate: 294124 samples/s
+  [Train] Epoch 139/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.009076 | Rate: 294375 samples/s
+  [Train] Epoch 139/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.009176 | Rate: 297670 samples/s
+  [Train] Epoch 139/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.009232 | Rate: 297988 samples/s
+  [Train] Epoch 139/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.009235 | Rate: 298329 samples/s
+  [Train] Epoch 139/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.009238 | Rate: 295952 samples/s
+  [Val] Epoch 139/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.007307 | Rate: 288129 samples/s
+  [Val] Epoch 139/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.007356 | Rate: 299449 samples/s
+  [Val] Epoch 139/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.007400 | Rate: 305610 samples/s
+  [Val] Epoch 139/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.007457 | Rate: 306941 samples/s
+  [Val] Epoch 139/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.007561 | Rate: 305518 samples/s
+  [Val] Epoch 139/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.007657 | Rate: 302418 samples/s
+  [Val] Epoch 139/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007755 | Rate: 298539 samples/s
+  [Val] Epoch 139/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007850 | Rate: 295002 samples/s
+  [Val] Epoch 139/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007953 | Rate: 291920 samples/s
+  [Val] Epoch 139/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.008055 | Rate: 293450 samples/s
+Epoch 139/500  train_loss=0.009238  val_loss=0.008055  lr=1.25e-04  improve=False  time=221.7s  ETA=6668.5s
+Loading 100 time-steps into cache …
+  → actually loading 199 unique time-steps (including t+1) …
+  → loaded in 1.9s
+Loading 100 time-steps into cache …
+  → actually loading 187 unique time-steps (including t+1) …
+  → loaded in 0.3s
+  [Train] Epoch 140/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.008884 | Rate: 243009 samples/s
+  [Train] Epoch 140/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.009102 | Rate: 267582 samples/s
+  [Train] Epoch 140/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.009081 | Rate: 279257 samples/s
+  [Train] Epoch 140/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.009061 | Rate: 286748 samples/s
+  [Train] Epoch 140/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.008999 | Rate: 289834 samples/s
+  [Train] Epoch 140/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.008992 | Rate: 289995 samples/s
+  [Train] Epoch 140/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.008983 | Rate: 291005 samples/s
+  [Train] Epoch 140/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.009035 | Rate: 292312 samples/s
+  [Train] Epoch 140/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.009098 | Rate: 292913 samples/s
+  [Train] Epoch 140/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.009087 | Rate: 291110 samples/s
+  [Val] Epoch 140/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.006830 | Rate: 269287 samples/s
+  [Val] Epoch 140/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.006884 | Rate: 281797 samples/s
+  [Val] Epoch 140/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.006940 | Rate: 284038 samples/s
+  [Val] Epoch 140/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.007002 | Rate: 289228 samples/s
+  [Val] Epoch 140/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.007097 | Rate: 289429 samples/s
+  [Val] Epoch 140/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.007195 | Rate: 291569 samples/s
+  [Val] Epoch 140/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007278 | Rate: 294728 samples/s
+  [Val] Epoch 140/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007363 | Rate: 296381 samples/s
+  [Val] Epoch 140/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007451 | Rate: 298840 samples/s
+  [Val] Epoch 140/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007544 | Rate: 301335 samples/s
+Epoch 140/500  train_loss=0.009087  val_loss=0.007544  lr=1.25e-04  improve=True  time=240.0s  ETA=6645.0s
+  → New best val loss 0.007544, checkpoint saved to best_model.pt, inference model saved to best_model_jit.pt
+Loading 100 time-steps into cache …
+  → actually loading 198 unique time-steps (including t+1) …
+  → loaded in 1.6s
+Loading 100 time-steps into cache …
+  → actually loading 193 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 141/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.008832 | Rate: 252842 samples/s
+  [Train] Epoch 141/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.009035 | Rate: 272547 samples/s
+  [Train] Epoch 141/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.009212 | Rate: 286913 samples/s
+  [Train] Epoch 141/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.009187 | Rate: 292222 samples/s
+  [Train] Epoch 141/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.009161 | Rate: 295796 samples/s
+  [Train] Epoch 141/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.009154 | Rate: 300518 samples/s
+  [Train] Epoch 141/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.009218 | Rate: 305217 samples/s
+  [Train] Epoch 141/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.009177 | Rate: 305951 samples/s
+  [Train] Epoch 141/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.009159 | Rate: 305733 samples/s
+  [Train] Epoch 141/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.009191 | Rate: 304242 samples/s
+  [Val] Epoch 141/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.009962 | Rate: 303773 samples/s
+  [Val] Epoch 141/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.010011 | Rate: 317665 samples/s
+  [Val] Epoch 141/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.010071 | Rate: 324207 samples/s
+  [Val] Epoch 141/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.010186 | Rate: 327586 samples/s
+  [Val] Epoch 141/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.010298 | Rate: 328859 samples/s
+  [Val] Epoch 141/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.010398 | Rate: 335144 samples/s
+  [Val] Epoch 141/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.010501 | Rate: 335088 samples/s
+  [Val] Epoch 141/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.010589 | Rate: 335877 samples/s
+  [Val] Epoch 141/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.010675 | Rate: 336563 samples/s
+  [Val] Epoch 141/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.010763 | Rate: 339481 samples/s
+Epoch 141/500  train_loss=0.009191  val_loss=0.010763  lr=1.25e-04  improve=False  time=256.6s  ETA=6579.8s
+Loading 100 time-steps into cache …
+  → actually loading 196 unique time-steps (including t+1) …
+  → loaded in 1.7s
+Loading 100 time-steps into cache …
+  → actually loading 194 unique time-steps (including t+1) …
+  → loaded in 0.3s
+  [Train] Epoch 142/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.009511 | Rate: 238010 samples/s
+  [Train] Epoch 142/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.009463 | Rate: 253661 samples/s
+  [Train] Epoch 142/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.009414 | Rate: 265588 samples/s
+  [Train] Epoch 142/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.009383 | Rate: 271169 samples/s
+  [Train] Epoch 142/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.009370 | Rate: 271283 samples/s
+  [Train] Epoch 142/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.009272 | Rate: 273433 samples/s
+  [Train] Epoch 142/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.009313 | Rate: 275943 samples/s
+  [Train] Epoch 142/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.009275 | Rate: 276649 samples/s
+  [Train] Epoch 142/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.009279 | Rate: 277330 samples/s
+  [Train] Epoch 142/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.009345 | Rate: 278058 samples/s
+  [Val] Epoch 142/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.006586 | Rate: 253788 samples/s
+  [Val] Epoch 142/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.006642 | Rate: 282924 samples/s
+  [Val] Epoch 142/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.006711 | Rate: 292125 samples/s
+  [Val] Epoch 142/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.006824 | Rate: 298843 samples/s
+  [Val] Epoch 142/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.006911 | Rate: 298649 samples/s
+  [Val] Epoch 142/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.006983 | Rate: 299116 samples/s
+  [Val] Epoch 142/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007067 | Rate: 304947 samples/s
+  [Val] Epoch 142/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007155 | Rate: 306763 samples/s
+  [Val] Epoch 142/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007235 | Rate: 308429 samples/s
+  [Val] Epoch 142/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007318 | Rate: 309769 samples/s
+Epoch 142/500  train_loss=0.009345  val_loss=0.007318  lr=1.25e-04  improve=True  time=274.9s  ETA=6560.6s
+  → New best val loss 0.007318, checkpoint saved to best_model.pt, inference model saved to best_model_jit.pt
+Loading 100 time-steps into cache …
+  → actually loading 198 unique time-steps (including t+1) …
+  → loaded in 1.4s
+Loading 100 time-steps into cache …
+  → actually loading 196 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 143/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.007765 | Rate: 230947 samples/s
+  [Train] Epoch 143/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.007952 | Rate: 266126 samples/s
+  [Train] Epoch 143/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.008101 | Rate: 275961 samples/s
+  [Train] Epoch 143/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.008295 | Rate: 279213 samples/s
+  [Train] Epoch 143/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.008423 | Rate: 282277 samples/s
+  [Train] Epoch 143/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.008477 | Rate: 288033 samples/s
+  [Train] Epoch 143/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.008417 | Rate: 289475 samples/s
+  [Train] Epoch 143/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.008428 | Rate: 291106 samples/s
+  [Train] Epoch 143/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.008394 | Rate: 292087 samples/s
+  [Train] Epoch 143/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.008406 | Rate: 290268 samples/s
+  [Val] Epoch 143/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.006502 | Rate: 294127 samples/s
+  [Val] Epoch 143/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.006548 | Rate: 316168 samples/s
+  [Val] Epoch 143/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.006620 | Rate: 317094 samples/s
+  [Val] Epoch 143/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.006717 | Rate: 316298 samples/s
+  [Val] Epoch 143/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.006810 | Rate: 315641 samples/s
+  [Val] Epoch 143/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.006894 | Rate: 319461 samples/s
+  [Val] Epoch 143/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.006981 | Rate: 318691 samples/s
+  [Val] Epoch 143/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007062 | Rate: 318570 samples/s
+  [Val] Epoch 143/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007140 | Rate: 317710 samples/s
+  [Val] Epoch 143/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007218 | Rate: 321027 samples/s
+Epoch 143/500  train_loss=0.008406  val_loss=0.007218  lr=1.25e-04  improve=True  time=292.2s  ETA=6518.7s
+  → New best val loss 0.007218, checkpoint saved to best_model.pt, inference model saved to best_model_jit.pt
+Loading 100 time-steps into cache …
+  → actually loading 200 unique time-steps (including t+1) …
+  → loaded in 1.6s
+Loading 100 time-steps into cache …
+  → actually loading 189 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 144/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.044149 | Rate: 238730 samples/s
+  [Train] Epoch 144/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.052994 | Rate: 272885 samples/s
+  [Train] Epoch 144/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.055477 | Rate: 280171 samples/s
+  [Train] Epoch 144/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.054230 | Rate: 285673 samples/s
+  [Train] Epoch 144/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.048318 | Rate: 288037 samples/s
+  [Train] Epoch 144/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.051366 | Rate: 293676 samples/s
+  [Train] Epoch 144/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.051945 | Rate: 294539 samples/s
+  [Train] Epoch 144/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.049586 | Rate: 294728 samples/s
+  [Train] Epoch 144/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.051819 | Rate: 295419 samples/s
+  [Train] Epoch 144/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.051554 | Rate: 293090 samples/s
+  [Val] Epoch 144/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.013428 | Rate: 261452 samples/s
+  [Val] Epoch 144/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.013504 | Rate: 287589 samples/s
+  [Val] Epoch 144/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.013570 | Rate: 289845 samples/s
+  [Val] Epoch 144/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.013639 | Rate: 287927 samples/s
+  [Val] Epoch 144/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.013722 | Rate: 290722 samples/s
+  [Val] Epoch 144/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.013795 | Rate: 297224 samples/s
+  [Val] Epoch 144/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.013876 | Rate: 295995 samples/s
+  [Val] Epoch 144/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.013974 | Rate: 295666 samples/s
+  [Val] Epoch 144/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.014085 | Rate: 295161 samples/s
+  [Val] Epoch 144/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.014214 | Rate: 297939 samples/s
+Epoch 144/500  train_loss=0.051554  val_loss=0.014214  lr=1.25e-04  improve=False  time=310.0s  ETA=6492.6s
+Loading 100 time-steps into cache …
+  → actually loading 199 unique time-steps (including t+1) …
+  → loaded in 1.6s
+Loading 100 time-steps into cache …
+  → actually loading 190 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 145/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.012348 | Rate: 234274 samples/s
+  [Train] Epoch 145/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.011961 | Rate: 263564 samples/s
+  [Train] Epoch 145/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.011398 | Rate: 274571 samples/s
+  [Train] Epoch 145/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.011395 | Rate: 281181 samples/s
+  [Train] Epoch 145/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.011102 | Rate: 285733 samples/s
+  [Train] Epoch 145/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.011015 | Rate: 291861 samples/s
+  [Train] Epoch 145/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.011129 | Rate: 292530 samples/s
+  [Train] Epoch 145/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.011096 | Rate: 291551 samples/s
+  [Train] Epoch 145/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.011064 | Rate: 292508 samples/s
+  [Train] Epoch 145/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.011156 | Rate: 290747 samples/s
+  [Val] Epoch 145/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.011301 | Rate: 289912 samples/s
+  [Val] Epoch 145/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.011360 | Rate: 313952 samples/s
+  [Val] Epoch 145/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.011453 | Rate: 313907 samples/s
+  [Val] Epoch 145/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.011527 | Rate: 316358 samples/s
+  [Val] Epoch 145/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.011633 | Rate: 316884 samples/s
+  [Val] Epoch 145/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.011709 | Rate: 319499 samples/s
+  [Val] Epoch 145/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.011781 | Rate: 319746 samples/s
+  [Val] Epoch 145/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.011857 | Rate: 320882 samples/s
+  [Val] Epoch 145/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.011937 | Rate: 322482 samples/s
+  [Val] Epoch 145/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.012021 | Rate: 324968 samples/s
+Epoch 145/500  train_loss=0.011156  val_loss=0.012021  lr=1.25e-04  improve=False  time=327.3s  ETA=6454.4s
+Loading 100 time-steps into cache …
+  → actually loading 198 unique time-steps (including t+1) …
+  → loaded in 1.5s
+Loading 100 time-steps into cache …
+  → actually loading 192 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 146/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.009096 | Rate: 231479 samples/s
+  [Train] Epoch 146/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.009146 | Rate: 247600 samples/s
+  [Train] Epoch 146/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.009289 | Rate: 258808 samples/s
+  [Train] Epoch 146/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.009206 | Rate: 259061 samples/s
+  [Train] Epoch 146/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.009221 | Rate: 259647 samples/s
+  [Train] Epoch 146/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.009251 | Rate: 262105 samples/s
+  [Train] Epoch 146/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.009267 | Rate: 268981 samples/s
+  [Train] Epoch 146/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.009306 | Rate: 272170 samples/s
+  [Train] Epoch 146/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.009272 | Rate: 274392 samples/s
+  [Train] Epoch 146/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.009277 | Rate: 273531 samples/s
+  [Val] Epoch 146/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.008608 | Rate: 271287 samples/s
+  [Val] Epoch 146/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.008710 | Rate: 280284 samples/s
+  [Val] Epoch 146/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.008796 | Rate: 298567 samples/s
+  [Val] Epoch 146/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.008922 | Rate: 295987 samples/s
+  [Val] Epoch 146/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.009037 | Rate: 290186 samples/s
+  [Val] Epoch 146/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.009135 | Rate: 285474 samples/s
+  [Val] Epoch 146/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.009226 | Rate: 288409 samples/s
+  [Val] Epoch 146/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.009314 | Rate: 287570 samples/s
+  [Val] Epoch 146/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.009394 | Rate: 284633 samples/s
+  [Val] Epoch 146/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.009480 | Rate: 287964 samples/s
+Epoch 146/500  train_loss=0.009277  val_loss=0.009480  lr=1.25e-04  improve=False  time=345.9s  ETA=6444.6s
+Loading 100 time-steps into cache …
+  → actually loading 198 unique time-steps (including t+1) …
+  → loaded in 1.8s
+Loading 100 time-steps into cache …
+  → actually loading 193 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 147/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.008762 | Rate: 247083 samples/s
+  [Train] Epoch 147/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.008782 | Rate: 271660 samples/s
+  [Train] Epoch 147/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.008779 | Rate: 282592 samples/s
+  [Train] Epoch 147/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.008783 | Rate: 285797 samples/s
+  [Train] Epoch 147/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.008839 | Rate: 289712 samples/s
+  [Train] Epoch 147/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.008795 | Rate: 292476 samples/s
+  [Train] Epoch 147/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.008812 | Rate: 298403 samples/s
+  [Train] Epoch 147/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.008811 | Rate: 300401 samples/s
+  [Train] Epoch 147/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.008828 | Rate: 302616 samples/s
+  [Train] Epoch 147/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.008819 | Rate: 301168 samples/s
+  [Val] Epoch 147/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.007721 | Rate: 266289 samples/s
+  [Val] Epoch 147/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.007774 | Rate: 289666 samples/s
+  [Val] Epoch 147/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.007822 | Rate: 305657 samples/s
+  [Val] Epoch 147/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.007910 | Rate: 308117 samples/s
+  [Val] Epoch 147/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.008029 | Rate: 308634 samples/s
+  [Val] Epoch 147/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.008130 | Rate: 314245 samples/s
+  [Val] Epoch 147/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.008226 | Rate: 319988 samples/s
+  [Val] Epoch 147/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.008319 | Rate: 322826 samples/s
+  [Val] Epoch 147/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.008412 | Rate: 323987 samples/s
+  [Val] Epoch 147/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.008504 | Rate: 325616 samples/s
+Epoch 147/500  train_loss=0.008819  val_loss=0.008504  lr=1.25e-04  improve=False  time=363.1s  ETA=6408.0s
+Loading 100 time-steps into cache …
+  → actually loading 200 unique time-steps (including t+1) …
+  → loaded in 1.6s
+Loading 100 time-steps into cache …
+  → actually loading 184 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 148/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.009337 | Rate: 224068 samples/s
+  [Train] Epoch 148/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.009349 | Rate: 242872 samples/s
+  [Train] Epoch 148/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.009027 | Rate: 259223 samples/s
+  [Train] Epoch 148/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.009033 | Rate: 263348 samples/s
+  [Train] Epoch 148/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.009137 | Rate: 265485 samples/s
+  [Train] Epoch 148/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.009103 | Rate: 270055 samples/s
+  [Train] Epoch 148/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.009181 | Rate: 273677 samples/s
+  [Train] Epoch 148/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.009118 | Rate: 275850 samples/s
+  [Train] Epoch 148/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.009117 | Rate: 275911 samples/s
+  [Train] Epoch 148/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.009089 | Rate: 274937 samples/s
+  [Val] Epoch 148/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.006478 | Rate: 257374 samples/s
+  [Val] Epoch 148/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.006531 | Rate: 277579 samples/s
+  [Val] Epoch 148/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.006601 | Rate: 294708 samples/s
+  [Val] Epoch 148/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.006731 | Rate: 297197 samples/s
+  [Val] Epoch 148/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.006830 | Rate: 298937 samples/s
+  [Val] Epoch 148/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.006917 | Rate: 300026 samples/s
+  [Val] Epoch 148/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007007 | Rate: 303532 samples/s
+  [Val] Epoch 148/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007103 | Rate: 301534 samples/s
+  [Val] Epoch 148/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007196 | Rate: 301149 samples/s
+  [Val] Epoch 148/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007283 | Rate: 302890 samples/s
+Epoch 148/500  train_loss=0.009089  val_loss=0.007283  lr=1.25e-04  improve=False  time=381.2s  ETA=6390.3s
+Loading 100 time-steps into cache …
+  → actually loading 200 unique time-steps (including t+1) …
+  → loaded in 1.3s
+Loading 100 time-steps into cache …
+  → actually loading 191 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 149/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.009126 | Rate: 248444 samples/s
+  [Train] Epoch 149/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.009016 | Rate: 272615 samples/s
+  [Train] Epoch 149/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.009122 | Rate: 287284 samples/s
+  [Train] Epoch 149/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.009074 | Rate: 290839 samples/s
+  [Train] Epoch 149/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.009054 | Rate: 292858 samples/s
+  [Train] Epoch 149/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.009091 | Rate: 294274 samples/s
+  [Train] Epoch 149/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.009055 | Rate: 298026 samples/s
+  [Train] Epoch 149/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.009034 | Rate: 298470 samples/s
+  [Train] Epoch 149/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.009046 | Rate: 298822 samples/s
+  [Train] Epoch 149/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.009066 | Rate: 296537 samples/s
+  [Val] Epoch 149/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.006491 | Rate: 287151 samples/s
+  [Val] Epoch 149/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.006539 | Rate: 293401 samples/s
+  [Val] Epoch 149/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.006630 | Rate: 304134 samples/s
+  [Val] Epoch 149/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.006751 | Rate: 309852 samples/s
+  [Val] Epoch 149/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.006857 | Rate: 311079 samples/s
+  [Val] Epoch 149/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.006956 | Rate: 308773 samples/s
+  [Val] Epoch 149/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007047 | Rate: 310468 samples/s
+  [Val] Epoch 149/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007129 | Rate: 307094 samples/s
+  [Val] Epoch 149/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007209 | Rate: 306800 samples/s
+  [Val] Epoch 149/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007295 | Rate: 308675 samples/s
+Epoch 149/500  train_loss=0.009066  val_loss=0.007295  lr=6.25e-05  improve=False  time=398.4s  ETA=6356.8s
+Loading 100 time-steps into cache …
+  → actually loading 200 unique time-steps (including t+1) …
+  → loaded in 1.4s
+Loading 100 time-steps into cache …
+  → actually loading 188 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 150/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.009251 | Rate: 233140 samples/s
+  [Train] Epoch 150/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.009153 | Rate: 258241 samples/s
+  [Train] Epoch 150/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.009259 | Rate: 274831 samples/s
+  [Train] Epoch 150/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.009188 | Rate: 275927 samples/s
+  [Train] Epoch 150/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.009222 | Rate: 277041 samples/s
+  [Train] Epoch 150/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.009230 | Rate: 278026 samples/s
+  [Train] Epoch 150/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.009274 | Rate: 282066 samples/s
+  [Train] Epoch 150/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.009180 | Rate: 282321 samples/s
+  [Train] Epoch 150/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.009175 | Rate: 285316 samples/s
+  [Train] Epoch 150/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.009204 | Rate: 285607 samples/s
+  [Val] Epoch 150/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.007075 | Rate: 262662 samples/s
+  [Val] Epoch 150/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.007124 | Rate: 286425 samples/s
+  [Val] Epoch 150/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.007169 | Rate: 283385 samples/s
+  [Val] Epoch 150/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.007234 | Rate: 289321 samples/s
+  [Val] Epoch 150/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.007322 | Rate: 296025 samples/s
+  [Val] Epoch 150/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.007400 | Rate: 301821 samples/s
+  [Val] Epoch 150/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007471 | Rate: 307679 samples/s
+  [Val] Epoch 150/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007539 | Rate: 310559 samples/s
+  [Val] Epoch 150/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007616 | Rate: 312608 samples/s
+  [Val] Epoch 150/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007701 | Rate: 314351 samples/s
+Epoch 150/500  train_loss=0.009204  val_loss=0.007701  lr=6.25e-05  improve=False  time=416.0s  ETA=6330.0s
+Loading 100 time-steps into cache …
+  → actually loading 199 unique time-steps (including t+1) …
+  → loaded in 1.2s
+Loading 100 time-steps into cache …
+  → actually loading 189 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 151/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.008497 | Rate: 233060 samples/s
+  [Train] Epoch 151/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.008472 | Rate: 253600 samples/s
+  [Train] Epoch 151/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.008240 | Rate: 271553 samples/s
+  [Train] Epoch 151/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.008187 | Rate: 277391 samples/s
+  [Train] Epoch 151/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.008153 | Rate: 280370 samples/s
+  [Train] Epoch 151/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.008090 | Rate: 282908 samples/s
+  [Train] Epoch 151/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.008114 | Rate: 288968 samples/s
+  [Train] Epoch 151/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.008145 | Rate: 290970 samples/s
+  [Train] Epoch 151/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.008115 | Rate: 292686 samples/s
+  [Train] Epoch 151/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.008113 | Rate: 291976 samples/s
+  [Val] Epoch 151/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.006359 | Rate: 289041 samples/s
+  [Val] Epoch 151/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.006386 | Rate: 300421 samples/s
+  [Val] Epoch 151/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.006433 | Rate: 312237 samples/s
+  [Val] Epoch 151/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.006501 | Rate: 312474 samples/s
+  [Val] Epoch 151/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.006586 | Rate: 312746 samples/s
+  [Val] Epoch 151/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.006668 | Rate: 311294 samples/s
+  [Val] Epoch 151/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.006747 | Rate: 315683 samples/s
+  [Val] Epoch 151/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.006820 | Rate: 317503 samples/s
+  [Val] Epoch 151/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.006894 | Rate: 319198 samples/s
+  [Val] Epoch 151/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.006979 | Rate: 322049 samples/s
+Epoch 151/500  train_loss=0.008113  val_loss=0.006979  lr=6.25e-05  improve=True  time=432.8s  ETA=6294.0s
+  → New best val loss 0.006979, checkpoint saved to best_model.pt, inference model saved to best_model_jit.pt
+Loading 100 time-steps into cache …
+  → actually loading 198 unique time-steps (including t+1) …
+  → loaded in 1.4s
+Loading 100 time-steps into cache …
+  → actually loading 191 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 152/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.011466 | Rate: 242593 samples/s
+  [Train] Epoch 152/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.011828 | Rate: 272766 samples/s
+  [Train] Epoch 152/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.012141 | Rate: 277747 samples/s
+  [Train] Epoch 152/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.011960 | Rate: 278396 samples/s
+  [Train] Epoch 152/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.011840 | Rate: 286437 samples/s
+  [Train] Epoch 152/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.011597 | Rate: 292215 samples/s
+  [Train] Epoch 152/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.011531 | Rate: 299057 samples/s
+  [Train] Epoch 152/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.011582 | Rate: 301431 samples/s
+  [Train] Epoch 152/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.011672 | Rate: 302966 samples/s
+  [Train] Epoch 152/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.011626 | Rate: 302017 samples/s
+  [Val] Epoch 152/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.007778 | Rate: 247317 samples/s
+  [Val] Epoch 152/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.007846 | Rate: 286267 samples/s
+  [Val] Epoch 152/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.007936 | Rate: 290813 samples/s
+  [Val] Epoch 152/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.008048 | Rate: 295649 samples/s
+  [Val] Epoch 152/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.008156 | Rate: 298223 samples/s
+  [Val] Epoch 152/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.008233 | Rate: 300138 samples/s
+  [Val] Epoch 152/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.008304 | Rate: 304349 samples/s
+  [Val] Epoch 152/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.008377 | Rate: 306334 samples/s
+  [Val] Epoch 152/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.008454 | Rate: 310104 samples/s
+  [Val] Epoch 152/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.008539 | Rate: 313870 samples/s
+Epoch 152/500  train_loss=0.011626  val_loss=0.008539  lr=6.25e-05  improve=False  time=450.0s  ETA=6263.4s
+Loading 100 time-steps into cache …
+  → actually loading 198 unique time-steps (including t+1) …
+  → loaded in 1.3s
+Loading 100 time-steps into cache …
+  → actually loading 188 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 153/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.008174 | Rate: 236545 samples/s
+  [Train] Epoch 153/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.007969 | Rate: 271485 samples/s
+  [Train] Epoch 153/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.008037 | Rate: 277807 samples/s
+  [Train] Epoch 153/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.008053 | Rate: 282472 samples/s
+  [Train] Epoch 153/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.008116 | Rate: 285511 samples/s
+  [Train] Epoch 153/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.008085 | Rate: 288402 samples/s
+  [Train] Epoch 153/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.008096 | Rate: 291182 samples/s
+  [Train] Epoch 153/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.008047 | Rate: 291972 samples/s
+  [Train] Epoch 153/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.008032 | Rate: 293063 samples/s
+  [Train] Epoch 153/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007999 | Rate: 291130 samples/s
+  [Val] Epoch 153/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.006572 | Rate: 231930 samples/s
+  [Val] Epoch 153/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.006631 | Rate: 255922 samples/s
+  [Val] Epoch 153/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.006710 | Rate: 266357 samples/s
+  [Val] Epoch 153/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.006843 | Rate: 272705 samples/s
+  [Val] Epoch 153/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.006950 | Rate: 278166 samples/s
+  [Val] Epoch 153/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.007046 | Rate: 283487 samples/s
+  [Val] Epoch 153/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007140 | Rate: 289478 samples/s
+  [Val] Epoch 153/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007224 | Rate: 294010 samples/s
+  [Val] Epoch 153/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007306 | Rate: 297505 samples/s
+  [Val] Epoch 153/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007385 | Rate: 302583 samples/s
+Epoch 153/500  train_loss=0.007999  val_loss=0.007385  lr=6.25e-05  improve=False  time=467.4s  ETA=6238.5s
+Loading 100 time-steps into cache …
+  → actually loading 199 unique time-steps (including t+1) …
+  → loaded in 1.3s
+Loading 100 time-steps into cache …
+  → actually loading 195 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 154/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.007076 | Rate: 255430 samples/s
+  [Train] Epoch 154/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.007274 | Rate: 292121 samples/s
+  [Train] Epoch 154/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.007284 | Rate: 299504 samples/s
+  [Train] Epoch 154/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.007288 | Rate: 301471 samples/s
+  [Train] Epoch 154/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.007270 | Rate: 303622 samples/s
+  [Train] Epoch 154/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.007241 | Rate: 309925 samples/s
+  [Train] Epoch 154/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007229 | Rate: 310346 samples/s
+  [Train] Epoch 154/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007227 | Rate: 309906 samples/s
+  [Train] Epoch 154/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007239 | Rate: 310247 samples/s
+  [Train] Epoch 154/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007231 | Rate: 307543 samples/s
+  [Val] Epoch 154/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.007311 | Rate: 268643 samples/s
+  [Val] Epoch 154/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.007342 | Rate: 295603 samples/s
+  [Val] Epoch 154/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.007384 | Rate: 298483 samples/s
+  [Val] Epoch 154/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.007475 | Rate: 296038 samples/s
+  [Val] Epoch 154/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.007561 | Rate: 299702 samples/s
+  [Val] Epoch 154/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.007634 | Rate: 306211 samples/s
+  [Val] Epoch 154/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007712 | Rate: 304159 samples/s
+  [Val] Epoch 154/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007788 | Rate: 301996 samples/s
+  [Val] Epoch 154/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007860 | Rate: 300466 samples/s
+  [Val] Epoch 154/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007937 | Rate: 303496 samples/s
+Epoch 154/500  train_loss=0.007231  val_loss=0.007937  lr=6.25e-05  improve=False  time=484.5s  ETA=6209.2s
+Loading 100 time-steps into cache …
+  → actually loading 199 unique time-steps (including t+1) …
+  → loaded in 1.3s
+Loading 100 time-steps into cache …
+  → actually loading 194 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 155/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.008695 | Rate: 240188 samples/s
+  [Train] Epoch 155/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.008444 | Rate: 273103 samples/s
+  [Train] Epoch 155/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.008497 | Rate: 279842 samples/s
+  [Train] Epoch 155/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.008498 | Rate: 279918 samples/s
+  [Train] Epoch 155/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.008422 | Rate: 284224 samples/s
+  [Train] Epoch 155/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.008435 | Rate: 289333 samples/s
+  [Train] Epoch 155/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.008611 | Rate: 290614 samples/s
+  [Train] Epoch 155/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.008587 | Rate: 291441 samples/s
+  [Train] Epoch 155/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.008498 | Rate: 291638 samples/s
+  [Train] Epoch 155/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.008523 | Rate: 290006 samples/s
+  [Val] Epoch 155/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.006314 | Rate: 278756 samples/s
+  [Val] Epoch 155/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.006327 | Rate: 303547 samples/s
+  [Val] Epoch 155/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.006365 | Rate: 300224 samples/s
+  [Val] Epoch 155/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.006458 | Rate: 298292 samples/s
+  [Val] Epoch 155/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.006552 | Rate: 299619 samples/s
+  [Val] Epoch 155/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.006639 | Rate: 303563 samples/s
+  [Val] Epoch 155/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.006724 | Rate: 300763 samples/s
+  [Val] Epoch 155/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.006797 | Rate: 299279 samples/s
+  [Val] Epoch 155/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.006869 | Rate: 299878 samples/s
+  [Val] Epoch 155/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.006946 | Rate: 300230 samples/s
+Epoch 155/500  train_loss=0.008523  val_loss=0.006946  lr=6.25e-05  improve=True  time=502.2s  ETA=6187.6s
+  → New best val loss 0.006946, checkpoint saved to best_model.pt, inference model saved to best_model_jit.pt
+Loading 100 time-steps into cache …
+  → actually loading 199 unique time-steps (including t+1) …
+  → loaded in 1.2s
+Loading 100 time-steps into cache …
+  → actually loading 190 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 156/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.009397 | Rate: 237508 samples/s
+  [Train] Epoch 156/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.009289 | Rate: 264913 samples/s
+  [Train] Epoch 156/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.009376 | Rate: 280302 samples/s
+  [Train] Epoch 156/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.009311 | Rate: 286688 samples/s
+  [Train] Epoch 156/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.009273 | Rate: 289881 samples/s
+  [Train] Epoch 156/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.009228 | Rate: 293902 samples/s
+  [Train] Epoch 156/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.009214 | Rate: 298775 samples/s
+  [Train] Epoch 156/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.009205 | Rate: 300319 samples/s
+  [Train] Epoch 156/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.009197 | Rate: 301274 samples/s
+  [Train] Epoch 156/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.009199 | Rate: 299765 samples/s
+  [Val] Epoch 156/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.006616 | Rate: 247921 samples/s
+  [Val] Epoch 156/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.006641 | Rate: 271974 samples/s
+  [Val] Epoch 156/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.006669 | Rate: 284914 samples/s
+  [Val] Epoch 156/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.006706 | Rate: 293634 samples/s
+  [Val] Epoch 156/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.006765 | Rate: 298374 samples/s
+  [Val] Epoch 156/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.006838 | Rate: 302423 samples/s
+  [Val] Epoch 156/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.006908 | Rate: 307217 samples/s
+  [Val] Epoch 156/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.006984 | Rate: 309029 samples/s
+  [Val] Epoch 156/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007061 | Rate: 310479 samples/s
+  [Val] Epoch 156/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007149 | Rate: 311404 samples/s
+Epoch 156/500  train_loss=0.009199  val_loss=0.007149  lr=6.25e-05  improve=False  time=519.2s  ETA=6158.7s
+Loading 100 time-steps into cache …
+  → actually loading 199 unique time-steps (including t+1) …
+  → loaded in 1.3s
+Loading 100 time-steps into cache …
+  → actually loading 191 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 157/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.009331 | Rate: 249188 samples/s
+  [Train] Epoch 157/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.009591 | Rate: 274087 samples/s
+  [Train] Epoch 157/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.009602 | Rate: 288749 samples/s
+  [Train] Epoch 157/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.009453 | Rate: 292374 samples/s
+  [Train] Epoch 157/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.009594 | Rate: 295109 samples/s
+  [Train] Epoch 157/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.009567 | Rate: 296965 samples/s
+  [Train] Epoch 157/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.009662 | Rate: 300071 samples/s
+  [Train] Epoch 157/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.009639 | Rate: 300939 samples/s
+  [Train] Epoch 157/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.009550 | Rate: 301475 samples/s
+  [Train] Epoch 157/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.009611 | Rate: 297221 samples/s
+  [Val] Epoch 157/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.007585 | Rate: 260955 samples/s
+  [Val] Epoch 157/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.007624 | Rate: 275468 samples/s
+  [Val] Epoch 157/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.007694 | Rate: 286958 samples/s
+  [Val] Epoch 157/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.007802 | Rate: 295883 samples/s
+  [Val] Epoch 157/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.007898 | Rate: 301837 samples/s
+  [Val] Epoch 157/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.007977 | Rate: 305731 samples/s
+  [Val] Epoch 157/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.008053 | Rate: 311045 samples/s
+  [Val] Epoch 157/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.008132 | Rate: 313110 samples/s
+  [Val] Epoch 157/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.008215 | Rate: 313662 samples/s
+  [Val] Epoch 157/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.008296 | Rate: 315293 samples/s
+Epoch 157/500  train_loss=0.009611  val_loss=0.008296  lr=6.25e-05  improve=False  time=536.2s  ETA=6130.9s
+Loading 100 time-steps into cache …
+  → actually loading 198 unique time-steps (including t+1) …
+  → loaded in 1.0s
+Loading 100 time-steps into cache …
+  → actually loading 193 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 158/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.009701 | Rate: 215961 samples/s
+  [Train] Epoch 158/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.009351 | Rate: 240914 samples/s
+  [Train] Epoch 158/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.009387 | Rate: 258834 samples/s
+  [Train] Epoch 158/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.009354 | Rate: 262572 samples/s
+  [Train] Epoch 158/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.009384 | Rate: 267450 samples/s
+  [Train] Epoch 158/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.009342 | Rate: 271434 samples/s
+  [Train] Epoch 158/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.009381 | Rate: 276294 samples/s
+  [Train] Epoch 158/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.009416 | Rate: 279114 samples/s
+  [Train] Epoch 158/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.009387 | Rate: 281325 samples/s
+  [Train] Epoch 158/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.009369 | Rate: 279098 samples/s
+  [Val] Epoch 158/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.008527 | Rate: 256221 samples/s
+  [Val] Epoch 158/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.008572 | Rate: 281583 samples/s
+  [Val] Epoch 158/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.008672 | Rate: 298011 samples/s
+  [Val] Epoch 158/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.008806 | Rate: 302635 samples/s
+  [Val] Epoch 158/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.008901 | Rate: 305426 samples/s
+  [Val] Epoch 158/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.008973 | Rate: 301112 samples/s
+  [Val] Epoch 158/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.009050 | Rate: 304493 samples/s
+  [Val] Epoch 158/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.009125 | Rate: 303561 samples/s
+  [Val] Epoch 158/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.009204 | Rate: 302697 samples/s
+  [Val] Epoch 158/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.009284 | Rate: 303169 samples/s
+Epoch 158/500  train_loss=0.009369  val_loss=0.009284  lr=6.25e-05  improve=False  time=553.8s  ETA=6109.5s
+Loading 100 time-steps into cache …
+  → actually loading 199 unique time-steps (including t+1) …
+  → loaded in 1.4s
+Loading 100 time-steps into cache …
+  → actually loading 191 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 159/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.038313 | Rate: 230961 samples/s
+  [Train] Epoch 159/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.043242 | Rate: 257197 samples/s
+  [Train] Epoch 159/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.039831 | Rate: 271771 samples/s
+  [Train] Epoch 159/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.042301 | Rate: 275429 samples/s
+  [Train] Epoch 159/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.041769 | Rate: 277528 samples/s
+  [Train] Epoch 159/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.043401 | Rate: 279764 samples/s
+  [Train] Epoch 159/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.042741 | Rate: 284758 samples/s
+  [Train] Epoch 159/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.043970 | Rate: 287497 samples/s
+  [Train] Epoch 159/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.044944 | Rate: 289348 samples/s
+  [Train] Epoch 159/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.045200 | Rate: 285777 samples/s
+  [Val] Epoch 159/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.012939 | Rate: 287370 samples/s
+  [Val] Epoch 159/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.013044 | Rate: 300985 samples/s
+  [Val] Epoch 159/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.013115 | Rate: 313044 samples/s
+  [Val] Epoch 159/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.013188 | Rate: 315165 samples/s
+  [Val] Epoch 159/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.013268 | Rate: 315748 samples/s
+  [Val] Epoch 159/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.013331 | Rate: 316419 samples/s
+  [Val] Epoch 159/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.013385 | Rate: 318907 samples/s
+  [Val] Epoch 159/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.013458 | Rate: 319511 samples/s
+  [Val] Epoch 159/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.013539 | Rate: 320171 samples/s
+  [Val] Epoch 159/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.013629 | Rate: 320950 samples/s
+Epoch 159/500  train_loss=0.045200  val_loss=0.013629  lr=6.25e-05  improve=False  time=571.1s  ETA=6086.0s
+Loading 100 time-steps into cache …
+  → actually loading 198 unique time-steps (including t+1) …
+  → loaded in 1.2s
+Loading 100 time-steps into cache …
+  → actually loading 190 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 160/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.011876 | Rate: 222878 samples/s
+  [Train] Epoch 160/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.011749 | Rate: 250270 samples/s
+  [Train] Epoch 160/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.011536 | Rate: 267647 samples/s
+  [Train] Epoch 160/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.011622 | Rate: 273340 samples/s
+  [Train] Epoch 160/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.011621 | Rate: 278258 samples/s
+  [Train] Epoch 160/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.011750 | Rate: 280518 samples/s
+  [Train] Epoch 160/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.011595 | Rate: 286019 samples/s
+  [Train] Epoch 160/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.011353 | Rate: 287223 samples/s
+  [Train] Epoch 160/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.011223 | Rate: 287885 samples/s
+  [Train] Epoch 160/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.011183 | Rate: 285494 samples/s
+  [Val] Epoch 160/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.008852 | Rate: 273024 samples/s
+  [Val] Epoch 160/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.008943 | Rate: 291262 samples/s
+  [Val] Epoch 160/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.009018 | Rate: 305308 samples/s
+  [Val] Epoch 160/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.009089 | Rate: 308781 samples/s
+  [Val] Epoch 160/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.009179 | Rate: 309881 samples/s
+  [Val] Epoch 160/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.009249 | Rate: 311780 samples/s
+  [Val] Epoch 160/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.009319 | Rate: 312496 samples/s
+  [Val] Epoch 160/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.009387 | Rate: 312595 samples/s
+  [Val] Epoch 160/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.009457 | Rate: 310878 samples/s
+  [Val] Epoch 160/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.009538 | Rate: 310847 samples/s
+Epoch 160/500  train_loss=0.011183  val_loss=0.009538  lr=6.25e-05  improve=False  time=588.5s  ETA=6063.6s
+Loading 100 time-steps into cache …
+  → actually loading 199 unique time-steps (including t+1) …
+  → loaded in 1.3s
+Loading 100 time-steps into cache …
+  → actually loading 191 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 161/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.008719 | Rate: 250018 samples/s
+  [Train] Epoch 161/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.008633 | Rate: 273035 samples/s
+  [Train] Epoch 161/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.008581 | Rate: 288622 samples/s
+  [Train] Epoch 161/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.008586 | Rate: 290308 samples/s
+  [Train] Epoch 161/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.008626 | Rate: 290399 samples/s
+  [Train] Epoch 161/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.008707 | Rate: 290991 samples/s
+  [Train] Epoch 161/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.008719 | Rate: 294078 samples/s
+  [Train] Epoch 161/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.008712 | Rate: 294101 samples/s
+  [Train] Epoch 161/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.008751 | Rate: 290682 samples/s
+  [Train] Epoch 161/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.008761 | Rate: 287745 samples/s
+  [Val] Epoch 161/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.008066 | Rate: 270126 samples/s
+  [Val] Epoch 161/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.008178 | Rate: 293109 samples/s
+  [Val] Epoch 161/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.008297 | Rate: 310938 samples/s
+  [Val] Epoch 161/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.008413 | Rate: 313959 samples/s
+  [Val] Epoch 161/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.008499 | Rate: 315549 samples/s
+  [Val] Epoch 161/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.008568 | Rate: 316650 samples/s
+  [Val] Epoch 161/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.008650 | Rate: 318574 samples/s
+  [Val] Epoch 161/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.008734 | Rate: 315100 samples/s
+  [Val] Epoch 161/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.008814 | Rate: 313894 samples/s
+  [Val] Epoch 161/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.008891 | Rate: 315356 samples/s
+Epoch 161/500  train_loss=0.008761  val_loss=0.008891  lr=3.13e-05  improve=False  time=605.8s  ETA=6040.3s
+Loading 100 time-steps into cache …
+  → actually loading 200 unique time-steps (including t+1) …
+  → loaded in 1.0s
+Loading 100 time-steps into cache …
+  → actually loading 191 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 162/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.007798 | Rate: 238792 samples/s
+  [Train] Epoch 162/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.007676 | Rate: 261487 samples/s
+  [Train] Epoch 162/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.007624 | Rate: 272653 samples/s
+  [Train] Epoch 162/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.007553 | Rate: 277203 samples/s
+  [Train] Epoch 162/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.007608 | Rate: 281731 samples/s
+  [Train] Epoch 162/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.007641 | Rate: 285163 samples/s
+  [Train] Epoch 162/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007656 | Rate: 290474 samples/s
+  [Train] Epoch 162/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007642 | Rate: 292619 samples/s
+  [Train] Epoch 162/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007627 | Rate: 294111 samples/s
+  [Train] Epoch 162/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007616 | Rate: 292619 samples/s
+  [Val] Epoch 162/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.007404 | Rate: 294282 samples/s
+  [Val] Epoch 162/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.007477 | Rate: 306152 samples/s
+  [Val] Epoch 162/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.007594 | Rate: 316332 samples/s
+  [Val] Epoch 162/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.007724 | Rate: 317310 samples/s
+  [Val] Epoch 162/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.007807 | Rate: 317526 samples/s
+  [Val] Epoch 162/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.007880 | Rate: 317948 samples/s
+  [Val] Epoch 162/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007962 | Rate: 320399 samples/s
+  [Val] Epoch 162/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.008037 | Rate: 318674 samples/s
+  [Val] Epoch 162/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.008110 | Rate: 319494 samples/s
+  [Val] Epoch 162/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.008181 | Rate: 320801 samples/s
+Epoch 162/500  train_loss=0.007616  val_loss=0.008181  lr=3.13e-05  improve=False  time=622.5s  ETA=6012.0s
+Loading 100 time-steps into cache …
+  → actually loading 199 unique time-steps (including t+1) …
+  → loaded in 1.2s
+Loading 100 time-steps into cache …
+  → actually loading 188 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 163/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.007814 | Rate: 256183 samples/s
+  [Train] Epoch 163/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.007662 | Rate: 293080 samples/s
+  [Train] Epoch 163/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.007732 | Rate: 296634 samples/s
+  [Train] Epoch 163/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.007655 | Rate: 299098 samples/s
+  [Train] Epoch 163/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.007713 | Rate: 299013 samples/s
+  [Train] Epoch 163/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.007658 | Rate: 298538 samples/s
+  [Train] Epoch 163/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007655 | Rate: 301401 samples/s
+  [Train] Epoch 163/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007619 | Rate: 300362 samples/s
+  [Train] Epoch 163/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007635 | Rate: 301121 samples/s
+  [Train] Epoch 163/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007645 | Rate: 298209 samples/s
+  [Val] Epoch 163/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.007133 | Rate: 221818 samples/s
+  [Val] Epoch 163/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.007226 | Rate: 247431 samples/s
+  [Val] Epoch 163/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.007344 | Rate: 249758 samples/s
+  [Val] Epoch 163/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.007486 | Rate: 249546 samples/s
+  [Val] Epoch 163/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.007586 | Rate: 247413 samples/s
+  [Val] Epoch 163/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.007657 | Rate: 249529 samples/s
+  [Val] Epoch 163/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007725 | Rate: 250032 samples/s
+  [Val] Epoch 163/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007787 | Rate: 249371 samples/s
+  [Val] Epoch 163/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007847 | Rate: 248381 samples/s
+  [Val] Epoch 163/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007923 | Rate: 250560 samples/s
+Epoch 163/500  train_loss=0.007645  val_loss=0.007923  lr=3.13e-05  improve=False  time=641.3s  ETA=6003.5s
+Loading 100 time-steps into cache …
+  → actually loading 199 unique time-steps (including t+1) …
+  → loaded in 1.3s
+Loading 100 time-steps into cache …
+  → actually loading 186 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 164/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.007372 | Rate: 255509 samples/s
+  [Train] Epoch 164/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.007699 | Rate: 282375 samples/s
+  [Train] Epoch 164/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.007928 | Rate: 291224 samples/s
+  [Train] Epoch 164/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.007934 | Rate: 293451 samples/s
+  [Train] Epoch 164/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.007977 | Rate: 295083 samples/s
+  [Train] Epoch 164/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.008078 | Rate: 298515 samples/s
+  [Train] Epoch 164/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.008121 | Rate: 299756 samples/s
+  [Train] Epoch 164/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.008104 | Rate: 300326 samples/s
+  [Train] Epoch 164/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.008100 | Rate: 300668 samples/s
+  [Train] Epoch 164/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.008095 | Rate: 297263 samples/s
+  [Val] Epoch 164/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.006810 | Rate: 226254 samples/s
+  [Val] Epoch 164/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.006898 | Rate: 250877 samples/s
+  [Val] Epoch 164/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.007005 | Rate: 245039 samples/s
+  [Val] Epoch 164/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.007142 | Rate: 241982 samples/s
+  [Val] Epoch 164/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.007235 | Rate: 240755 samples/s
+  [Val] Epoch 164/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.007309 | Rate: 243439 samples/s
+  [Val] Epoch 164/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007379 | Rate: 245033 samples/s
+  [Val] Epoch 164/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007443 | Rate: 245800 samples/s
+  [Val] Epoch 164/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007503 | Rate: 248238 samples/s
+  [Val] Epoch 164/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007573 | Rate: 248904 samples/s
+Epoch 164/500  train_loss=0.008095  val_loss=0.007573  lr=3.13e-05  improve=False  time=660.3s  ETA=5996.5s
+Loading 100 time-steps into cache …
+  → actually loading 200 unique time-steps (including t+1) …
+  → loaded in 1.2s
+Loading 100 time-steps into cache …
+  → actually loading 185 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 165/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.009187 | Rate: 243137 samples/s
+  [Train] Epoch 165/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.009050 | Rate: 274445 samples/s
+  [Train] Epoch 165/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.009080 | Rate: 279076 samples/s
+  [Train] Epoch 165/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.009032 | Rate: 282723 samples/s
+  [Train] Epoch 165/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.008936 | Rate: 281454 samples/s
+  [Train] Epoch 165/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.008814 | Rate: 287100 samples/s
+  [Train] Epoch 165/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.008818 | Rate: 286502 samples/s
+  [Train] Epoch 165/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.008804 | Rate: 283857 samples/s
+  [Train] Epoch 165/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.008882 | Rate: 284999 samples/s
+  [Train] Epoch 165/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.008866 | Rate: 282740 samples/s
+  [Val] Epoch 165/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.007242 | Rate: 311935 samples/s
+  [Val] Epoch 165/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.007274 | Rate: 312467 samples/s
+  [Val] Epoch 165/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.007326 | Rate: 311341 samples/s
+  [Val] Epoch 165/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.007392 | Rate: 306795 samples/s
+  [Val] Epoch 165/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.007482 | Rate: 308276 samples/s
+  [Val] Epoch 165/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.007573 | Rate: 308751 samples/s
+  [Val] Epoch 165/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007641 | Rate: 299758 samples/s
+  [Val] Epoch 165/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007699 | Rate: 299271 samples/s
+  [Val] Epoch 165/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007770 | Rate: 297846 samples/s
+  [Val] Epoch 165/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007854 | Rate: 300413 samples/s
+Epoch 165/500  train_loss=0.008866  val_loss=0.007854  lr=3.13e-05  improve=False  time=678.0s  ETA=5977.2s
+Loading 100 time-steps into cache …
+  → actually loading 199 unique time-steps (including t+1) …
+  → loaded in 0.9s
+Loading 100 time-steps into cache …
+  → actually loading 191 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 166/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.007235 | Rate: 222358 samples/s
+  [Train] Epoch 166/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.007275 | Rate: 254985 samples/s
+  [Train] Epoch 166/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.007293 | Rate: 256295 samples/s
+  [Train] Epoch 166/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.007238 | Rate: 257548 samples/s
+  [Train] Epoch 166/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.007260 | Rate: 256195 samples/s
+  [Train] Epoch 166/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.007212 | Rate: 261161 samples/s
+  [Train] Epoch 166/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007187 | Rate: 260984 samples/s
+  [Train] Epoch 166/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007184 | Rate: 264145 samples/s
+  [Train] Epoch 166/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007163 | Rate: 268263 samples/s
+  [Train] Epoch 166/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007157 | Rate: 267554 samples/s
+  [Val] Epoch 166/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.006724 | Rate: 264149 samples/s
+  [Val] Epoch 166/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.006782 | Rate: 284544 samples/s
+  [Val] Epoch 166/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.006846 | Rate: 287061 samples/s
+  [Val] Epoch 166/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.006961 | Rate: 289338 samples/s
+  [Val] Epoch 166/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.007068 | Rate: 289332 samples/s
+  [Val] Epoch 166/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.007150 | Rate: 294411 samples/s
+  [Val] Epoch 166/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007226 | Rate: 294657 samples/s
+  [Val] Epoch 166/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007304 | Rate: 296264 samples/s
+  [Val] Epoch 166/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007380 | Rate: 295798 samples/s
+  [Val] Epoch 166/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007457 | Rate: 298584 samples/s
+Epoch 166/500  train_loss=0.007157  val_loss=0.007457  lr=3.13e-05  improve=False  time=695.9s  ETA=5960.0s
+Loading 100 time-steps into cache …
+  → actually loading 200 unique time-steps (including t+1) …
+  → loaded in 1.2s
+Loading 100 time-steps into cache …
+  → actually loading 193 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 167/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.007669 | Rate: 219190 samples/s
+  [Train] Epoch 167/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.007703 | Rate: 255647 samples/s
+  [Train] Epoch 167/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.007778 | Rate: 260279 samples/s
+  [Train] Epoch 167/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.007741 | Rate: 264632 samples/s
+  [Train] Epoch 167/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.007665 | Rate: 268577 samples/s
+  [Train] Epoch 167/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.007604 | Rate: 276836 samples/s
+  [Train] Epoch 167/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007548 | Rate: 280678 samples/s
+  [Train] Epoch 167/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007595 | Rate: 282570 samples/s
+  [Train] Epoch 167/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007600 | Rate: 284809 samples/s
+  [Train] Epoch 167/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007600 | Rate: 283760 samples/s
+  [Val] Epoch 167/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.008149 | Rate: 268062 samples/s
+  [Val] Epoch 167/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.008186 | Rate: 291432 samples/s
+  [Val] Epoch 167/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.008231 | Rate: 298714 samples/s
+  [Val] Epoch 167/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.008323 | Rate: 302432 samples/s
+  [Val] Epoch 167/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.008432 | Rate: 303709 samples/s
+  [Val] Epoch 167/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.008517 | Rate: 307793 samples/s
+  [Val] Epoch 167/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.008585 | Rate: 310432 samples/s
+  [Val] Epoch 167/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.008663 | Rate: 311709 samples/s
+  [Val] Epoch 167/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.008743 | Rate: 313106 samples/s
+  [Val] Epoch 167/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.008822 | Rate: 317030 samples/s
+Epoch 167/500  train_loss=0.007600  val_loss=0.008822  lr=1.56e-05  improve=False  time=713.3s  ETA=5937.9s
+Loading 100 time-steps into cache …
+  → actually loading 199 unique time-steps (including t+1) …
+  → loaded in 0.8s
+Loading 100 time-steps into cache …
+  → actually loading 189 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 168/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.023370 | Rate: 242011 samples/s
+  [Train] Epoch 168/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.019898 | Rate: 263918 samples/s
+  [Train] Epoch 168/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.020884 | Rate: 279296 samples/s
+  [Train] Epoch 168/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.021447 | Rate: 284026 samples/s
+  [Train] Epoch 168/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.020872 | Rate: 285438 samples/s
+  [Train] Epoch 168/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.020834 | Rate: 287107 samples/s
+  [Train] Epoch 168/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.019994 | Rate: 291283 samples/s
+  [Train] Epoch 168/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.019816 | Rate: 292164 samples/s
+  [Train] Epoch 168/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.020724 | Rate: 292533 samples/s
+  [Train] Epoch 168/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.020519 | Rate: 290973 samples/s
+  [Val] Epoch 168/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.007153 | Rate: 266925 samples/s
+  [Val] Epoch 168/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.007248 | Rate: 285984 samples/s
+  [Val] Epoch 168/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.007382 | Rate: 298710 samples/s
+  [Val] Epoch 168/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.007509 | Rate: 300004 samples/s
+  [Val] Epoch 168/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.007591 | Rate: 301795 samples/s
+  [Val] Epoch 168/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.007655 | Rate: 303152 samples/s
+  [Val] Epoch 168/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007715 | Rate: 306003 samples/s
+  [Val] Epoch 168/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007777 | Rate: 309062 samples/s
+  [Val] Epoch 168/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007843 | Rate: 310987 samples/s
+  [Val] Epoch 168/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007916 | Rate: 313175 samples/s
+Epoch 168/500  train_loss=0.020519  val_loss=0.007916  lr=1.56e-05  improve=False  time=730.0s  ETA=5911.4s
+Loading 100 time-steps into cache …
+  → actually loading 198 unique time-steps (including t+1) …
+  → loaded in 0.9s
+Loading 100 time-steps into cache …
+  → actually loading 187 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 169/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.007448 | Rate: 246851 samples/s
+  [Train] Epoch 169/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.007673 | Rate: 260636 samples/s
+  [Train] Epoch 169/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.007819 | Rate: 273580 samples/s
+  [Train] Epoch 169/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.007723 | Rate: 286235 samples/s
+  [Train] Epoch 169/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.007660 | Rate: 287717 samples/s
+  [Train] Epoch 169/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.007681 | Rate: 289821 samples/s
+  [Train] Epoch 169/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007634 | Rate: 294092 samples/s
+  [Train] Epoch 169/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007640 | Rate: 296621 samples/s
+  [Train] Epoch 169/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007618 | Rate: 298457 samples/s
+  [Train] Epoch 169/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007592 | Rate: 295547 samples/s
+  [Val] Epoch 169/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.006717 | Rate: 270516 samples/s
+  [Val] Epoch 169/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.006765 | Rate: 290035 samples/s
+  [Val] Epoch 169/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.006841 | Rate: 299468 samples/s
+  [Val] Epoch 169/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.006976 | Rate: 308361 samples/s
+  [Val] Epoch 169/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.007084 | Rate: 310052 samples/s
+  [Val] Epoch 169/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.007161 | Rate: 312582 samples/s
+  [Val] Epoch 169/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007231 | Rate: 316043 samples/s
+  [Val] Epoch 169/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007295 | Rate: 317922 samples/s
+  [Val] Epoch 169/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007370 | Rate: 318700 samples/s
+  [Val] Epoch 169/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007450 | Rate: 319483 samples/s
+Epoch 169/500  train_loss=0.007592  val_loss=0.007450  lr=1.56e-05  improve=False  time=746.6s  ETA=5883.6s
+Loading 100 time-steps into cache …
+  → actually loading 198 unique time-steps (including t+1) …
+  → loaded in 1.1s
+Loading 100 time-steps into cache …
+  → actually loading 193 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 170/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.009054 | Rate: 238627 samples/s
+  [Train] Epoch 170/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.008930 | Rate: 260948 samples/s
+  [Train] Epoch 170/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.008961 | Rate: 269697 samples/s
+  [Train] Epoch 170/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.008923 | Rate: 279618 samples/s
+  [Train] Epoch 170/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.008850 | Rate: 282646 samples/s
+  [Train] Epoch 170/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.008868 | Rate: 283980 samples/s
+  [Train] Epoch 170/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.008924 | Rate: 286267 samples/s
+  [Train] Epoch 170/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.008895 | Rate: 290048 samples/s
+  [Train] Epoch 170/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.008872 | Rate: 290704 samples/s
+  [Train] Epoch 170/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.008907 | Rate: 285196 samples/s
+  [Val] Epoch 170/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.006594 | Rate: 281556 samples/s
+  [Val] Epoch 170/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.006652 | Rate: 280239 samples/s
+  [Val] Epoch 170/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.006702 | Rate: 284373 samples/s
+  [Val] Epoch 170/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.006752 | Rate: 292729 samples/s
+  [Val] Epoch 170/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.006837 | Rate: 294119 samples/s
+  [Val] Epoch 170/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.006928 | Rate: 296368 samples/s
+  [Val] Epoch 170/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007001 | Rate: 300209 samples/s
+  [Val] Epoch 170/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007075 | Rate: 305263 samples/s
+  [Val] Epoch 170/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007154 | Rate: 304488 samples/s
+  [Val] Epoch 170/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007241 | Rate: 307223 samples/s
+Epoch 170/500  train_loss=0.008907  val_loss=0.007241  lr=1.56e-05  improve=False  time=763.9s  ETA=5862.5s
+Loading 100 time-steps into cache …
+  → actually loading 199 unique time-steps (including t+1) …
+  → loaded in 1.1s
+Loading 100 time-steps into cache …
+  → actually loading 191 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 171/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.015728 | Rate: 238616 samples/s
+  [Train] Epoch 171/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.014495 | Rate: 261816 samples/s
+  [Train] Epoch 171/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.014991 | Rate: 275242 samples/s
+  [Train] Epoch 171/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.015658 | Rate: 279998 samples/s
+  [Train] Epoch 171/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.015706 | Rate: 284141 samples/s
+  [Train] Epoch 171/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.015823 | Rate: 286439 samples/s
+  [Train] Epoch 171/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.016229 | Rate: 290705 samples/s
+  [Train] Epoch 171/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.016110 | Rate: 290631 samples/s
+  [Train] Epoch 171/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.016079 | Rate: 291018 samples/s
+  [Train] Epoch 171/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.016234 | Rate: 287152 samples/s
+  [Val] Epoch 171/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.007156 | Rate: 256047 samples/s
+  [Val] Epoch 171/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.007204 | Rate: 274100 samples/s
+  [Val] Epoch 171/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.007259 | Rate: 287944 samples/s
+  [Val] Epoch 171/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.007320 | Rate: 292308 samples/s
+  [Val] Epoch 171/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.007414 | Rate: 293646 samples/s
+  [Val] Epoch 171/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.007508 | Rate: 293514 samples/s
+  [Val] Epoch 171/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007581 | Rate: 298851 samples/s
+  [Val] Epoch 171/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007655 | Rate: 300252 samples/s
+  [Val] Epoch 171/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007735 | Rate: 300870 samples/s
+  [Val] Epoch 171/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007819 | Rate: 302795 samples/s
+Epoch 171/500  train_loss=0.016234  val_loss=0.007819  lr=1.56e-05  improve=False  time=781.4s  ETA=5842.4s
+Loading 100 time-steps into cache …
+  → actually loading 200 unique time-steps (including t+1) …
+  → loaded in 1.1s
+Loading 100 time-steps into cache …
+  → actually loading 192 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 172/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.007643 | Rate: 236584 samples/s
+  [Train] Epoch 172/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.007876 | Rate: 258273 samples/s
+  [Train] Epoch 172/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.007753 | Rate: 268640 samples/s
+  [Train] Epoch 172/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.007773 | Rate: 272850 samples/s
+  [Train] Epoch 172/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.007748 | Rate: 275659 samples/s
+  [Train] Epoch 172/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.007759 | Rate: 278476 samples/s
+  [Train] Epoch 172/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007737 | Rate: 283515 samples/s
+  [Train] Epoch 172/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007722 | Rate: 286451 samples/s
+  [Train] Epoch 172/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007705 | Rate: 289073 samples/s
+  [Train] Epoch 172/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007669 | Rate: 288315 samples/s
+  [Val] Epoch 172/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.006510 | Rate: 274903 samples/s
+  [Val] Epoch 172/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.006544 | Rate: 293711 samples/s
+  [Val] Epoch 172/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.006602 | Rate: 303956 samples/s
+  [Val] Epoch 172/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.006676 | Rate: 304967 samples/s
+  [Val] Epoch 172/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.006787 | Rate: 304981 samples/s
+  [Val] Epoch 172/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.006885 | Rate: 304820 samples/s
+  [Val] Epoch 172/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.006971 | Rate: 308638 samples/s
+  [Val] Epoch 172/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007057 | Rate: 310050 samples/s
+  [Val] Epoch 172/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007145 | Rate: 312119 samples/s
+  [Val] Epoch 172/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007233 | Rate: 313250 samples/s
+Epoch 172/500  train_loss=0.007669  val_loss=0.007233  lr=1.56e-05  improve=False  time=798.5s  ETA=5820.3s
+Loading 100 time-steps into cache …
+  → actually loading 197 unique time-steps (including t+1) …
+  → loaded in 0.9s
+Loading 100 time-steps into cache …
+  → actually loading 189 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 173/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.007277 | Rate: 248924 samples/s
+  [Train] Epoch 173/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.007346 | Rate: 272089 samples/s
+  [Train] Epoch 173/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.007332 | Rate: 286354 samples/s
+  [Train] Epoch 173/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.007463 | Rate: 292753 samples/s
+  [Train] Epoch 173/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.007559 | Rate: 295555 samples/s
+  [Train] Epoch 173/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.007566 | Rate: 297018 samples/s
+  [Train] Epoch 173/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007592 | Rate: 301600 samples/s
+  [Train] Epoch 173/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007592 | Rate: 303018 samples/s
+  [Train] Epoch 173/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007615 | Rate: 306112 samples/s
+  [Train] Epoch 173/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007606 | Rate: 304012 samples/s
+  [Val] Epoch 173/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.006380 | Rate: 275244 samples/s
+  [Val] Epoch 173/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.006442 | Rate: 288294 samples/s
+  [Val] Epoch 173/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.006497 | Rate: 288354 samples/s
+  [Val] Epoch 173/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.006576 | Rate: 284536 samples/s
+  [Val] Epoch 173/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.006685 | Rate: 275065 samples/s
+  [Val] Epoch 173/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.006775 | Rate: 278511 samples/s
+  [Val] Epoch 173/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.006853 | Rate: 282486 samples/s
+  [Val] Epoch 173/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.006930 | Rate: 284100 samples/s
+  [Val] Epoch 173/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007003 | Rate: 288042 samples/s
+  [Val] Epoch 173/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007083 | Rate: 293392 samples/s
+Epoch 173/500  train_loss=0.007606  val_loss=0.007083  lr=7.81e-06  improve=False  time=815.5s  ETA=5797.4s
+Loading 100 time-steps into cache …
+  → actually loading 198 unique time-steps (including t+1) …
+  → loaded in 1.1s
+Loading 100 time-steps into cache …
+  → actually loading 193 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 174/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.008350 | Rate: 210722 samples/s
+  [Train] Epoch 174/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.008207 | Rate: 245120 samples/s
+  [Train] Epoch 174/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.008075 | Rate: 263709 samples/s
+  [Train] Epoch 174/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.008126 | Rate: 270147 samples/s
+  [Train] Epoch 174/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.008135 | Rate: 273610 samples/s
+  [Train] Epoch 174/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.008098 | Rate: 276456 samples/s
+  [Train] Epoch 174/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.008095 | Rate: 281008 samples/s
+  [Train] Epoch 174/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.008131 | Rate: 283260 samples/s
+  [Train] Epoch 174/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.008130 | Rate: 284361 samples/s
+  [Train] Epoch 174/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.008163 | Rate: 281700 samples/s
+  [Val] Epoch 174/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.006301 | Rate: 235070 samples/s
+  [Val] Epoch 174/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.006394 | Rate: 254235 samples/s
+  [Val] Epoch 174/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.006470 | Rate: 275075 samples/s
+  [Val] Epoch 174/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.006591 | Rate: 281664 samples/s
+  [Val] Epoch 174/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.006691 | Rate: 286096 samples/s
+  [Val] Epoch 174/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.006766 | Rate: 288401 samples/s
+  [Val] Epoch 174/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.006838 | Rate: 295133 samples/s
+  [Val] Epoch 174/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.006906 | Rate: 298534 samples/s
+  [Val] Epoch 174/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.006980 | Rate: 300829 samples/s
+  [Val] Epoch 174/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007057 | Rate: 303412 samples/s
+Epoch 174/500  train_loss=0.008163  val_loss=0.007057  lr=7.81e-06  improve=False  time=833.1s  ETA=5778.8s
+Loading 100 time-steps into cache …
+  → actually loading 200 unique time-steps (including t+1) …
+  → loaded in 1.0s
+Loading 100 time-steps into cache …
+  → actually loading 190 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 175/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.008266 | Rate: 226419 samples/s
+  [Train] Epoch 175/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.008225 | Rate: 263024 samples/s
+  [Train] Epoch 175/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.008072 | Rate: 270331 samples/s
+  [Train] Epoch 175/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.008082 | Rate: 278553 samples/s
+  [Train] Epoch 175/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.008042 | Rate: 283006 samples/s
+  [Train] Epoch 175/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.008083 | Rate: 286389 samples/s
+  [Train] Epoch 175/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.008087 | Rate: 292623 samples/s
+  [Train] Epoch 175/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.008104 | Rate: 294195 samples/s
+  [Train] Epoch 175/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.008131 | Rate: 296143 samples/s
+  [Train] Epoch 175/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.008141 | Rate: 294658 samples/s
+  [Val] Epoch 175/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.006368 | Rate: 265284 samples/s
+  [Val] Epoch 175/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.006434 | Rate: 296106 samples/s
+  [Val] Epoch 175/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.006500 | Rate: 296378 samples/s
+  [Val] Epoch 175/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.006589 | Rate: 298232 samples/s
+  [Val] Epoch 175/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.006702 | Rate: 299745 samples/s
+  [Val] Epoch 175/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.006791 | Rate: 300659 samples/s
+  [Val] Epoch 175/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.006865 | Rate: 306646 samples/s
+  [Val] Epoch 175/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.006951 | Rate: 308744 samples/s
+  [Val] Epoch 175/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007034 | Rate: 311221 samples/s
+  [Val] Epoch 175/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007116 | Rate: 314522 samples/s
+Epoch 175/500  train_loss=0.008141  val_loss=0.007116  lr=7.81e-06  improve=False  time=850.0s  ETA=5754.9s
+Loading 100 time-steps into cache …
+  → actually loading 199 unique time-steps (including t+1) …
+  → loaded in 0.7s
+Loading 100 time-steps into cache …
+  → actually loading 191 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 176/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.008594 | Rate: 232205 samples/s
+  [Train] Epoch 176/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.008805 | Rate: 268549 samples/s
+  [Train] Epoch 176/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.008757 | Rate: 277027 samples/s
+  [Train] Epoch 176/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.008642 | Rate: 280999 samples/s
+  [Train] Epoch 176/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.008677 | Rate: 282962 samples/s
+  [Train] Epoch 176/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.008757 | Rate: 287379 samples/s
+  [Train] Epoch 176/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.008742 | Rate: 289484 samples/s
+  [Train] Epoch 176/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.008775 | Rate: 292169 samples/s
+  [Train] Epoch 176/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.008730 | Rate: 294299 samples/s
+  [Train] Epoch 176/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.008714 | Rate: 293036 samples/s
+  [Val] Epoch 176/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.006298 | Rate: 263894 samples/s
+  [Val] Epoch 176/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.006351 | Rate: 298347 samples/s
+  [Val] Epoch 176/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.006409 | Rate: 297316 samples/s
+  [Val] Epoch 176/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.006497 | Rate: 304662 samples/s
+  [Val] Epoch 176/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.006607 | Rate: 308361 samples/s
+  [Val] Epoch 176/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.006692 | Rate: 313983 samples/s
+  [Val] Epoch 176/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.006764 | Rate: 316021 samples/s
+  [Val] Epoch 176/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.006837 | Rate: 317257 samples/s
+  [Val] Epoch 176/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.006910 | Rate: 318691 samples/s
+  [Val] Epoch 176/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.006987 | Rate: 321882 samples/s
+Epoch 176/500  train_loss=0.008714  val_loss=0.006987  lr=7.81e-06  improve=False  time=866.4s  ETA=5728.9s
+Loading 100 time-steps into cache …
+  → actually loading 196 unique time-steps (including t+1) …
+  → loaded in 0.9s
+Loading 100 time-steps into cache …
+  → actually loading 188 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 177/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.007918 | Rate: 233162 samples/s
+  [Train] Epoch 177/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.007649 | Rate: 266595 samples/s
+  [Train] Epoch 177/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.007551 | Rate: 275303 samples/s
+  [Train] Epoch 177/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.007665 | Rate: 281808 samples/s
+  [Train] Epoch 177/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.007608 | Rate: 283192 samples/s
+  [Train] Epoch 177/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.007541 | Rate: 288177 samples/s
+  [Train] Epoch 177/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007524 | Rate: 290815 samples/s
+  [Train] Epoch 177/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007537 | Rate: 293324 samples/s
+  [Train] Epoch 177/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007542 | Rate: 295046 samples/s
+  [Train] Epoch 177/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007546 | Rate: 292037 samples/s
+  [Val] Epoch 177/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.006461 | Rate: 269108 samples/s
+  [Val] Epoch 177/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.006514 | Rate: 295404 samples/s
+  [Val] Epoch 177/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.006614 | Rate: 298245 samples/s
+  [Val] Epoch 177/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.006752 | Rate: 299763 samples/s
+  [Val] Epoch 177/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.006858 | Rate: 303484 samples/s
+  [Val] Epoch 177/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.006938 | Rate: 310483 samples/s
+  [Val] Epoch 177/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007012 | Rate: 310789 samples/s
+  [Val] Epoch 177/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007084 | Rate: 312081 samples/s
+  [Val] Epoch 177/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007151 | Rate: 312869 samples/s
+  [Val] Epoch 177/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007222 | Rate: 315958 samples/s
+Epoch 177/500  train_loss=0.007546  val_loss=0.007222  lr=7.81e-06  improve=False  time=883.2s  ETA=5705.8s
+Loading 100 time-steps into cache …
+  → actually loading 199 unique time-steps (including t+1) …
+  → loaded in 0.8s
+Loading 100 time-steps into cache …
+  → actually loading 186 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 178/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.008992 | Rate: 222117 samples/s
+  [Train] Epoch 178/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.008396 | Rate: 259588 samples/s
+  [Train] Epoch 178/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.008445 | Rate: 268143 samples/s
+  [Train] Epoch 178/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.008465 | Rate: 271182 samples/s
+  [Train] Epoch 178/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.008355 | Rate: 275350 samples/s
+  [Train] Epoch 178/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.008354 | Rate: 279486 samples/s
+  [Train] Epoch 178/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.008400 | Rate: 279579 samples/s
+  [Train] Epoch 178/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.008369 | Rate: 279684 samples/s
+  [Train] Epoch 178/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.008400 | Rate: 279389 samples/s
+  [Train] Epoch 178/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.008389 | Rate: 278352 samples/s
+  [Val] Epoch 178/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.006191 | Rate: 296394 samples/s
+  [Val] Epoch 178/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.006227 | Rate: 323003 samples/s
+  [Val] Epoch 178/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.006271 | Rate: 322487 samples/s
+  [Val] Epoch 178/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.006326 | Rate: 320697 samples/s
+  [Val] Epoch 178/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.006416 | Rate: 321614 samples/s
+  [Val] Epoch 178/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.006501 | Rate: 324095 samples/s
+  [Val] Epoch 178/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.006575 | Rate: 323251 samples/s
+  [Val] Epoch 178/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.006643 | Rate: 322599 samples/s
+  [Val] Epoch 178/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.006723 | Rate: 321949 samples/s
+  [Val] Epoch 178/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.006811 | Rate: 323637 samples/s
+Epoch 178/500  train_loss=0.008389  val_loss=0.006811  lr=7.81e-06  improve=True  time=900.1s  ETA=5682.8s
+  → New best val loss 0.006811, checkpoint saved to best_model.pt, inference model saved to best_model_jit.pt
+Loading 100 time-steps into cache …
+  → actually loading 200 unique time-steps (including t+1) …
+  → loaded in 0.8s
+Loading 100 time-steps into cache …
+  → actually loading 191 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 179/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.007238 | Rate: 230901 samples/s
+  [Train] Epoch 179/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.007013 | Rate: 255944 samples/s
+  [Train] Epoch 179/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.006943 | Rate: 259958 samples/s
+  [Train] Epoch 179/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.006950 | Rate: 260705 samples/s
+  [Train] Epoch 179/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.006947 | Rate: 260006 samples/s
+  [Train] Epoch 179/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.006916 | Rate: 261792 samples/s
+  [Train] Epoch 179/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.006872 | Rate: 266743 samples/s
+  [Train] Epoch 179/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.006913 | Rate: 267844 samples/s
+  [Train] Epoch 179/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.006954 | Rate: 268675 samples/s
+  [Train] Epoch 179/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.006932 | Rate: 267586 samples/s
+  [Val] Epoch 179/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.006098 | Rate: 270546 samples/s
+  [Val] Epoch 179/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.006144 | Rate: 280858 samples/s
+  [Val] Epoch 179/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.006187 | Rate: 285977 samples/s
+  [Val] Epoch 179/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.006284 | Rate: 289173 samples/s
+  [Val] Epoch 179/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.006396 | Rate: 290347 samples/s
+  [Val] Epoch 179/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.006481 | Rate: 290480 samples/s
+  [Val] Epoch 179/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.006557 | Rate: 289036 samples/s
+  [Val] Epoch 179/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.006628 | Rate: 292423 samples/s
+  [Val] Epoch 179/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.006706 | Rate: 292962 samples/s
+  [Val] Epoch 179/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.006784 | Rate: 292456 samples/s
+Epoch 179/500  train_loss=0.006932  val_loss=0.006784  lr=7.81e-06  improve=True  time=918.0s  ETA=5667.1s
+  → New best val loss 0.006784, checkpoint saved to best_model.pt, inference model saved to best_model_jit.pt
+Loading 100 time-steps into cache …
+  → actually loading 199 unique time-steps (including t+1) …
+  → loaded in 0.8s
+Loading 100 time-steps into cache …
+  → actually loading 188 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 180/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.007742 | Rate: 233807 samples/s
+  [Train] Epoch 180/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.007782 | Rate: 258490 samples/s
+  [Train] Epoch 180/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.007748 | Rate: 267417 samples/s
+  [Train] Epoch 180/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.007774 | Rate: 278368 samples/s
+  [Train] Epoch 180/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.007758 | Rate: 279452 samples/s
+  [Train] Epoch 180/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.007736 | Rate: 281162 samples/s
+  [Train] Epoch 180/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007741 | Rate: 283898 samples/s
+  [Train] Epoch 180/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007724 | Rate: 288834 samples/s
+  [Train] Epoch 180/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007752 | Rate: 290800 samples/s
+  [Train] Epoch 180/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007755 | Rate: 287605 samples/s
+  [Val] Epoch 180/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.006127 | Rate: 279851 samples/s
+  [Val] Epoch 180/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.006163 | Rate: 286336 samples/s
+  [Val] Epoch 180/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.006219 | Rate: 290984 samples/s
+  [Val] Epoch 180/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.006314 | Rate: 290533 samples/s
+  [Val] Epoch 180/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.006418 | Rate: 289984 samples/s
+  [Val] Epoch 180/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.006501 | Rate: 289569 samples/s
+  [Val] Epoch 180/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.006569 | Rate: 289532 samples/s
+  [Val] Epoch 180/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.006636 | Rate: 291600 samples/s
+  [Val] Epoch 180/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.006707 | Rate: 291259 samples/s
+  [Val] Epoch 180/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.006785 | Rate: 292196 samples/s
+Epoch 180/500  train_loss=0.007755  val_loss=0.006785  lr=7.81e-06  improve=False  time=935.5s  ETA=5648.0s
+Loading 100 time-steps into cache …
+  → actually loading 199 unique time-steps (including t+1) …
+  → loaded in 0.9s
+Loading 100 time-steps into cache …
+  → actually loading 190 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 181/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.007367 | Rate: 242395 samples/s
+  [Train] Epoch 181/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.007168 | Rate: 268208 samples/s
+  [Train] Epoch 181/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.007132 | Rate: 283512 samples/s
+  [Train] Epoch 181/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.007132 | Rate: 287222 samples/s
+  [Train] Epoch 181/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.007121 | Rate: 287909 samples/s
+  [Train] Epoch 181/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.007108 | Rate: 287312 samples/s
+  [Train] Epoch 181/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007149 | Rate: 289377 samples/s
+  [Train] Epoch 181/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007150 | Rate: 292637 samples/s
+  [Train] Epoch 181/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007139 | Rate: 294062 samples/s
+  [Train] Epoch 181/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007145 | Rate: 289543 samples/s
+  [Val] Epoch 181/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.005976 | Rate: 264884 samples/s
+  [Val] Epoch 181/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.006008 | Rate: 277419 samples/s
+  [Val] Epoch 181/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.006050 | Rate: 292333 samples/s
+  [Val] Epoch 181/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.006104 | Rate: 296705 samples/s
+  [Val] Epoch 181/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.006188 | Rate: 298456 samples/s
+  [Val] Epoch 181/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.006274 | Rate: 300966 samples/s
+  [Val] Epoch 181/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.006347 | Rate: 301839 samples/s
+  [Val] Epoch 181/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.006424 | Rate: 307777 samples/s
+  [Val] Epoch 181/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.006507 | Rate: 309589 samples/s
+  [Val] Epoch 181/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.006590 | Rate: 309774 samples/s
+Epoch 181/500  train_loss=0.007145  val_loss=0.006590  lr=7.81e-06  improve=True  time=952.4s  ETA=5626.1s
+  → New best val loss 0.006590, checkpoint saved to best_model.pt, inference model saved to best_model_jit.pt
+Loading 100 time-steps into cache …
+  → actually loading 200 unique time-steps (including t+1) …
+  → loaded in 0.7s
+Loading 100 time-steps into cache …
+  → actually loading 187 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 182/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.008362 | Rate: 229624 samples/s
+  [Train] Epoch 182/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.008488 | Rate: 254128 samples/s
+  [Train] Epoch 182/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.008504 | Rate: 268035 samples/s
+  [Train] Epoch 182/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.008430 | Rate: 275949 samples/s
+  [Train] Epoch 182/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.008422 | Rate: 281395 samples/s
+  [Train] Epoch 182/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.008360 | Rate: 285557 samples/s
+  [Train] Epoch 182/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.008368 | Rate: 290284 samples/s
+  [Train] Epoch 182/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.008424 | Rate: 292707 samples/s
+  [Train] Epoch 182/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.008434 | Rate: 293945 samples/s
+  [Train] Epoch 182/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.008443 | Rate: 290176 samples/s
+  [Val] Epoch 182/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.005915 | Rate: 262779 samples/s
+  [Val] Epoch 182/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.005955 | Rate: 286619 samples/s
+  [Val] Epoch 182/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.006016 | Rate: 301397 samples/s
+  [Val] Epoch 182/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.006111 | Rate: 305192 samples/s
+  [Val] Epoch 182/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.006213 | Rate: 307395 samples/s
+  [Val] Epoch 182/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.006291 | Rate: 306717 samples/s
+  [Val] Epoch 182/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.006361 | Rate: 309468 samples/s
+  [Val] Epoch 182/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.006426 | Rate: 311023 samples/s
+  [Val] Epoch 182/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.006500 | Rate: 313510 samples/s
+  [Val] Epoch 182/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.006576 | Rate: 314986 samples/s
+Epoch 182/500  train_loss=0.008443  val_loss=0.006576  lr=7.81e-06  improve=True  time=969.1s  ETA=5603.4s
+  → New best val loss 0.006576, checkpoint saved to best_model.pt, inference model saved to best_model_jit.pt
+Loading 100 time-steps into cache …
+  → actually loading 198 unique time-steps (including t+1) …
+  → loaded in 0.8s
+Loading 100 time-steps into cache …
+  → actually loading 190 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 183/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.007517 | Rate: 242365 samples/s
+  [Train] Epoch 183/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.007379 | Rate: 274024 samples/s
+  [Train] Epoch 183/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.007545 | Rate: 283587 samples/s
+  [Train] Epoch 183/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.007511 | Rate: 284482 samples/s
+  [Train] Epoch 183/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.007492 | Rate: 287191 samples/s
+  [Train] Epoch 183/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.007506 | Rate: 291152 samples/s
+  [Train] Epoch 183/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007510 | Rate: 296140 samples/s
+  [Train] Epoch 183/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007433 | Rate: 298268 samples/s
+  [Train] Epoch 183/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007442 | Rate: 300003 samples/s
+  [Train] Epoch 183/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007494 | Rate: 298271 samples/s
+  [Val] Epoch 183/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.005928 | Rate: 306382 samples/s
+  [Val] Epoch 183/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.005965 | Rate: 327622 samples/s
+  [Val] Epoch 183/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.005999 | Rate: 325687 samples/s
+  [Val] Epoch 183/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.006044 | Rate: 322610 samples/s
+  [Val] Epoch 183/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.006131 | Rate: 321991 samples/s
+  [Val] Epoch 183/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.006213 | Rate: 322092 samples/s
+  [Val] Epoch 183/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.006288 | Rate: 324099 samples/s
+  [Val] Epoch 183/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.006362 | Rate: 325276 samples/s
+  [Val] Epoch 183/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.006435 | Rate: 327409 samples/s
+  [Val] Epoch 183/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.006512 | Rate: 328070 samples/s
+Epoch 183/500  train_loss=0.007494  val_loss=0.006512  lr=7.81e-06  improve=True  time=985.4s  ETA=5578.0s
+  → New best val loss 0.006512, checkpoint saved to best_model.pt, inference model saved to best_model_jit.pt
+Loading 100 time-steps into cache …
+  → actually loading 200 unique time-steps (including t+1) …
+  → loaded in 0.7s
+Loading 100 time-steps into cache …
+  → actually loading 193 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 184/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.008520 | Rate: 244883 samples/s
+  [Train] Epoch 184/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.008445 | Rate: 277961 samples/s
+  [Train] Epoch 184/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.008697 | Rate: 284014 samples/s
+  [Train] Epoch 184/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.008643 | Rate: 285707 samples/s
+  [Train] Epoch 184/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.008632 | Rate: 287728 samples/s
+  [Train] Epoch 184/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.008631 | Rate: 292943 samples/s
+  [Train] Epoch 184/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.008622 | Rate: 296936 samples/s
+  [Train] Epoch 184/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.008592 | Rate: 298348 samples/s
+  [Train] Epoch 184/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.008550 | Rate: 301332 samples/s
+  [Train] Epoch 184/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.008522 | Rate: 300855 samples/s
+  [Val] Epoch 184/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.006084 | Rate: 248111 samples/s
+  [Val] Epoch 184/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.006123 | Rate: 276453 samples/s
+  [Val] Epoch 184/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.006169 | Rate: 274068 samples/s
+  [Val] Epoch 184/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.006274 | Rate: 280286 samples/s
+  [Val] Epoch 184/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.006364 | Rate: 284478 samples/s
+  [Val] Epoch 184/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.006441 | Rate: 290706 samples/s
+  [Val] Epoch 184/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.006509 | Rate: 295303 samples/s
+  [Val] Epoch 184/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.006579 | Rate: 299018 samples/s
+  [Val] Epoch 184/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.006649 | Rate: 297676 samples/s
+  [Val] Epoch 184/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.006722 | Rate: 300707 samples/s
+Epoch 184/500  train_loss=0.008522  val_loss=0.006722  lr=7.81e-06  improve=False  time=1002.2s  ETA=5555.8s
+Loading 100 time-steps into cache …
+  → actually loading 200 unique time-steps (including t+1) …
+  → loaded in 0.7s
+Loading 100 time-steps into cache …
+  → actually loading 193 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 185/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.008040 | Rate: 227338 samples/s
+  [Train] Epoch 185/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.007966 | Rate: 259874 samples/s
+  [Train] Epoch 185/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.008160 | Rate: 269530 samples/s
+  [Train] Epoch 185/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.008122 | Rate: 278467 samples/s
+  [Train] Epoch 185/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.008147 | Rate: 281678 samples/s
+  [Train] Epoch 185/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.008206 | Rate: 289649 samples/s
+  [Train] Epoch 185/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.008283 | Rate: 291865 samples/s
+  [Train] Epoch 185/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.008297 | Rate: 293400 samples/s
+  [Train] Epoch 185/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.008300 | Rate: 294939 samples/s
+  [Train] Epoch 185/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.008318 | Rate: 292675 samples/s
+  [Val] Epoch 185/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.005943 | Rate: 273447 samples/s
+  [Val] Epoch 185/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.005969 | Rate: 300549 samples/s
+  [Val] Epoch 185/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.005995 | Rate: 301820 samples/s
+  [Val] Epoch 185/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.006040 | Rate: 307094 samples/s
+  [Val] Epoch 185/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.006114 | Rate: 309659 samples/s
+  [Val] Epoch 185/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.006198 | Rate: 316033 samples/s
+  [Val] Epoch 185/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.006271 | Rate: 317342 samples/s
+  [Val] Epoch 185/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.006349 | Rate: 319452 samples/s
+  [Val] Epoch 185/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.006432 | Rate: 319811 samples/s
+  [Val] Epoch 185/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.006516 | Rate: 323317 samples/s
+Epoch 185/500  train_loss=0.008318  val_loss=0.006516  lr=7.81e-06  improve=False  time=1018.6s  ETA=5531.9s
+Loading 100 time-steps into cache …
+  → actually loading 199 unique time-steps (including t+1) …
+  → loaded in 0.7s
+Loading 100 time-steps into cache …
+  → actually loading 191 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 186/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.009223 | Rate: 241458 samples/s
+  [Train] Epoch 186/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.009181 | Rate: 266766 samples/s
+  [Train] Epoch 186/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.009146 | Rate: 283469 samples/s
+  [Train] Epoch 186/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.009010 | Rate: 287253 samples/s
+  [Train] Epoch 186/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.008920 | Rate: 289749 samples/s
+  [Train] Epoch 186/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.008942 | Rate: 290012 samples/s
+  [Train] Epoch 186/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.008958 | Rate: 294282 samples/s
+  [Train] Epoch 186/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.008924 | Rate: 294494 samples/s
+  [Train] Epoch 186/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.008916 | Rate: 294916 samples/s
+  [Train] Epoch 186/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.008926 | Rate: 292936 samples/s
+  [Val] Epoch 186/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.005996 | Rate: 269965 samples/s
+  [Val] Epoch 186/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.006022 | Rate: 279986 samples/s
+  [Val] Epoch 186/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.006081 | Rate: 288189 samples/s
+  [Val] Epoch 186/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.006180 | Rate: 289128 samples/s
+  [Val] Epoch 186/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.006276 | Rate: 288237 samples/s
+  [Val] Epoch 186/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.006354 | Rate: 290238 samples/s
+  [Val] Epoch 186/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.006426 | Rate: 293575 samples/s
+  [Val] Epoch 186/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.006505 | Rate: 295713 samples/s
+  [Val] Epoch 186/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.006580 | Rate: 296041 samples/s
+  [Val] Epoch 186/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.006654 | Rate: 298073 samples/s
+Epoch 186/500  train_loss=0.008926  val_loss=0.006654  lr=7.81e-06  improve=False  time=1035.6s  ETA=5511.4s
+Loading 100 time-steps into cache …
+  → actually loading 198 unique time-steps (including t+1) …
+  → loaded in 0.6s
+Loading 100 time-steps into cache …
+  → actually loading 190 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 187/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.006430 | Rate: 236608 samples/s
+  [Train] Epoch 187/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.006411 | Rate: 263326 samples/s
+  [Train] Epoch 187/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.006478 | Rate: 277877 samples/s
+  [Train] Epoch 187/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.006416 | Rate: 283360 samples/s
+  [Train] Epoch 187/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.006357 | Rate: 283431 samples/s
+  [Train] Epoch 187/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.006408 | Rate: 284948 samples/s
+  [Train] Epoch 187/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.006454 | Rate: 287291 samples/s
+  [Train] Epoch 187/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.006474 | Rate: 291302 samples/s
+  [Train] Epoch 187/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.006461 | Rate: 292360 samples/s
+  [Train] Epoch 187/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.006445 | Rate: 288801 samples/s
+  [Val] Epoch 187/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.005838 | Rate: 281888 samples/s
+  [Val] Epoch 187/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.005862 | Rate: 293563 samples/s
+  [Val] Epoch 187/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.005895 | Rate: 304946 samples/s
+  [Val] Epoch 187/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.005962 | Rate: 304470 samples/s
+  [Val] Epoch 187/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.006054 | Rate: 303784 samples/s
+  [Val] Epoch 187/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.006136 | Rate: 305650 samples/s
+  [Val] Epoch 187/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.006214 | Rate: 308625 samples/s
+  [Val] Epoch 187/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.006287 | Rate: 313954 samples/s
+  [Val] Epoch 187/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.006360 | Rate: 315509 samples/s
+  [Val] Epoch 187/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.006437 | Rate: 311055 samples/s
+Epoch 187/500  train_loss=0.006445  val_loss=0.006437  lr=7.81e-06  improve=True  time=1052.2s  ETA=5489.2s
+  → New best val loss 0.006437, checkpoint saved to best_model.pt, inference model saved to best_model_jit.pt
+Loading 100 time-steps into cache …
+  → actually loading 199 unique time-steps (including t+1) …
+  → loaded in 0.6s
+Loading 100 time-steps into cache …
+  → actually loading 193 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 188/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.007394 | Rate: 230862 samples/s
+  [Train] Epoch 188/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.007144 | Rate: 251429 samples/s
+  [Train] Epoch 188/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.007124 | Rate: 261809 samples/s
+  [Train] Epoch 188/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.007167 | Rate: 271778 samples/s
+  [Train] Epoch 188/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.007146 | Rate: 276881 samples/s
+  [Train] Epoch 188/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.007173 | Rate: 281964 samples/s
+  [Train] Epoch 188/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007245 | Rate: 283765 samples/s
+  [Train] Epoch 188/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007259 | Rate: 288223 samples/s
+  [Train] Epoch 188/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007224 | Rate: 290239 samples/s
+  [Train] Epoch 188/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007254 | Rate: 287768 samples/s
+  [Val] Epoch 188/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.005800 | Rate: 280372 samples/s
+  [Val] Epoch 188/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.005824 | Rate: 285421 samples/s
+  [Val] Epoch 188/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.005863 | Rate: 289900 samples/s
+  [Val] Epoch 188/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.005971 | Rate: 297754 samples/s
+  [Val] Epoch 188/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.006067 | Rate: 297797 samples/s
+  [Val] Epoch 188/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.006151 | Rate: 302436 samples/s
+  [Val] Epoch 188/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.006223 | Rate: 302881 samples/s
+  [Val] Epoch 188/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.006291 | Rate: 308252 samples/s
+  [Val] Epoch 188/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.006356 | Rate: 310330 samples/s
+  [Val] Epoch 188/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.006423 | Rate: 312253 samples/s
+Epoch 188/500  train_loss=0.007254  val_loss=0.006423  lr=7.81e-06  improve=True  time=1069.0s  ETA=5467.8s
+  → New best val loss 0.006423, checkpoint saved to best_model.pt, inference model saved to best_model_jit.pt
+Loading 100 time-steps into cache …
+  → actually loading 200 unique time-steps (including t+1) …
+  → loaded in 0.8s
+Loading 100 time-steps into cache …
+  → actually loading 184 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 189/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.007090 | Rate: 236035 samples/s
+  [Train] Epoch 189/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.007076 | Rate: 260907 samples/s
+  [Train] Epoch 189/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.007255 | Rate: 277087 samples/s
+  [Train] Epoch 189/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.007234 | Rate: 282296 samples/s
+  [Train] Epoch 189/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.007206 | Rate: 286156 samples/s
+  [Train] Epoch 189/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.007272 | Rate: 290961 samples/s
+  [Train] Epoch 189/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007295 | Rate: 295761 samples/s
+  [Train] Epoch 189/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007293 | Rate: 297830 samples/s
+  [Train] Epoch 189/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007296 | Rate: 298687 samples/s
+  [Train] Epoch 189/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007330 | Rate: 296658 samples/s
+  [Val] Epoch 189/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.005755 | Rate: 276118 samples/s
+  [Val] Epoch 189/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.005779 | Rate: 293792 samples/s
+  [Val] Epoch 189/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.005819 | Rate: 305431 samples/s
+  [Val] Epoch 189/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.005922 | Rate: 306606 samples/s
+  [Val] Epoch 189/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.006009 | Rate: 301066 samples/s
+  [Val] Epoch 189/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.006091 | Rate: 301789 samples/s
+  [Val] Epoch 189/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.006164 | Rate: 306342 samples/s
+  [Val] Epoch 189/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.006229 | Rate: 307189 samples/s
+  [Val] Epoch 189/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.006295 | Rate: 309005 samples/s
+  [Val] Epoch 189/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.006361 | Rate: 310613 samples/s
+Epoch 189/500  train_loss=0.007330  val_loss=0.006361  lr=7.81e-06  improve=True  time=1085.7s  ETA=5445.8s
+  → New best val loss 0.006361, checkpoint saved to best_model.pt, inference model saved to best_model_jit.pt
+Loading 100 time-steps into cache …
+  → actually loading 198 unique time-steps (including t+1) …
+  → loaded in 0.8s
+Loading 100 time-steps into cache …
+  → actually loading 189 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 190/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.007326 | Rate: 238948 samples/s
+  [Train] Epoch 190/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.007330 | Rate: 263618 samples/s
+  [Train] Epoch 190/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.007248 | Rate: 281110 samples/s
+  [Train] Epoch 190/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.007271 | Rate: 286098 samples/s
+  [Train] Epoch 190/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.007268 | Rate: 289049 samples/s
+  [Train] Epoch 190/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.007307 | Rate: 290229 samples/s
+  [Train] Epoch 190/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007292 | Rate: 293756 samples/s
+  [Train] Epoch 190/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007326 | Rate: 294086 samples/s
+  [Train] Epoch 190/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007313 | Rate: 292389 samples/s
+  [Train] Epoch 190/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007307 | Rate: 290514 samples/s
+  [Val] Epoch 190/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.005700 | Rate: 264366 samples/s
+  [Val] Epoch 190/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.005717 | Rate: 288642 samples/s
+  [Val] Epoch 190/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.005739 | Rate: 301935 samples/s
+  [Val] Epoch 190/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.005769 | Rate: 305342 samples/s
+  [Val] Epoch 190/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.005854 | Rate: 307170 samples/s
+  [Val] Epoch 190/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.005933 | Rate: 307521 samples/s
+  [Val] Epoch 190/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.006004 | Rate: 313636 samples/s
+  [Val] Epoch 190/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.006070 | Rate: 315197 samples/s
+  [Val] Epoch 190/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.006137 | Rate: 317664 samples/s
+  [Val] Epoch 190/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.006207 | Rate: 319537 samples/s
+Epoch 190/500  train_loss=0.007307  val_loss=0.006207  lr=7.81e-06  improve=True  time=1102.3s  ETA=5423.9s
+  → New best val loss 0.006207, checkpoint saved to best_model.pt, inference model saved to best_model_jit.pt
+Loading 100 time-steps into cache …
+  → actually loading 200 unique time-steps (including t+1) …
+  → loaded in 0.7s
+Loading 100 time-steps into cache …
+  → actually loading 189 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 191/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.009812 | Rate: 241357 samples/s
+  [Train] Epoch 191/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.009982 | Rate: 254378 samples/s
+  [Train] Epoch 191/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.009955 | Rate: 267165 samples/s
+  [Train] Epoch 191/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.009893 | Rate: 269377 samples/s
+  [Train] Epoch 191/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.009783 | Rate: 271050 samples/s
+  [Train] Epoch 191/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.009761 | Rate: 273080 samples/s
+  [Train] Epoch 191/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.009787 | Rate: 276974 samples/s
+  [Train] Epoch 191/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.009817 | Rate: 279895 samples/s
+  [Train] Epoch 191/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.009865 | Rate: 281323 samples/s
+  [Train] Epoch 191/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.009905 | Rate: 280443 samples/s
+  [Val] Epoch 191/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.005864 | Rate: 283462 samples/s
+  [Val] Epoch 191/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.005891 | Rate: 297056 samples/s
+  [Val] Epoch 191/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.005923 | Rate: 294436 samples/s
+  [Val] Epoch 191/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.005988 | Rate: 287849 samples/s
+  [Val] Epoch 191/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.006087 | Rate: 290643 samples/s
+  [Val] Epoch 191/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.006184 | Rate: 290197 samples/s
+  [Val] Epoch 191/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.006274 | Rate: 294212 samples/s
+  [Val] Epoch 191/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.006356 | Rate: 293421 samples/s
+  [Val] Epoch 191/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.006428 | Rate: 292778 samples/s
+  [Val] Epoch 191/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.006499 | Rate: 295275 samples/s
+Epoch 191/500  train_loss=0.009905  val_loss=0.006499  lr=7.81e-06  improve=False  time=1119.7s  ETA=5405.9s
+Loading 100 time-steps into cache …
+  → actually loading 199 unique time-steps (including t+1) …
+  → loaded in 0.7s
+Loading 100 time-steps into cache …
+  → actually loading 190 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 192/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.007441 | Rate: 245807 samples/s
+  [Train] Epoch 192/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.007435 | Rate: 267645 samples/s
+  [Train] Epoch 192/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.007531 | Rate: 270180 samples/s
+  [Train] Epoch 192/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.007541 | Rate: 269518 samples/s
+  [Train] Epoch 192/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.007448 | Rate: 265140 samples/s
+  [Train] Epoch 192/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.007443 | Rate: 268149 samples/s
+  [Train] Epoch 192/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007438 | Rate: 269147 samples/s
+  [Train] Epoch 192/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007441 | Rate: 271419 samples/s
+  [Train] Epoch 192/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007417 | Rate: 271446 samples/s
+  [Train] Epoch 192/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007406 | Rate: 269405 samples/s
+  [Val] Epoch 192/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.005737 | Rate: 270696 samples/s
+  [Val] Epoch 192/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.005766 | Rate: 293552 samples/s
+  [Val] Epoch 192/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.005834 | Rate: 303140 samples/s
+  [Val] Epoch 192/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.005911 | Rate: 308734 samples/s
+  [Val] Epoch 192/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.005996 | Rate: 309117 samples/s
+  [Val] Epoch 192/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.006065 | Rate: 311929 samples/s
+  [Val] Epoch 192/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.006124 | Rate: 306237 samples/s
+  [Val] Epoch 192/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.006190 | Rate: 306061 samples/s
+  [Val] Epoch 192/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.006258 | Rate: 304310 samples/s
+  [Val] Epoch 192/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.006332 | Rate: 306007 samples/s
+Epoch 192/500  train_loss=0.007406  val_loss=0.006332  lr=7.81e-06  improve=False  time=1137.1s  ETA=5388.0s
+Loading 100 time-steps into cache …
+  → actually loading 199 unique time-steps (including t+1) …
+  → loaded in 0.5s
+Loading 100 time-steps into cache …
+  → actually loading 190 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 193/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.007528 | Rate: 235827 samples/s
+  [Train] Epoch 193/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.007495 | Rate: 267337 samples/s
+  [Train] Epoch 193/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.007526 | Rate: 271612 samples/s
+  [Train] Epoch 193/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.007679 | Rate: 275824 samples/s
+  [Train] Epoch 193/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.007664 | Rate: 276579 samples/s
+  [Train] Epoch 193/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.007672 | Rate: 282047 samples/s
+  [Train] Epoch 193/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007692 | Rate: 284224 samples/s
+  [Train] Epoch 193/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007788 | Rate: 284074 samples/s
+  [Train] Epoch 193/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007754 | Rate: 283969 samples/s
+  [Train] Epoch 193/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007736 | Rate: 282224 samples/s
+  [Val] Epoch 193/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.005979 | Rate: 289151 samples/s
+  [Val] Epoch 193/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.006008 | Rate: 309834 samples/s
+  [Val] Epoch 193/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.006045 | Rate: 307212 samples/s
+  [Val] Epoch 193/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.006111 | Rate: 303387 samples/s
+  [Val] Epoch 193/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.006199 | Rate: 303796 samples/s
+  [Val] Epoch 193/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.006280 | Rate: 306936 samples/s
+  [Val] Epoch 193/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.006351 | Rate: 308620 samples/s
+  [Val] Epoch 193/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.006418 | Rate: 306140 samples/s
+  [Val] Epoch 193/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.006484 | Rate: 308815 samples/s
+  [Val] Epoch 193/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.006554 | Rate: 312833 samples/s
+Epoch 193/500  train_loss=0.007736  val_loss=0.006554  lr=7.81e-06  improve=False  time=1153.8s  ETA=5367.0s
+Loading 100 time-steps into cache …
+  → actually loading 198 unique time-steps (including t+1) …
+  → loaded in 0.6s
+Loading 100 time-steps into cache …
+  → actually loading 191 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 194/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.007046 | Rate: 236552 samples/s
+  [Train] Epoch 194/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.007441 | Rate: 261056 samples/s
+  [Train] Epoch 194/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.007421 | Rate: 276447 samples/s
+  [Train] Epoch 194/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.007458 | Rate: 279647 samples/s
+  [Train] Epoch 194/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.007520 | Rate: 284951 samples/s
+  [Train] Epoch 194/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.007528 | Rate: 288984 samples/s
+  [Train] Epoch 194/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.007517 | Rate: 294320 samples/s
+  [Train] Epoch 194/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.007525 | Rate: 296536 samples/s
+  [Train] Epoch 194/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.007522 | Rate: 298957 samples/s
+  [Train] Epoch 194/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.007488 | Rate: 297995 samples/s
+  [Val] Epoch 194/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.005966 | Rate: 289913 samples/s
+  [Val] Epoch 194/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.006000 | Rate: 304682 samples/s
+  [Val] Epoch 194/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.006034 | Rate: 312665 samples/s
+  [Val] Epoch 194/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.006104 | Rate: 316187 samples/s
+  [Val] Epoch 194/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.006191 | Rate: 318175 samples/s
+  [Val] Epoch 194/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.006264 | Rate: 320234 samples/s
+  [Val] Epoch 194/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.006333 | Rate: 321831 samples/s
+  [Val] Epoch 194/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.006399 | Rate: 319456 samples/s
+  [Val] Epoch 194/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.006475 | Rate: 317335 samples/s
+  [Val] Epoch 194/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.006550 | Rate: 318500 samples/s
+Epoch 194/500  train_loss=0.007488  val_loss=0.006550  lr=7.81e-06  improve=False  time=1170.1s  ETA=5344.0s
+Loading 100 time-steps into cache …
+  → actually loading 196 unique time-steps (including t+1) …
+  → loaded in 0.6s
+Loading 100 time-steps into cache …
+  → actually loading 191 unique time-steps (including t+1) …
+  → loaded in 0.2s
+  [Train] Epoch 195/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.010680 | Rate: 237815 samples/s
+  [Train] Epoch 195/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.011463 | Rate: 263853 samples/s
+  [Train] Epoch 195/500 | Batch 342/1140 | Samples: 700416 | Loss: 0.011348 | Rate: 270686 samples/s
+  [Train] Epoch 195/500 | Batch 456/1140 | Samples: 933888 | Loss: 0.011551 | Rate: 275612 samples/s
+  [Train] Epoch 195/500 | Batch 570/1140 | Samples: 1167360 | Loss: 0.011382 | Rate: 279292 samples/s
+  [Train] Epoch 195/500 | Batch 684/1140 | Samples: 1400832 | Loss: 0.011764 | Rate: 281997 samples/s
+  [Train] Epoch 195/500 | Batch 798/1140 | Samples: 1634304 | Loss: 0.011782 | Rate: 283516 samples/s
+  [Train] Epoch 195/500 | Batch 912/1140 | Samples: 1867776 | Loss: 0.011761 | Rate: 288256 samples/s
+  [Train] Epoch 195/500 | Batch 1026/1140 | Samples: 2101248 | Loss: 0.011777 | Rate: 288819 samples/s
+  [Train] Epoch 195/500 | Batch 1140/1140 | Samples: 2332800 | Loss: 0.011752 | Rate: 285649 samples/s
+  [Val] Epoch 195/500 | Batch 114/1140 | Samples: 233472 | Loss: 0.006023 | Rate: 284953 samples/s
+  [Val] Epoch 195/500 | Batch 228/1140 | Samples: 466944 | Loss: 0.006044 | Rate: 296138 samples/s

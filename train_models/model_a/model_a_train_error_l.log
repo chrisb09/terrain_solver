@@ -1,0 +1,45 @@
+[INFO] Module OpenSSL/1.1 loaded.
+[WARN] This node does not have a GPU installed. CUDA will not work.
+[WARN] Please refer to https://help.itc.rwth-aachen.de for information on which
+nodes feature GPUs. 
+[INFO] Module CUDA/12.4.0 loaded.
+[INFO] Module GCCcore/11.3.0 loaded.
+[INFO] Module Clang/15.0.5 loaded.
+[INFO] Module GCC/11.3.0 loaded.
+[INFO] Module OpenMPI/4.1.4 loaded.
+[INFO] Module FFTW.MPI/3.3.10 loaded.
+[INFO] Module HDF5/1.12.2 loaded.
+[INFO] Module PnetCDF/1.12.3 loaded.
+[INFO] Module cuDNN/8.9.7.29-CUDA-12.4.0 loaded.
+[INFO] Module imkl/2024.2.0 loaded.
+E0325 14:32:34.499861 22470840877504 torch/distributed/elastic/multiprocessing/api.py:833] failed (exitcode: -9) local_rank: 0 (pid: 402324) of binary: /rwthfs/rz/cluster/hpcwork/ro092286/smartsim/python/smartsim_cpu/bin/python
+Traceback (most recent call last):
+  File "/rwthfs/rz/cluster/hpcwork/ro092286/smartsim/python/smartsim_cpu/bin/torchrun", line 8, in <module>
+    sys.exit(main())
+  File "/rwthfs/rz/cluster/hpcwork/ro092286/smartsim/python/smartsim_cpu/lib64/python3.9/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 348, in wrapper
+    return f(*args, **kwargs)
+  File "/rwthfs/rz/cluster/hpcwork/ro092286/smartsim/python/smartsim_cpu/lib64/python3.9/site-packages/torch/distributed/run.py", line 901, in main
+    run(args)
+  File "/rwthfs/rz/cluster/hpcwork/ro092286/smartsim/python/smartsim_cpu/lib64/python3.9/site-packages/torch/distributed/run.py", line 892, in run
+    elastic_launch(
+  File "/rwthfs/rz/cluster/hpcwork/ro092286/smartsim/python/smartsim_cpu/lib64/python3.9/site-packages/torch/distributed/launcher/api.py", line 133, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+  File "/rwthfs/rz/cluster/hpcwork/ro092286/smartsim/python/smartsim_cpu/lib64/python3.9/site-packages/torch/distributed/launcher/api.py", line 264, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+=======================================================
+train.py FAILED
+-------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+-------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-03-25_14:32:34
+  host      : n23m0158.hpc.itc.rwth-aachen.de
+  rank      : 0 (local_rank: 0)
+  exitcode  : -9 (pid: 402324)
+  error_file: <N/A>
+  traceback : Signal 9 (SIGKILL) received by PID 402324
+=======================================================
+[2026-03-25T14:32:38.206] error: Detected 1 oom_kill event in StepId=66202517.batch. Some of the step tasks have been OOM Killed.
