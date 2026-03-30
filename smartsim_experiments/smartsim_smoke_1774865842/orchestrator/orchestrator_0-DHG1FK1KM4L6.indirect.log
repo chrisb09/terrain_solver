@@ -1,0 +1,5 @@
+12:17:24 login23-g-1.hpc.itc.rwth-aachen.de __main__.orchestrator_0-DHG1FK1KM4L6[360263:MainThread] INFO Indirect proxy 360263 child process 360307 started
+12:17:24 login23-g-1.hpc.itc.rwth-aachen.de __main__.orchestrator_0-DHG1FK1KM4L6[360263:MainThread] INFO Waiting for child process 360307 to complete
+12:17:24 login23-g-1.hpc.itc.rwth-aachen.de __main__.orchestrator_0-DHG1FK1KM4L6[360263:MainThread] INFO handling signal 2
+12:17:24 login23-g-1.hpc.itc.rwth-aachen.de __main__.orchestrator_0-DHG1FK1KM4L6[360263:MainThread] INFO Performing cleanup
+12:17:24 login23-g-1.hpc.itc.rwth-aachen.de __main__.orchestrator_0-DHG1FK1KM4L6[360263:MainThread] INFO Indirect proxy 360263 child process None complete. return code: -15

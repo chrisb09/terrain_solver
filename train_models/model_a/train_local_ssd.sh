@@ -1,12 +1,12 @@
 #!/bin/zsh
 #SBATCH --job-name=train_local_ssd
-#SBATCH --partition=c23ml
+#SBATCH --partition=c23mm
 #SBATCH --account=thes2181
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=8
+#SBATCH --cpus-per-task=24
 #SBATCH --time=20:00:00
-#SBATCH --mem-per-cpu=8G
+#SBATCH --mem-per-cpu=5G
 #SBATCH --output=train_local_ssd.out
 #SBATCH --error=train_local_ssd.err
 
@@ -43,12 +43,14 @@ mkdir -p "${LOCAL_INPUT_DIR}" "${LOCAL_OUTPUT_DIR}"
 
 TRAIN_ARGS=(
   --model watercnn
-  --epochs 50
-  --batch-size 4096
-  --num-threads 8
-  --output "${LOCAL_OUTPUT_DIR}/best_model.pt"
-  --inference-output "${LOCAL_OUTPUT_DIR}/best_model_jit.pt"
+  --epochs 100
+  --batch-size 16384
+  --num-threads ${SLURM_CPUS_PER_TASK}
+  --ignore-prev-val-loss
 )
+
+  #--output "${LOCAL_OUTPUT_DIR}/best_model.pt"
+  #--inference-output "${LOCAL_OUTPUT_DIR}/best_model_jit.pt"
 
 if [[ "${MODE}" == "h5" ]]; then
   echo "[stage-in] copying HDF5 to local SSD/BeeOND ..."

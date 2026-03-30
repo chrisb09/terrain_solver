@@ -1,0 +1,73 @@
+Module OpenSSL/1.1 is not loaded. Purging and loading required modules.
+Purging and loading required modules for SmartSim...
+Loading required modules...
+Overriding devices via argument: cuda-12
+
+=== Installing SmartSim for device: cuda-12 ===
+Including backend: torch
+Excluding torch backend for device cuda-12 to avoid CUDA 12.4 compatibility issues with PyTorch. We will install it separately using pip after the smartsim build.
+Including backend: onnxruntime
+Including backend: tensorflow
+SmartSim build command: smart build --device cuda-12 --skip-torch
+Install location: ./python/smartsim_cuda-12/
+Base directory for SmartSim installation: /hpcwork/ro092286/smartsim/
+Python virtual environment already exists at ./python/smartsim_cuda-12/
+Activating Python virtual environment for device: cuda-12
+smartsim is already installed in the virtual environment.
+Checking SmartSim build status...
+command succeeded
+SmartSim' redis is already built and available.
+SmartSim' has TensorFlow support.
+SmartSim is already fully built with all backends.
+Installation of the smartsim 'backend' complete. This includes the SmartRedis Python client. The Fortran/C/C++ clients can be built from source as needed.
+
+--- Installing SmartRedis C/C++ client ---
+SmartRedis directory already exists. Skipping clone.
+Already on the correct branch: develop
+Already at the correct commit: 552d05b3a59bdd79fc119c25eb75126ebba41b14
+Current directory: /hpcwork/ro092286/smartsim
+[config] GPUs=1  cpus-per-task=24  threads-per-rank=24
+[stage-in] copying prepared input to local SSD/BeeOND ...
+          8.69K   0%    0.00kB/s    0:00:00            8.69K   0%    0.00kB/s    0:00:00 (xfr#1, to-chk=16/18)        449.03M   1%  428.22MB/s    0:01:08          941.79M   3%  449.30MB/s    0:01:04            1.43G   4%  455.01MB/s    0:01:02            1.91G   6%  458.73MB/s    0:00:03 (xfr#2, to-chk=15/18)          1.91G   6%  451.53MB/s    0:01:01            2.38G   7%  456.04MB/s    0:01:00            2.87G   9%  454.91MB/s    0:00:59            3.36G  10%  455.59MB/s    0:00:58            3.82G  12%  456.66MB/s    0:00:07 (xfr#3, to-chk=14/18)          3.82G  12%  454.27MB/s    0:00:57            4.29G  14%  455.04MB/s    0:00:56            4.78G  15%  455.32MB/s    0:00:55            5.27G  17%  454.82MB/s    0:00:54            5.73G  18%  455.94MB/s    0:00:11 (xfr#4, to-chk=13/18)          5.73G  18%  455.78MB/s    0:00:53            6.21G  20%  457.36MB/s    0:00:51            6.70G  21%  457.22MB/s    0:00:50            7.19G  23%  457.93MB/s    0:00:49            7.64G  25%  456.61MB/s    0:00:15 (xfr#5, to-chk=12/18)          7.64G  25%  455.78MB/s    0:00:49            8.13G  26%  458.78MB/s    0:00:47            8.62G  28%  459.56MB/s    0:00:46            9.12G  29%  460.38MB/s    0:00:45            9.55G  31%  457.35MB/s    0:00:19 (xfr#6, to-chk=11/18)          9.57G  31%  460.17MB/s    0:00:44           10.06G  32%  460.45MB/s    0:00:43           10.55G  34%  459.72MB/s    0:00:42           11.05G  36%  459.42MB/s    0:00:41           11.46G  37%  457.83MB/s    0:00:23 (xfr#7, to-chk=10/18)         11.50G  37%  461.17MB/s    0:00:40           12.00G  39%  462.73MB/s    0:00:39           12.50G  40%  465.18MB/s    0:00:37           13.00G  42%  465.97MB/s    0:00:36           13.37G  43%  459.05MB/s    0:00:27 (xfr#8, to-chk=9/18)          13.46G  44%  466.54MB/s    0:00:35           13.96G  45%  466.66MB/s    0:00:34           14.46G  47%  466.50MB/s    0:00:33           14.95G  48%  466.32MB/s    0:00:32           15.28G  50%  459.92MB/s    0:00:31 (xfr#9, to-chk=8/18)         15.41G  50%  466.21MB/s    0:00:31           15.91G  52%  466.21MB/s    0:00:30           16.41G  53%  466.28MB/s    0:00:29           16.91G  55%  466.24MB/s    0:00:28           17.19G  56%  460.55MB/s    0:00:35 (xfr#10, to-chk=7/18)         17.36G  56%  463.61MB/s    0:00:27           17.85G  58%  462.88MB/s    0:00:26           18.35G  60%  462.11MB/s    0:00:25           18.85G  61%  462.50MB/s    0:00:24           19.10G  62%  460.82MB/s    0:00:39 (xfr#11, to-chk=6/18)         19.30G  63%  464.27MB/s    0:00:23           19.80G  64%  465.34MB/s    0:00:22           20.30G  66%  466.24MB/s    0:00:21           20.80G  68%  466.21MB/s    0:00:20           21.01G  68%  461.30MB/s    0:00:43 (xfr#12, to-chk=5/18)         21.26G  69%  466.55MB/s    0:00:19           21.76G  71%  466.39MB/s    0:00:18           22.26G  72%  466.28MB/s    0:00:17           22.75G  74%  466.23MB/s    0:00:16           22.92G  75%  461.69MB/s    0:00:47 (xfr#13, to-chk=4/18)         23.22G  75%  467.35MB/s    0:00:15           23.72G  77%  467.32MB/s    0:00:14           24.21G  79%  467.26MB/s    0:00:13           24.71G  80%  467.22MB/s    0:00:12           24.83G  81%  462.10MB/s    0:00:51 (xfr#14, to-chk=3/18)         25.12G  82%  454.46MB/s    0:00:11           25.59G  83%  448.18MB/s    0:00:10           26.04G  85%  436.92MB/s    0:00:10           26.53G  86%  434.43MB/s    0:00:09           26.73G  87%  460.03MB/s    0:00:55 (xfr#15, to-chk=2/18)         26.98G  88%  444.03MB/s    0:00:07           27.48G  89%  449.98MB/s    0:00:06           27.98G  91%  461.34MB/s    0:00:05           28.42G  93%  450.18MB/s    0:00:04           28.64G  93%  459.50MB/s    0:00:59 (xfr#16, to-chk=1/18)         28.82G  94%  437.76MB/s    0:00:03           28.93G  94%  346.65MB/s    0:00:04           29.02G  94%  247.90MB/s    0:00:06           29.10G  95%  163.16MB/s    0:00:08           29.19G  95%   88.52MB/s    0:00:15           29.27G  95%   80.63MB/s    0:00:15           29.35G  96%   80.16MB/s    0:00:14           29.44G  96%   78.94MB/s    0:00:13           29.52G  96%   78.06MB/s    0:00:12           29.62G  96%   82.90MB/s    0:00:11           30.04G  98%  162.26MB/s    0:00:03           30.53G  99%  261.81MB/s    0:00:00           30.55G 100%  410.16MB/s    0:01:11 (xfr#17, to-chk=0/18)         30.55G 100%  410.14MB/s    0:01:11 (xfr#17, to-chk=0/18)
+[run] starting distributed GPU training with torchrun
+Distributed: True  world_size: 1  device: cuda:0
+Model architecture: watercnn
+Train/Val split: 90.0% / 10.0%
+CPU threads: 24  DataLoader workers: 0
+Cache mode: cache
+Loading prepared binary data from: /tmp/ro092286/66264109/train_local_gpu_66264109/input/prepared
+  Prepared unique records: 381927955
+  Raw pair occurrences (sum counts): 2330467200
+  Train records: 343735160, Val records: 38192795
+Preloading 343735160 prepared records into RAM …
+  → preloaded in 1784.0s, RAM ~25.61 GB
+Preloading 38192795 prepared records into RAM …
+  → preloaded in 199.2s, RAM ~2.85 GB
+Model has 1897 parameters (7.41 KB in fp32)
+Parameter breakdown:
+  water_conv.weight: 72 params (0.28 KB)
+  water_conv.bias: 8 params (0.03 KB)
+  terrain_conv.weight: 72 params (0.28 KB)
+  terrain_conv.bias: 8 params (0.03 KB)
+  combine_1x1.weight: 16 params (0.06 KB)
+  combine_1x1.bias: 8 params (0.03 KB)
+  combine_3x3.weight: 1152 params (4.50 KB)
+  combine_3x3.bias: 16 params (0.06 KB)
+  fc.0.weight: 512 params (2.00 KB)
+  fc.0.bias: 16 params (0.06 KB)
+  fc.2.weight: 16 params (0.06 KB)
+  fc.2.bias: 1 params (0.00 KB)
+Resumed training from best_model_watercnn.pt at epoch 28.
+  Restored best val loss: 0.000217
+
+Starting training …
+  Data resolution: 1080x2160
+  Train records per epoch: 343735160 (global), 343735160 (per-rank)
+  Val records per epoch: 38192795 (global), 38192795 (per-rank)
+  Samples per epoch: 343735160 (global), 343735160 (per-rank)
+  Train dataset size: 343735160 samples (25 GB)
+  Val dataset size: 38192795 samples (2 GB)
+  Batch size: 16384, Epochs this run: 73
+  [Train] Epoch 28/100 started | batches=20980 | log_interval=2098
+  [Train] Epoch 28/100 | Batch 1/20980 | Samples: 68964 | Loss: 0.009619 | Rate: 1250 samples/s
+  [Train] Epoch 28/100 | Batch 2098/20980 | Samples: 209709392 | Loss: 0.048336 | Rate: 39158 samples/s

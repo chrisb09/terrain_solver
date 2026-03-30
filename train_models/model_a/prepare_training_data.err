@@ -12,4 +12,27 @@ nodes feature GPUs.
 [INFO] Module PnetCDF/1.12.3 loaded.
 [INFO] Module cuDNN/8.9.7.29-CUDA-12.4.0 loaded.
 [INFO] Module imkl/2024.2.0 loaded.
-mkdir: cannot create directory ‘/mnt/beegfs’: Permission denied
+[n23m0016.hpc.itc.rwth-aachen.de:161602] mca_base_component_repository_open: unable to open mca_pmix_s1: libpmi.so.0: cannot open shared object file: No such file or directory (ignored)
+[n23m0016.hpc.itc.rwth-aachen.de:161601] mca_base_component_repository_open: unable to open mca_pmix_s1: libpmi.so.0: cannot open shared object file: No such file or directory (ignored)
+[n23m0016.hpc.itc.rwth-aachen.de:161603] mca_base_component_repository_open: unable to open mca_pmix_s1: libpmi.so.0: cannot open shared object file: No such file or directory (ignored)
+[n23m0016.hpc.itc.rwth-aachen.de:161608] mca_base_component_repository_open: unable to open mca_pmix_s1: libpmi.so.0: cannot open shared object file: No such file or directory (ignored)
+[n23m0016.hpc.itc.rwth-aachen.de:161609] mca_base_component_repository_open: unable to open mca_pmix_s1: libpmi.so.0: cannot open shared object file: No such file or directory (ignored)
+[n23m0016.hpc.itc.rwth-aachen.de:161599] mca_base_component_repository_open: unable to open mca_pmix_s1: libpmi.so.0: cannot open shared object file: No such file or directory (ignored)
+[n23m0016.hpc.itc.rwth-aachen.de:161600] mca_base_component_repository_open: unable to open mca_pmix_s1: libpmi.so.0: cannot open shared object file: No such file or directory (ignored)
+[n23m0016.hpc.itc.rwth-aachen.de:161604] mca_base_component_repository_open: unable to open mca_pmix_s1: libpmi.so.0: cannot open shared object file: No such file or directory (ignored)
+[n23m0016.hpc.itc.rwth-aachen.de:161605] mca_base_component_repository_open: unable to open mca_pmix_s1: libpmi.so.0: cannot open shared object file: No such file or directory (ignored)
+[n23m0016.hpc.itc.rwth-aachen.de:161606] mca_base_component_repository_open: unable to open mca_pmix_s1: libpmi.so.0: cannot open shared object file: No such file or directory (ignored)
+[n23m0016.hpc.itc.rwth-aachen.de:161607] mca_base_component_repository_open: unable to open mca_pmix_s1: libpmi.so.0: cannot open shared object file: No such file or directory (ignored)
+[n23m0016.hpc.itc.rwth-aachen.de:161610] mca_base_component_repository_open: unable to open mca_pmix_s1: libpmi.so.0: cannot open shared object file: No such file or directory (ignored)
+[n23m0016.hpc.itc.rwth-aachen.de:161599] mca_base_component_repository_open: unable to open mca_pmix_s2: libpmi2.so.0: cannot open shared object file: No such file or directory (ignored)
+[n23m0016.hpc.itc.rwth-aachen.de:161600] mca_base_component_repository_open: unable to open mca_pmix_s2: libpmi2.so.0: cannot open shared object file: No such file or directory (ignored)
+[n23m0016.hpc.itc.rwth-aachen.de:161602] mca_base_component_repository_open: unable to open mca_pmix_s2: libpmi2.so.0: cannot open shared object file: No such file or directory (ignored)
+[n23m0016.hpc.itc.rwth-aachen.de:161604] mca_base_component_repository_open: unable to open mca_pmix_s2: libpmi2.so.0: cannot open shared object file: No such file or directory (ignored)
+[n23m0016.hpc.itc.rwth-aachen.de:161610] mca_base_component_repository_open: unable to open mca_pmix_s2: libpmi2.so.0: cannot open shared object file: No such file or directory (ignored)
+[n23m0016.hpc.itc.rwth-aachen.de:161601] mca_base_component_repository_open: unable to open mca_pmix_s2: libpmi2.so.0: cannot open shared object file: No such file or directory (ignored)
+[n23m0016.hpc.itc.rwth-aachen.de:161603] mca_base_component_repository_open: unable to open mca_pmix_s2: libpmi2.so.0: cannot open shared object file: No such file or directory (ignored)
+[n23m0016.hpc.itc.rwth-aachen.de:161605] mca_base_component_repository_open: unable to open mca_pmix_s2: libpmi2.so.0: cannot open shared object file: No such file or directory (ignored)
+[n23m0016.hpc.itc.rwth-aachen.de:161607] mca_base_component_repository_open: unable to open mca_pmix_s2: libpmi2.so.0: cannot open shared object file: No such file or directory (ignored)
+[n23m0016.hpc.itc.rwth-aachen.de:161608] mca_base_component_repository_open: unable to open mca_pmix_s2: libpmi2.so.0: cannot open shared object file: No such file or directory (ignored)
+[n23m0016.hpc.itc.rwth-aachen.de:161609] mca_base_component_repository_open: unable to open mca_pmix_s2: libpmi2.so.0: cannot open shared object file: No such file or directory (ignored)
+[n23m0016.hpc.itc.rwth-aachen.de:161606] mca_base_component_repository_open: unable to open mca_pmix_s2: libpmi2.so.0: cannot open shared object file: No such file or directory (ignored)

@@ -9,7 +9,7 @@
 
 #SBATCH --time=12:00:00
 #SBATCH --account=thes2181
-#SBATCH --ntasks-per-node=24
+#SBATCH --ntasks-per-node=16
 ##SBATCH --mem=50G
 #SBATCH --partition=c23mm
 #SBATCH --mem-per-cpu=5G
@@ -28,5 +28,5 @@ cd /hpcwork/ro092286/smartsim/ || exit
 cd mini_app/train_models/model_a || exit
 
 # 32 CPU cores: use num-threads=32 for computation, num-workers=0 for cache mode
-torchrun --nnodes=1 --nproc_per_node=$CORE_COUNT_PER_NODE train.py --cache-mode window --batch-size 8192 --epochs 1000 --max-steps 10000 --num-threads $THREADS_PER_WORKER --num-workers 4 --window-steps 50 --export-field-inference  --model transformer_mlp
+torchrun --nnodes=1 --nproc_per_node=$CORE_COUNT_PER_NODE train.py --cache-mode window --batch-size 8192 --epochs 1000 --max-steps 10000 --num-threads $THREADS_PER_WORKER --num-workers 2 --window-steps 50 --export-field-inference  --model transformer_mlp
 # --export-field-iter --field-iter-steps 18 

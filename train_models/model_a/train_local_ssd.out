@@ -1,0 +1,261 @@
+Module OpenSSL/1.1 is not loaded. Purging and loading required modules.
+Purging and loading required modules for SmartSim...
+Loading required modules...
+Overriding devices via argument: cpu
+
+=== Installing SmartSim for device: cpu ===
+Including backend: torch
+Including backend: onnxruntime
+Including backend: tensorflow
+SmartSim build command: smart build --device cpu
+Install location: ./python/smartsim_cpu/
+Base directory for SmartSim installation: /hpcwork/ro092286/smartsim/
+Python virtual environment already exists at ./python/smartsim_cpu/
+Activating Python virtual environment for device: cpu
+smartsim is already installed in the virtual environment.
+Checking SmartSim build status...
+command succeeded
+SmartSim' redis is already built and available.
+SmartSim' has TensorFlow support.
+SmartSim is already fully built with all backends.
+Installation of the smartsim 'backend' complete. This includes the SmartRedis Python client. The Fortran/C/C++ clients can be built from source as needed.
+
+--- Installing SmartRedis C/C++ client ---
+SmartRedis directory already exists. Skipping clone.
+Already on the correct branch: develop
+Already at the correct commit: 552d05b3a59bdd79fc119c25eb75126ebba41b14
+Current directory: /hpcwork/ro092286/smartsim
+[stage-in] copying prepared input to local SSD/BeeOND ...
+          8.69K   0%    0.00kB/s    0:00:00            8.69K   0%    0.00kB/s    0:00:00 (xfr#1, to-chk=16/18)        501.06M   1%  477.84MB/s    0:01:01            1.05G   3%  499.14MB/s    0:00:57            1.61G   5%  511.82MB/s    0:00:55            1.91G   6%  516.94MB/s    0:00:03 (xfr#2, to-chk=15/18)          2.12G   6%  506.34MB/s    0:00:54            2.69G   8%  522.61MB/s    0:00:52            3.26G  10%  527.42MB/s    0:00:50            3.82G  12%  521.45MB/s    0:00:06 (xfr#3, to-chk=14/18)          3.82G  12%  524.89MB/s    0:00:49            4.32G  14%  521.11MB/s    0:00:49            4.87G  15%  517.84MB/s    0:00:48            5.43G  17%  516.00MB/s    0:00:47            5.73G  18%  518.36MB/s    0:00:10 (xfr#4, to-chk=13/18)          5.94G  19%  506.36MB/s    0:00:47            6.50G  21%  519.89MB/s    0:00:45            7.05G  23%  520.56MB/s    0:00:44            7.63G  24%  524.06MB/s    0:00:42            7.64G  25%  519.33MB/s    0:00:14 (xfr#5, to-chk=12/18)          8.16G  26%  528.22MB/s    0:00:41            8.73G  28%  532.05MB/s    0:00:40            9.30G  30%  534.62MB/s    0:00:38            9.55G  31%  522.16MB/s    0:00:17 (xfr#6, to-chk=11/18)          9.82G  32%  523.39MB/s    0:00:38           10.39G  34%  533.58MB/s    0:00:36           10.96G  35%  533.87MB/s    0:00:35           11.46G  37%  523.95MB/s    0:00:20 (xfr#7, to-chk=10/18)         11.50G  37%  525.26MB/s    0:00:35           12.07G  39%  537.38MB/s    0:00:33           12.64G  41%  537.53MB/s    0:00:32           13.22G  43%  538.29MB/s    0:00:31           13.37G  43%  525.66MB/s    0:00:24 (xfr#8, to-chk=9/18)          13.75G  44%  537.39MB/s    0:00:30           14.32G  46%  536.92MB/s    0:00:29           14.89G  48%  535.98MB/s    0:00:28           15.28G  50%  526.71MB/s    0:00:27 (xfr#9, to-chk=8/18)         15.42G  50%  524.48MB/s    0:00:28           15.99G  52%  535.47MB/s    0:00:26           16.56G  54%  533.88MB/s    0:00:25           17.13G  56%  534.41MB/s    0:00:24           17.19G  56%  527.18MB/s    0:00:31 (xfr#10, to-chk=7/18)         17.63G  57%  528.74MB/s    0:00:23           18.19G  59%  523.04MB/s    0:00:23           18.75G  61%  522.62MB/s    0:00:22           19.10G  62%  526.49MB/s    0:00:34 (xfr#11, to-chk=6/18)         19.27G  63%  509.91MB/s    0:00:21           19.83G  64%  523.23MB/s    0:00:20           20.39G  66%  525.41MB/s    0:00:18           20.94G  68%  522.87MB/s    0:00:17           21.01G  68%  525.87MB/s    0:00:38 (xfr#12, to-chk=5/18)         21.47G  70%  525.34MB/s    0:00:16           22.04G  72%  528.56MB/s    0:00:15           22.61G  73%  529.81MB/s    0:00:14           22.92G  75%  526.24MB/s    0:00:41 (xfr#13, to-chk=4/18)         23.09G  75%  511.67MB/s    0:00:14           23.19G  75%  409.44MB/s    0:00:17           23.27G  76%  293.82MB/s    0:00:24           23.54G  77%  222.61MB/s    0:00:30           24.10G  78%  240.42MB/s    0:00:26           24.62G  80%  341.74MB/s    0:00:16           24.83G  81%  500.16MB/s    0:00:47 (xfr#14, to-chk=3/18)         25.14G  82%  443.97MB/s    0:00:11           25.67G  84%  508.34MB/s    0:00:09           26.24G  85%  512.22MB/s    0:00:08           26.73G  87%  501.34MB/s    0:00:50 (xfr#15, to-chk=2/18)         26.75G  87%  507.98MB/s    0:00:07           27.32G  89%  520.53MB/s    0:00:06           27.87G  91%  525.17MB/s    0:00:04           28.43G  93%  521.71MB/s    0:00:03           28.64G  93%  502.66MB/s    0:00:54 (xfr#16, to-chk=1/18)         28.94G  94%  522.72MB/s    0:00:03           29.48G  96%  515.05MB/s    0:00:02           30.00G  98%  507.43MB/s    0:00:01           30.55G 100%  502.90MB/s    0:00:57 (xfr#17, to-chk=0/18)         30.55G 100%  502.88MB/s    0:00:57 (xfr#17, to-chk=0/18)
+[run] starting training
+Distributed: False  world_size: 1  device: cpu
+Model architecture: watercnn
+Train/Val split: 90.0% / 10.0%
+CPU threads: 24  DataLoader workers: 4
+Cache mode: stream
+Loading prepared binary data from: /tmp/ro092286/66273061/train_local_66273061/input/prepared
+  Prepared unique records: 381927955
+  Raw pair occurrences (sum counts): 2330467200
+  Train records: 343735160, Val records: 38192795
+Model has 1897 parameters (7.41 KB in fp32)
+Parameter breakdown:
+  water_conv.weight: 72 params (0.28 KB)
+  water_conv.bias: 8 params (0.03 KB)
+  terrain_conv.weight: 72 params (0.28 KB)
+  terrain_conv.bias: 8 params (0.03 KB)
+  combine_1x1.weight: 16 params (0.06 KB)
+  combine_1x1.bias: 8 params (0.03 KB)
+  combine_3x3.weight: 1152 params (4.50 KB)
+  combine_3x3.bias: 16 params (0.06 KB)
+  fc.0.weight: 512 params (2.00 KB)
+  fc.0.bias: 16 params (0.06 KB)
+  fc.2.weight: 16 params (0.06 KB)
+  fc.2.bias: 1 params (0.00 KB)
+Ignoring previous best validation loss from checkpoint and resetting to infinity for early stopping.
+Resumed training from best_model_watercnn.pt at epoch 28.
+  Restored best val loss: inf
+
+Starting training …
+  Data resolution: 1080x2160
+  Train records per epoch: 343735160 (global), 343735160 (per-rank)
+  Val records per epoch: 38192795 (global), 38192795 (per-rank)
+  Samples per epoch: 343735160 (global), 343735160 (per-rank)
+  Train dataset size: 343735160 samples (25 GB)
+  Val dataset size: 38192795 samples (2 GB)
+  Batch size: 16384, Epochs this run: 73
+  [Train] Epoch 28/100 started | batches=20980 | log_interval=2098
+  [Train] Epoch 28/100 | Batch 1/20980 | Samples: 97705 | Loss: 0.006976 | Rate: 4837 samples/s
+  [Train] Epoch 28/100 | Batch 2098/20980 | Samples: 195306928 | Loss: 0.041340 | Rate: 200538 samples/s
+  [Train] Epoch 28/100 | Batch 4196/20980 | Samples: 391202080 | Loss: 0.062096 | Rate: 201380 samples/s
+  [Train] Epoch 28/100 | Batch 6294/20980 | Samples: 609892608 | Loss: 0.045754 | Rate: 210568 samples/s
+  [Train] Epoch 28/100 | Batch 8392/20980 | Samples: 809635584 | Loss: 0.038245 | Rate: 208960 samples/s
+  [Train] Epoch 28/100 | Batch 10490/20980 | Samples: 1053849152 | Loss: 0.039490 | Rate: 219139 samples/s
+  [Train] Epoch 28/100 | Batch 12588/20980 | Samples: 1263854976 | Loss: 0.034310 | Rate: 219182 samples/s
+  [Train] Epoch 28/100 | Batch 14686/20980 | Samples: 1469963776 | Loss: 0.031649 | Rate: 218558 samples/s
+  [Train] Epoch 28/100 | Batch 16784/20980 | Samples: 1671444992 | Loss: 0.032033 | Rate: 217286 samples/s
+  [Train] Epoch 28/100 | Batch 18882/20980 | Samples: 1885325568 | Loss: 0.031156 | Rate: 217751 samples/s
+  [Train] Epoch 28/100 | Batch 20980/20980 | Samples: 2102421760 | Loss: 0.029154 | Rate: 217972 samples/s
+  [Val] Epoch 28/100 started | batches=2332 | log_interval=233
+  [Val] Epoch 28/100 | Batch 1/2332 | Samples: 68329 | Loss: 0.009090 | Rate: 37228 samples/s
+  [Val] Epoch 28/100 | Batch 233/2332 | Samples: 29642312 | Loss: 0.006410 | Rate: 648691 samples/s
+  [Val] Epoch 28/100 | Batch 466/2332 | Samples: 50032368 | Loss: 0.007597 | Rate: 556955 samples/s
+  [Val] Epoch 28/100 | Batch 699/2332 | Samples: 72533600 | Loss: 0.007870 | Rate: 546033 samples/s
+  [Val] Epoch 28/100 | Batch 932/2332 | Samples: 94920048 | Loss: 0.008076 | Rate: 540154 samples/s
+  [Val] Epoch 28/100 | Batch 1165/2332 | Samples: 118040528 | Loss: 0.008123 | Rate: 538600 samples/s
+  [Val] Epoch 28/100 | Batch 1398/2332 | Samples: 141474352 | Loss: 0.008147 | Rate: 538435 samples/s
+  [Val] Epoch 28/100 | Batch 1631/2332 | Samples: 163260720 | Loss: 0.008292 | Rate: 535424 samples/s
+  [Val] Epoch 28/100 | Batch 1864/2332 | Samples: 184000096 | Loss: 0.008436 | Rate: 529138 samples/s
+  [Val] Epoch 28/100 | Batch 2097/2332 | Samples: 206300048 | Loss: 0.008446 | Rate: 528088 samples/s
+  [Val] Epoch 28/100 | Batch 2330/2332 | Samples: 227940112 | Loss: 0.008500 | Rate: 526535 samples/s
+  [Val] Epoch 28/100 | Batch 2332/2332 | Samples: 228040112 | Loss: 0.008500 | Rate: 526412 samples/s
+Epoch  28/100  train_loss=0.029154  val_loss=0.008500  lr=1.00e-03  improve=True  time=10079.9s  ETA=725750.2s
+  → New best val loss 0.008500, checkpoint saved to best_model_watercnn.pt
+    Inference model saved to best_model_jit_watercnn.pt
+  [Train] Epoch 29/100 started | batches=20980 | log_interval=2098
+  [Train] Epoch 29/100 | Batch 1/20980 | Samples: 89912 | Loss: 0.013156 | Rate: 6315 samples/s
+  [Train] Epoch 29/100 | Batch 2098/20980 | Samples: 200010288 | Loss: 0.015108 | Rate: 203710 samples/s
+  [Train] Epoch 29/100 | Batch 4196/20980 | Samples: 406049760 | Loss: 0.014559 | Rate: 210275 samples/s
+  [Train] Epoch 29/100 | Batch 6294/20980 | Samples: 604855744 | Loss: 0.017986 | Rate: 210880 samples/s
+  [Train] Epoch 29/100 | Batch 8392/20980 | Samples: 799499136 | Loss: 0.019034 | Rate: 218250 samples/s
+  [Train] Epoch 29/100 | Batch 10490/20980 | Samples: 1036972544 | Loss: 0.017572 | Rate: 226156 samples/s
+  [Train] Epoch 29/100 | Batch 12588/20980 | Samples: 1257388160 | Loss: 0.018204 | Rate: 226209 samples/s
+  [Train] Epoch 29/100 | Batch 14686/20980 | Samples: 1482601216 | Loss: 0.017735 | Rate: 227646 samples/s
+  [Train] Epoch 29/100 | Batch 16784/20980 | Samples: 1686465408 | Loss: 0.017730 | Rate: 230626 samples/s
+  [Train] Epoch 29/100 | Batch 18882/20980 | Samples: 1896623872 | Loss: 0.017404 | Rate: 234298 samples/s
+  [Train] Epoch 29/100 | Batch 20980/20980 | Samples: 2102426752 | Loss: 0.016900 | Rate: 236245 samples/s
+  [Val] Epoch 29/100 started | batches=2332 | log_interval=233
+  [Val] Epoch 29/100 | Batch 1/2332 | Samples: 68329 | Loss: 0.010442 | Rate: 39301 samples/s
+  [Val] Epoch 29/100 | Batch 233/2332 | Samples: 29642312 | Loss: 0.008571 | Rate: 637961 samples/s
+  [Val] Epoch 29/100 | Batch 466/2332 | Samples: 50032368 | Loss: 0.010118 | Rate: 560226 samples/s
+  [Val] Epoch 29/100 | Batch 699/2332 | Samples: 72533600 | Loss: 0.010446 | Rate: 549813 samples/s
+  [Val] Epoch 29/100 | Batch 932/2332 | Samples: 94920048 | Loss: 0.010743 | Rate: 542996 samples/s
+  [Val] Epoch 29/100 | Batch 1165/2332 | Samples: 118040528 | Loss: 0.010744 | Rate: 542790 samples/s
+  [Val] Epoch 29/100 | Batch 1398/2332 | Samples: 141474352 | Loss: 0.010704 | Rate: 543041 samples/s
+  [Val] Epoch 29/100 | Batch 1631/2332 | Samples: 163260720 | Loss: 0.010845 | Rate: 539066 samples/s
+  [Val] Epoch 29/100 | Batch 1864/2332 | Samples: 184000096 | Loss: 0.011039 | Rate: 532904 samples/s
+  [Val] Epoch 29/100 | Batch 2097/2332 | Samples: 206300048 | Loss: 0.011007 | Rate: 532719 samples/s
+  [Val] Epoch 29/100 | Batch 2330/2332 | Samples: 227940112 | Loss: 0.011027 | Rate: 531880 samples/s
+  [Val] Epoch 29/100 | Batch 2332/2332 | Samples: 228040112 | Loss: 0.011027 | Rate: 532107 samples/s
+Epoch  29/100  train_loss=0.016900  val_loss=0.011027  lr=1.00e-03  improve=False  time=19410.9s  ETA=689088.7s
+  [Train] Epoch 30/100 started | batches=20980 | log_interval=2098
+  [Train] Epoch 30/100 | Batch 1/20980 | Samples: 86547 | Loss: 0.009929 | Rate: 5647 samples/s
+  [Train] Epoch 30/100 | Batch 2098/20980 | Samples: 209909664 | Loss: 0.016365 | Rate: 265505 samples/s
+  [Train] Epoch 30/100 | Batch 4196/20980 | Samples: 406670016 | Loss: 0.018869 | Rate: 252654 samples/s
+  [Train] Epoch 30/100 | Batch 6294/20980 | Samples: 648026880 | Loss: 0.018052 | Rate: 264012 samples/s
+  [Train] Epoch 30/100 | Batch 8392/20980 | Samples: 855446656 | Loss: 0.017593 | Rate: 261959 samples/s
+  [Train] Epoch 30/100 | Batch 10490/20980 | Samples: 1054514880 | Loss: 0.017190 | Rate: 255400 samples/s
+  [Train] Epoch 30/100 | Batch 12588/20980 | Samples: 1255967488 | Loss: 0.020833 | Rate: 247210 samples/s
+  [Train] Epoch 30/100 | Batch 14686/20980 | Samples: 1454803200 | Loss: 0.020397 | Rate: 241171 samples/s
+  [Train] Epoch 30/100 | Batch 16784/20980 | Samples: 1672837376 | Loss: 0.019457 | Rate: 241204 samples/s
+  [Train] Epoch 30/100 | Batch 18882/20980 | Samples: 1895742976 | Loss: 0.019663 | Rate: 246502 samples/s
+  [Train] Epoch 30/100 | Batch 20980/20980 | Samples: 2102431104 | Loss: 0.019559 | Rate: 247153 samples/s
+  [Val] Epoch 30/100 started | batches=2332 | log_interval=233
+  [Val] Epoch 30/100 | Batch 1/2332 | Samples: 68329 | Loss: 0.004789 | Rate: 35995 samples/s
+  [Val] Epoch 30/100 | Batch 233/2332 | Samples: 29642312 | Loss: 0.002890 | Rate: 643907 samples/s
+  [Val] Epoch 30/100 | Batch 466/2332 | Samples: 50032368 | Loss: 0.003425 | Rate: 559093 samples/s
+  [Val] Epoch 30/100 | Batch 699/2332 | Samples: 72533600 | Loss: 0.003553 | Rate: 546362 samples/s
+  [Val] Epoch 30/100 | Batch 932/2332 | Samples: 94920048 | Loss: 0.003618 | Rate: 540118 samples/s
+  [Val] Epoch 30/100 | Batch 1165/2332 | Samples: 118040528 | Loss: 0.003643 | Rate: 539973 samples/s
+  [Val] Epoch 30/100 | Batch 1398/2332 | Samples: 141474352 | Loss: 0.003644 | Rate: 541397 samples/s
+  [Val] Epoch 30/100 | Batch 1631/2332 | Samples: 163260720 | Loss: 0.003687 | Rate: 536553 samples/s
+  [Val] Epoch 30/100 | Batch 1864/2332 | Samples: 184000096 | Loss: 0.003747 | Rate: 531529 samples/s
+  [Val] Epoch 30/100 | Batch 2097/2332 | Samples: 206300048 | Loss: 0.003759 | Rate: 531466 samples/s
+  [Val] Epoch 30/100 | Batch 2330/2332 | Samples: 227940112 | Loss: 0.003772 | Rate: 529711 samples/s
+  [Val] Epoch 30/100 | Batch 2332/2332 | Samples: 228040112 | Loss: 0.003772 | Rate: 529937 samples/s
+Epoch  30/100  train_loss=0.019559  val_loss=0.003772  lr=1.00e-03  improve=True  time=28348.2s  ETA=661458.5s
+  → New best val loss 0.003772, checkpoint saved to best_model_watercnn.pt
+    Inference model saved to best_model_jit_watercnn.pt
+  [Train] Epoch 31/100 started | batches=20980 | log_interval=2098
+  [Train] Epoch 31/100 | Batch 1/20980 | Samples: 80881 | Loss: 0.003684 | Rate: 5641 samples/s
+  [Train] Epoch 31/100 | Batch 2098/20980 | Samples: 214946512 | Loss: 0.016809 | Rate: 242113 samples/s
+  [Train] Epoch 31/100 | Batch 4196/20980 | Samples: 412778432 | Loss: 0.016215 | Rate: 236171 samples/s
+  [Train] Epoch 31/100 | Batch 6294/20980 | Samples: 618002368 | Loss: 0.015087 | Rate: 238210 samples/s
+  [Train] Epoch 31/100 | Batch 8392/20980 | Samples: 813735616 | Loss: 0.019779 | Rate: 236834 samples/s
+  [Train] Epoch 31/100 | Batch 10490/20980 | Samples: 1009450560 | Loss: 0.017474 | Rate: 235724 samples/s
+  [Train] Epoch 31/100 | Batch 12588/20980 | Samples: 1235739520 | Loss: 0.026453 | Rate: 239275 samples/s
+  [Train] Epoch 31/100 | Batch 14686/20980 | Samples: 1446900864 | Loss: 0.024043 | Rate: 239453 samples/s
+  [Train] Epoch 31/100 | Batch 16784/20980 | Samples: 1650201344 | Loss: 0.022994 | Rate: 238621 samples/s
+  [Train] Epoch 31/100 | Batch 18882/20980 | Samples: 1859913600 | Loss: 0.021443 | Rate: 238154 samples/s
+  [Train] Epoch 31/100 | Batch 20980/20980 | Samples: 2102427520 | Loss: 0.020810 | Rate: 241030 samples/s
+  [Val] Epoch 31/100 started | batches=2332 | log_interval=233
+  [Val] Epoch 31/100 | Batch 1/2332 | Samples: 68329 | Loss: 0.077266 | Rate: 42355 samples/s
+  [Val] Epoch 31/100 | Batch 233/2332 | Samples: 29642312 | Loss: 0.042494 | Rate: 655396 samples/s
+  [Val] Epoch 31/100 | Batch 466/2332 | Samples: 50032368 | Loss: 0.050306 | Rate: 573434 samples/s
+  [Val] Epoch 31/100 | Batch 699/2332 | Samples: 72533600 | Loss: 0.051992 | Rate: 557870 samples/s
+  [Val] Epoch 31/100 | Batch 932/2332 | Samples: 94920048 | Loss: 0.052927 | Rate: 549702 samples/s
+  [Val] Epoch 31/100 | Batch 1165/2332 | Samples: 118040528 | Loss: 0.053208 | Rate: 547085 samples/s
+  [Val] Epoch 31/100 | Batch 1398/2332 | Samples: 141474352 | Loss: 0.053277 | Rate: 548923 samples/s
+  [Val] Epoch 31/100 | Batch 1631/2332 | Samples: 163260720 | Loss: 0.053841 | Rate: 545728 samples/s
+  [Val] Epoch 31/100 | Batch 1864/2332 | Samples: 184000096 | Loss: 0.054596 | Rate: 538774 samples/s
+  [Val] Epoch 31/100 | Batch 2097/2332 | Samples: 206300048 | Loss: 0.054813 | Rate: 538146 samples/s
+  [Val] Epoch 31/100 | Batch 2330/2332 | Samples: 227940112 | Loss: 0.055101 | Rate: 537428 samples/s
+  [Val] Epoch 31/100 | Batch 2332/2332 | Samples: 228040112 | Loss: 0.055103 | Rate: 537658 samples/s
+Epoch  31/100  train_loss=0.020810  val_loss=0.055103  lr=1.00e-03  improve=False  time=37496.4s  ETA=646813.3s
+  [Train] Epoch 32/100 started | batches=20980 | log_interval=2098
+  [Train] Epoch 32/100 | Batch 1/20980 | Samples: 82502 | Loss: 0.063187 | Rate: 5573 samples/s
+  [Train] Epoch 32/100 | Batch 2098/20980 | Samples: 202835312 | Loss: 0.029379 | Rate: 225489 samples/s
+  [Train] Epoch 32/100 | Batch 4196/20980 | Samples: 405328352 | Loss: 0.025031 | Rate: 215549 samples/s
+  [Train] Epoch 32/100 | Batch 6294/20980 | Samples: 607957888 | Loss: 0.021345 | Rate: 213620 samples/s
+  [Train] Epoch 32/100 | Batch 8392/20980 | Samples: 850951168 | Loss: 0.018186 | Rate: 230788 samples/s
+  [Train] Epoch 32/100 | Batch 10490/20980 | Samples: 1052886784 | Loss: 0.017952 | Rate: 225629 samples/s
+  [Train] Epoch 32/100 | Batch 12588/20980 | Samples: 1245077376 | Loss: 0.017141 | Rate: 220729 samples/s
+  [Train] Epoch 32/100 | Batch 14686/20980 | Samples: 1462059520 | Loss: 0.017136 | Rate: 220318 samples/s
+  [Train] Epoch 32/100 | Batch 16784/20980 | Samples: 1659635840 | Loss: 0.016915 | Rate: 219444 samples/s
+  [Train] Epoch 32/100 | Batch 18882/20980 | Samples: 1898838528 | Loss: 0.016737 | Rate: 226427 samples/s
+  [Train] Epoch 32/100 | Batch 20980/20980 | Samples: 2102421120 | Loss: 0.016908 | Rate: 227842 samples/s
+  [Val] Epoch 32/100 started | batches=2332 | log_interval=233
+  [Val] Epoch 32/100 | Batch 1/2332 | Samples: 68329 | Loss: 0.006974 | Rate: 38374 samples/s
+  [Val] Epoch 32/100 | Batch 233/2332 | Samples: 29642312 | Loss: 0.005028 | Rate: 610571 samples/s
+  [Val] Epoch 32/100 | Batch 466/2332 | Samples: 50032368 | Loss: 0.005933 | Rate: 524101 samples/s
+  [Val] Epoch 32/100 | Batch 699/2332 | Samples: 72533600 | Loss: 0.006118 | Rate: 509521 samples/s
+  [Val] Epoch 32/100 | Batch 932/2332 | Samples: 94920048 | Loss: 0.006215 | Rate: 501338 samples/s
+  [Val] Epoch 32/100 | Batch 1165/2332 | Samples: 118040528 | Loss: 0.006244 | Rate: 499074 samples/s
+  [Val] Epoch 32/100 | Batch 1398/2332 | Samples: 141474352 | Loss: 0.006275 | Rate: 498831 samples/s
+  [Val] Epoch 32/100 | Batch 1631/2332 | Samples: 163260720 | Loss: 0.006344 | Rate: 494341 samples/s
+  [Val] Epoch 32/100 | Batch 1864/2332 | Samples: 184000096 | Loss: 0.006439 | Rate: 487909 samples/s
+  [Val] Epoch 32/100 | Batch 2097/2332 | Samples: 206300048 | Loss: 0.006450 | Rate: 486666 samples/s
+  [Val] Epoch 32/100 | Batch 2330/2332 | Samples: 227940112 | Loss: 0.006475 | Rate: 485484 samples/s
+  [Val] Epoch 32/100 | Batch 2332/2332 | Samples: 228040112 | Loss: 0.006475 | Rate: 485691 samples/s
+Epoch  32/100  train_loss=0.016908  val_loss=0.006475  lr=1.00e-03  improve=False  time=47193.8s  ETA=641836.1s
+  [Train] Epoch 33/100 started | batches=20980 | log_interval=2098
+  [Train] Epoch 33/100 | Batch 1/20980 | Samples: 1378171 | Loss: 0.000350 | Rate: 94860 samples/s
+  [Train] Epoch 33/100 | Batch 2098/20980 | Samples: 195612896 | Loss: 0.013658 | Rate: 231205 samples/s
+  [Train] Epoch 33/100 | Batch 4196/20980 | Samples: 397091136 | Loss: 0.017319 | Rate: 239174 samples/s
+  [Train] Epoch 33/100 | Batch 6294/20980 | Samples: 643056064 | Loss: 0.017152 | Rate: 254985 samples/s
+  [Train] Epoch 33/100 | Batch 8392/20980 | Samples: 871177088 | Loss: 0.016907 | Rate: 258593 samples/s
+  [Train] Epoch 33/100 | Batch 10490/20980 | Samples: 1066376384 | Loss: 0.015743 | Rate: 254556 samples/s
+  [Train] Epoch 33/100 | Batch 12588/20980 | Samples: 1270065920 | Loss: 0.014989 | Rate: 251837 samples/s
+  [Train] Epoch 33/100 | Batch 14686/20980 | Samples: 1474138624 | Loss: 0.014817 | Rate: 249463 samples/s
+  [Train] Epoch 33/100 | Batch 16784/20980 | Samples: 1699592448 | Loss: 0.015140 | Rate: 252903 samples/s
+  [Train] Epoch 33/100 | Batch 18882/20980 | Samples: 1897340032 | Loss: 0.015298 | Rate: 250634 samples/s
+  [Train] Epoch 33/100 | Batch 20980/20980 | Samples: 2102430976 | Loss: 0.017412 | Rate: 248476 samples/s
+  [Val] Epoch 33/100 started | batches=2332 | log_interval=233
+  [Val] Epoch 33/100 | Batch 1/2332 | Samples: 68329 | Loss: 0.008495 | Rate: 42685 samples/s
+  [Val] Epoch 33/100 | Batch 233/2332 | Samples: 29642312 | Loss: 0.006466 | Rate: 616001 samples/s
+  [Val] Epoch 33/100 | Batch 466/2332 | Samples: 50032368 | Loss: 0.007565 | Rate: 529790 samples/s
+  [Val] Epoch 33/100 | Batch 699/2332 | Samples: 72533600 | Loss: 0.007816 | Rate: 514686 samples/s
+  [Val] Epoch 33/100 | Batch 932/2332 | Samples: 94920048 | Loss: 0.007964 | Rate: 506376 samples/s
+  [Val] Epoch 33/100 | Batch 1165/2332 | Samples: 118040528 | Loss: 0.007987 | Rate: 504372 samples/s
+  [Val] Epoch 33/100 | Batch 1398/2332 | Samples: 141474352 | Loss: 0.007999 | Rate: 504312 samples/s
+  [Val] Epoch 33/100 | Batch 1631/2332 | Samples: 163260720 | Loss: 0.008104 | Rate: 499505 samples/s
+  [Val] Epoch 33/100 | Batch 1864/2332 | Samples: 184000096 | Loss: 0.008226 | Rate: 492968 samples/s
+  [Val] Epoch 33/100 | Batch 2097/2332 | Samples: 206300048 | Loss: 0.008253 | Rate: 491330 samples/s
+  [Val] Epoch 33/100 | Batch 2330/2332 | Samples: 227940112 | Loss: 0.008340 | Rate: 489927 samples/s
+  [Val] Epoch 33/100 | Batch 2332/2332 | Samples: 228040112 | Loss: 0.008341 | Rate: 490136 samples/s
+Epoch  33/100  train_loss=0.017412  val_loss=0.008341  lr=1.00e-03  improve=False  time=56120.7s  ETA=626681.3s
+  [Train] Epoch 34/100 started | batches=20980 | log_interval=2098
+  [Train] Epoch 34/100 | Batch 1/20980 | Samples: 72281 | Loss: 0.025428 | Rate: 4558 samples/s
+  [Train] Epoch 34/100 | Batch 2098/20980 | Samples: 242796048 | Loss: 0.007113 | Rate: 292160 samples/s
+  [Train] Epoch 34/100 | Batch 4196/20980 | Samples: 435203616 | Loss: 0.008475 | Rate: 251767 samples/s
+  [Train] Epoch 34/100 | Batch 6294/20980 | Samples: 653866880 | Loss: 0.011579 | Rate: 241608 samples/s
+  [Train] Epoch 34/100 | Batch 8392/20980 | Samples: 850073152 | Loss: 0.011986 | Rate: 232132 samples/s
+  [Train] Epoch 34/100 | Batch 10490/20980 | Samples: 1052675328 | Loss: 0.012418 | Rate: 227088 samples/s
+  [Train] Epoch 34/100 | Batch 12588/20980 | Samples: 1249438336 | Loss: 0.012469 | Rate: 222183 samples/s
+  [Train] Epoch 34/100 | Batch 14686/20980 | Samples: 1468079104 | Loss: 0.013191 | Rate: 222873 samples/s
+  [Train] Epoch 34/100 | Batch 16784/20980 | Samples: 1679927936 | Loss: 0.014109 | Rate: 222525 samples/s
+  [Train] Epoch 34/100 | Batch 18882/20980 | Samples: 1895410176 | Loss: 0.013810 | Rate: 222395 samples/s
+  [Train] Epoch 34/100 | Batch 20980/20980 | Samples: 2102431232 | Loss: 0.014342 | Rate: 221051 samples/s
+  [Val] Epoch 34/100 started | batches=2332 | log_interval=233
+  [Val] Epoch 34/100 | Batch 1/2332 | Samples: 68329 | Loss: 0.002483 | Rate: 40673 samples/s
+  [Val] Epoch 34/100 | Batch 233/2332 | Samples: 29642312 | Loss: 0.001455 | Rate: 674483 samples/s
+  [Val] Epoch 34/100 | Batch 466/2332 | Samples: 50032368 | Loss: 0.001743 | Rate: 585527 samples/s
+  [Val] Epoch 34/100 | Batch 699/2332 | Samples: 72533600 | Loss: 0.001817 | Rate: 571386 samples/s
+  [Val] Epoch 34/100 | Batch 932/2332 | Samples: 94920048 | Loss: 0.001857 | Rate: 563635 samples/s
+  [Val] Epoch 34/100 | Batch 1165/2332 | Samples: 118040528 | Loss: 0.001865 | Rate: 561080 samples/s
+  [Val] Epoch 34/100 | Batch 1398/2332 | Samples: 141474352 | Loss: 0.001862 | Rate: 560888 samples/s
+  [Val] Epoch 34/100 | Batch 1631/2332 | Samples: 163260720 | Loss: 0.001885 | Rate: 554870 samples/s
+  [Val] Epoch 34/100 | Batch 1864/2332 | Samples: 184000096 | Loss: 0.001915 | Rate: 546641 samples/s
+  [Val] Epoch 34/100 | Batch 2097/2332 | Samples: 206300048 | Loss: 0.001922 | Rate: 543863 samples/s
+  [Val] Epoch 34/100 | Batch 2330/2332 | Samples: 227940112 | Loss: 0.001928 | Rate: 541394 samples/s
+  [Val] Epoch 34/100 | Batch 2332/2332 | Samples: 228040112 | Loss: 0.001928 | Rate: 541626 samples/s
+Epoch  34/100  train_loss=0.014342  val_loss=0.001928  lr=1.00e-03  improve=True  time=66053.1s  ETA=622786.6s
+  → New best val loss 0.001928, checkpoint saved to best_model_watercnn.pt
+    Inference model saved to best_model_jit_watercnn.pt
+  [Train] Epoch 35/100 started | batches=20980 | log_interval=2098
+  [Train] Epoch 35/100 | Batch 1/20980 | Samples: 79108 | Loss: 0.001995 | Rate: 5504 samples/s
+  [Train] Epoch 35/100 | Batch 2098/20980 | Samples: 213818448 | Loss: 0.019870 | Rate: 218499 samples/s
+  [Train] Epoch 35/100 | Batch 4196/20980 | Samples: 413427968 | Loss: 0.017870 | Rate: 217773 samples/s
+  [Train] Epoch 35/100 | Batch 6294/20980 | Samples: 618903040 | Loss: 0.026528 | Rate: 223773 samples/s
+  [Train] Epoch 35/100 | Batch 8392/20980 | Samples: 818190400 | Loss: 0.022222 | Rate: 225364 samples/s
+  [Train] Epoch 35/100 | Batch 10490/20980 | Samples: 1021540672 | Loss: 0.025708 | Rate: 226352 samples/s
+  [Train] Epoch 35/100 | Batch 12588/20980 | Samples: 1222654208 | Loss: 0.026403 | Rate: 226904 samples/s

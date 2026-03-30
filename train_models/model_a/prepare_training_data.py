@@ -408,8 +408,21 @@ def mpi_send_pairs(ctx: MPIContext, dest: int, keys: np.ndarray, counts: np.ndar
         return
     key_cols = int(keys.shape[1])
     comm.send(key_cols, dest=dest, tag=tag_base + 1)
-    comm.Send([np.ascontiguousarray(keys.reshape(-1), dtype=np.uint32), mpi.UINT32_T], dest=dest, tag=tag_base + 2)
-    comm.Send([np.ascontiguousarray(counts, dtype=np.int64), mpi.INT64_T], dest=dest, tag=tag_base + 3)
+
+    # Some MPI stacks still use 32-bit count arguments for Send/Recv calls.
+    # Keep each transfer chunk below that limit to avoid MPI_ERR_ARG on large merges.
+    max_rows_per_chunk = max(1, (2**31 - 1) // key_cols)
+    keys_c = np.ascontiguousarray(keys, dtype=np.uint32)
+    counts_c = np.ascontiguousarray(counts, dtype=np.int64)
+
+    offset = 0
+    while offset < rows:
+        chunk_rows = min(max_rows_per_chunk, rows - offset)
+        keys_chunk = keys_c[offset : offset + chunk_rows].reshape(-1)
+        counts_chunk = counts_c[offset : offset + chunk_rows]
+        comm.Send([keys_chunk, mpi.UINT32_T], dest=dest, tag=tag_base + 2)
+        comm.Send([counts_chunk, mpi.INT64_T], dest=dest, tag=tag_base + 3)
+        offset += chunk_rows
 
 
 def mpi_recv_pairs(ctx: MPIContext, src: int, tag_base: int = 1000) -> tuple[np.ndarray, np.ndarray]:
@@ -421,8 +434,17 @@ def mpi_recv_pairs(ctx: MPIContext, src: int, tag_base: int = 1000) -> tuple[np.
     key_cols = comm.recv(source=src, tag=tag_base + 1)
     keys_flat = np.empty(rows * key_cols, dtype=np.uint32)
     counts = np.empty(rows, dtype=np.int64)
-    comm.Recv([keys_flat, mpi.UINT32_T], source=src, tag=tag_base + 2)
-    comm.Recv([counts, mpi.INT64_T], source=src, tag=tag_base + 3)
+
+    max_rows_per_chunk = max(1, (2**31 - 1) // key_cols)
+    offset = 0
+    while offset < rows:
+        chunk_rows = min(max_rows_per_chunk, rows - offset)
+        key_start = offset * key_cols
+        key_end = (offset + chunk_rows) * key_cols
+        comm.Recv([keys_flat[key_start:key_end], mpi.UINT32_T], source=src, tag=tag_base + 2)
+        comm.Recv([counts[offset : offset + chunk_rows], mpi.INT64_T], source=src, tag=tag_base + 3)
+        offset += chunk_rows
+
     return keys_flat.reshape(rows, key_cols), counts
 
 

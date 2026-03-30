@@ -59,15 +59,16 @@ def main() -> None:
     #x_water[0, 0, 1, 0] = 10
     #x_water[0, 0, 1, 2] = 10
     
-    x_terrain[0, 0, 0, 0] = 0
-    x_terrain[0, 0, 0, 1] = 198
-    x_terrain[0, 0, 0, 2] = 198
-    x_terrain[0, 0, 1, 0] = 82
-    x_terrain[0, 0, 1, 1] = 82
-    x_terrain[0, 0, 1, 2] = 83
-    x_terrain[0, 0, 2, 0] = 74
-    x_terrain[0, 0, 2, 1] = 74
-    x_terrain[0, 0, 2, 2] = 74
+    if False:
+        x_terrain[0, 0, 0, 0] = 0
+        x_terrain[0, 0, 0, 1] = 198
+        x_terrain[0, 0, 0, 2] = 198
+        x_terrain[0, 0, 1, 0] = 82
+        x_terrain[0, 0, 1, 1] = 82
+        x_terrain[0, 0, 1, 2] = 83
+        x_terrain[0, 0, 2, 0] = 74
+        x_terrain[0, 0, 2, 1] = 74
+        x_terrain[0, 0, 2, 2] = 74
 
     with torch.no_grad():
         out = model(x_water, x_terrain)

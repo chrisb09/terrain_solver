@@ -1,98 +1,104 @@
 #!/usr/bin/env python3
 import argparse
+import sys
 from pathlib import Path
 
 import torch
 
 
-class RealFunctionModel(torch.nn.Module):
-    def __init__(self) -> None:
-        super().__init__()
-        self.register_buffer("quarter", torch.tensor(0.25, dtype=torch.float32))
+TRAIN_MODEL_DIR = Path(__file__).resolve().parents[1] / "train_models" / "model_a"
+sys.path.insert(0, str(TRAIN_MODEL_DIR))
 
-    def forward(self, x_water: torch.Tensor, x_terrain: torch.Tensor) -> torch.Tensor:
-        if x_water.dim() != 4 or x_terrain.dim() != 4:
-            raise RuntimeError("Expected 4D tensors with shape [B, 1, 3, 3]")
-        if x_water.size(1) != 1 or x_terrain.size(1) != 1:
-            raise RuntimeError("Expected channel dimension C=1")
-        if x_water.size(2) != 3 or x_water.size(3) != 3:
-            raise RuntimeError("Expected x_water shape [B, 1, 3, 3]")
-        if x_terrain.size(2) != 3 or x_terrain.size(3) != 3:
-            raise RuntimeError("Expected x_terrain shape [B, 1, 3, 3]")
-
-        center_w = x_water[:, 0, 1, 1]
-        center_t = x_terrain[:, 0, 1, 1]
-        this_total = center_w + center_t
-        new_value = center_w.clone()
-
-        nz = 0
-        nx = 1
-        neighbor_total = x_water[:, 0, nz, nx] + x_terrain[:, 0, nz, nx]
-        diff = this_total - neighbor_total
-        outflow = torch.minimum(center_w, torch.clamp_min(diff, 0.0)) * self.quarter
-        inflow = torch.minimum(x_water[:, 0, nz, nx], torch.clamp_min(-diff, 0.0)) * self.quarter
-        new_value = new_value - (outflow - inflow)
-
-        nz = 2
-        nx = 1
-        neighbor_total = x_water[:, 0, nz, nx] + x_terrain[:, 0, nz, nx]
-        diff = this_total - neighbor_total
-        outflow = torch.minimum(center_w, torch.clamp_min(diff, 0.0)) * self.quarter
-        inflow = torch.minimum(x_water[:, 0, nz, nx], torch.clamp_min(-diff, 0.0)) * self.quarter
-        new_value = new_value - (outflow - inflow)
-
-        nz = 1
-        nx = 0
-        neighbor_total = x_water[:, 0, nz, nx] + x_terrain[:, 0, nz, nx]
-        diff = this_total - neighbor_total
-        outflow = torch.minimum(center_w, torch.clamp_min(diff, 0.0)) * self.quarter
-        inflow = torch.minimum(x_water[:, 0, nz, nx], torch.clamp_min(-diff, 0.0)) * self.quarter
-        new_value = new_value - (outflow - inflow)
-
-        nz = 1
-        nx = 2
-        neighbor_total = x_water[:, 0, nz, nx] + x_terrain[:, 0, nz, nx]
-        diff = this_total - neighbor_total
-        outflow = torch.minimum(center_w, torch.clamp_min(diff, 0.0)) * self.quarter
-        inflow = torch.minimum(x_water[:, 0, nz, nx], torch.clamp_min(-diff, 0.0)) * self.quarter
-        new_value = new_value - (outflow - inflow)
-
-        return new_value
+from train import (  # noqa: E402
+    RealFunctionModel,
+    build_artifact_record,
+    ensure_parent_dir,
+    export_inference_model,
+    export_onnx_model,
+    export_tensorflow_frozen_model,
+    write_artifact_manifest,
+)
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Build and save a TorchScript model implementing the exact real_function update rule")
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Build export artifacts for the exact perfect-model update rule."
+    )
     parser.add_argument(
-        "--output",
+        "--torch-output",
         type=Path,
         default=Path("train_models/model_a/real_function_jit.pt"),
-        help="Output path for scripted model",
+        help="Output path for TorchScript model",
+    )
+    parser.add_argument(
+        "--onnx-output",
+        type=Path,
+        default=Path("train_models/model_a/real_function.onnx"),
+        help="Output path for ONNX model",
+    )
+    parser.add_argument(
+        "--tf-output",
+        type=Path,
+        default=Path("train_models/model_a/real_function_tf.pb"),
+        help="Output path for TensorFlow frozen graph",
+    )
+    parser.add_argument(
+        "--artifact-manifest",
+        type=Path,
+        default=Path("train_models/model_a/artifact_manifest_perfect_model.json"),
+        help="Output path for the artifact manifest",
+    )
+    parser.add_argument(
+        "--export-backends",
+        nargs="+",
+        choices=["torch", "onnx", "tf"],
+        default=["torch"],
+        help="Backends to export",
     )
     parser.add_argument(
         "--device",
         choices=["cpu", "cuda"],
         default="cpu",
-        help="Device used during scripting and quick self-check",
+        help="Device used during TorchScript export and self-check",
     )
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
 
     if args.device == "cuda" and not torch.cuda.is_available():
         raise RuntimeError("CUDA requested but not available")
 
     device = torch.device(args.device)
     model = RealFunctionModel().to(device).eval()
+    artifacts = []
 
-    scripted = torch.jit.script(model)
+    if "torch" in args.export_backends:
+        ensure_parent_dir(str(args.torch_output))
+        export_inference_model(model, str(args.torch_output), device)
+        artifacts.append(build_artifact_record("perfect_model", "TORCH", str(args.torch_output)))
 
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    scripted.save(str(args.output))
+    if "onnx" in args.export_backends:
+        artifact = export_onnx_model(model, str(args.onnx_output))
+        artifact["model_name"] = "perfect_model"
+        artifacts.append(artifact)
+
+    if "tf" in args.export_backends:
+        artifact = export_tensorflow_frozen_model(model, str(args.tf_output))
+        artifact["model_name"] = "perfect_model"
+        artifacts.append(artifact)
+
+    write_artifact_manifest(str(args.artifact_manifest), "perfect_model", artifacts)
 
     x_water = torch.zeros((1, 1, 3, 3), dtype=torch.float32, device=device)
     x_terrain = torch.zeros((1, 1, 3, 3), dtype=torch.float32, device=device)
     with torch.no_grad():
-        y = scripted(x_water, x_terrain)
+        y = model(x_water, x_terrain)
 
-    print(f"Saved TorchScript model to: {args.output}")
+    for artifact in artifacts:
+        print(f"Saved {artifact['backend']} model to: {artifact['path']}")
+    print(f"Saved artifact manifest to: {args.artifact_manifest}")
     print(f"Self-check output on zero input: {y.detach().cpu().numpy()}")
 
 

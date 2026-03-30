@@ -4,11 +4,12 @@
 #SBATCH --partition=c23mm
 #SBATCH --account=thes2181
 #SBATCH --nodes=1
-#SBATCH --ntasks=96
+#SBATCH --ntasks=12
 #SBATCH --cpus-per-task=1
 #SBATCH --time=20:00:00
 ##SBATCH --time=01:00:00
-#SBATCH --mem-per-cpu=5G
+##SBATCH --mem-per-cpu=5G
+#SBATCH --mem-per-cpu=40G
 #SBATCH --output=prepare_training_data.out
 #SBATCH --error=prepare_training_data.err
 
@@ -26,8 +27,31 @@ DATA_PATH="/hpcwork/ro092286/smartsim/mini_app/external_data/circle_r300_d300_s1
 OUTPUT_DIR="${SCRIPT_DIR}/prepare_mpi"
 
 # Local fast storage base directory (override via LOCAL_SSD_DIR if needed).
-# Priority: LOCAL_SSD_DIR -> BEEOND -> SLURM_TMPDIR -> /tmp.
-LOCAL_STAGE_BASE="${LOCAL_SSD_DIR:-${BEEOND:-${SLURM_TMPDIR:-/tmp/${USER}/${SLURM_JOB_ID}}}}"
+# Priority candidates: LOCAL_SSD_DIR -> BEEOND -> SLURM_TMPDIR -> /tmp.
+STAGE_CANDIDATES=(
+  "${LOCAL_SSD_DIR:-}"
+  "${BEEOND:-}"
+  "${SLURM_TMPDIR:-}"
+  "/tmp/${USER}/${SLURM_JOB_ID}"
+)
+
+LOCAL_STAGE_BASE=""
+for candidate in "${STAGE_CANDIDATES[@]}"; do
+  [[ -z "${candidate}" ]] && continue
+  if mkdir -p "${candidate}" 2>/dev/null; then
+    if [[ -w "${candidate}" ]]; then
+      LOCAL_STAGE_BASE="${candidate}"
+      break
+    fi
+  fi
+done
+
+if [[ -z "${LOCAL_STAGE_BASE}" ]]; then
+  echo "ERROR: Could not find a writable local staging directory." >&2
+  echo "Tried LOCAL_SSD_DIR='${LOCAL_SSD_DIR:-}', BEEOND='${BEEOND:-}', SLURM_TMPDIR='${SLURM_TMPDIR:-}', /tmp fallback." >&2
+  exit 1
+fi
+
 LOCAL_WORK_DIR="${LOCAL_STAGE_BASE}/prep_pairs_${SLURM_JOB_ID}"
 LOCAL_DATA_PATH="${LOCAL_WORK_DIR}/$(basename "${DATA_PATH}")"
 LOCAL_OUTPUT_DIR="${LOCAL_WORK_DIR}/prepared_out"
@@ -44,6 +68,7 @@ cd "${SCRIPT_DIR}" || exit
 mkdir -p "${LOCAL_WORK_DIR}"
 
 echo "[stage-in] local work dir: ${LOCAL_WORK_DIR}"
+echo "[stage-in] local stage base: ${LOCAL_STAGE_BASE}"
 echo "[stage-in] copying input HDF5 to local SSD/BeeOND ..."
 rsync -ah --info=progress2 "${DATA_PATH}" "${LOCAL_DATA_PATH}"
 echo "[stage-in] done"
@@ -57,7 +82,7 @@ python3 -c "import mpi4py; print('mpi4py ok')"
 srun --mpi=pmix_v3 python3 -m mpi4py prepare_training_data.py \
   "${LOCAL_DATA_PATH}" \
   "${LOCAL_OUTPUT_DIR}" \
-  --max-steps 10000 \
+  --max-steps 1000 \
   --num-batches 16 \
   --shuffle-output \
   --topk 20 \

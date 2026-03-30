@@ -22,6 +22,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <vector>
 
 enum class IoMode {
@@ -47,6 +48,9 @@ enum class SaveMode {
 
 struct Config {
     std::string model_path;
+    std::string model_backend = "TORCH";
+    std::vector<std::string> model_inputs;
+    std::vector<std::string> model_outputs;
     std::string input_hdf5;
     std::string output_hdf5;
     std::string device = "CPU";
@@ -109,6 +113,10 @@ static void usage() {
         << "Usage:\n"
         << "  terrain_solver --model-path <path> --input-hdf5 <path> --output-hdf5 <path> [options]\n\n"
         << "Options:\n"
+        << "  --model-backend <torch|onnx|tf|tflite>\n"
+        << "                                   Model backend for SmartRedis loading (default: torch)\n"
+        << "  --model-inputs <csv>            Optional model input names (required for TF graph models)\n"
+        << "  --model-outputs <csv>           Optional model output names (required for TF graph models)\n"
         << "  --device <cpu|gpu>               Device to run the solver on (default: cpu)\n"
         << "  --gpus-per-node <int>            Number of GPUs per node (default: 1)\n"
         << "  --steps <int>                    Number of simulation steps (default: 100)\n"
@@ -184,6 +192,37 @@ static std::string parse_device(const std::string& value) {
         return "GPU";
     }
     throw std::runtime_error("Unsupported device: " + value);
+}
+
+static std::string parse_model_backend(const std::string& value) {
+    if (equals_ignore_case(value, "TORCH")) {
+        return "TORCH";
+    }
+    if (equals_ignore_case(value, "ONNX")) {
+        return "ONNX";
+    }
+    if (equals_ignore_case(value, "TF")) {
+        return "TF";
+    }
+    if (equals_ignore_case(value, "TFLITE")) {
+        return "TFLITE";
+    }
+    throw std::runtime_error("Unsupported --model-backend: " + value);
+}
+
+static std::vector<std::string> split_csv(const std::string& value) {
+    std::vector<std::string> tokens;
+    std::stringstream ss(value);
+    std::string token;
+    while (std::getline(ss, token, ',')) {
+        const auto begin = token.find_first_not_of(" \t");
+        if (begin == std::string::npos) {
+            continue;
+        }
+        const auto end = token.find_last_not_of(" \t");
+        tokens.push_back(token.substr(begin, end - begin + 1));
+    }
+    return tokens;
 }
 
 static IoMode parse_io_mode(const std::string& value) {
@@ -273,7 +312,7 @@ static Config parse_args(int argc, char** argv, int rank, int total_ranks) {
             cfg.write_surface = true;
         } else if (arg == "--overwrite-output") {
             cfg.overwrite_output = true;
-        } else if (arg == "--model-path" ||
+        } else if (arg == "--model-path" || arg == "--model-backend" || arg == "--model-inputs" || arg == "--model-outputs" ||
                    arg == "--input-hdf5" || arg == "--output-hdf5" ||
                    arg == "--steps" || arg == "--device" ||
                    arg == "--gpus-per-node" ||
@@ -283,6 +322,12 @@ static Config parse_args(int argc, char** argv, int rank, int total_ranks) {
             const std::string value(argv[++i]);
             if (arg == "--device") {
                 cfg.device = parse_device(value); // validate value
+            } else if (arg == "--model-backend") {
+                cfg.model_backend = parse_model_backend(value);
+            } else if (arg == "--model-inputs") {
+                cfg.model_inputs = split_csv(value);
+            } else if (arg == "--model-outputs") {
+                cfg.model_outputs = split_csv(value);
             } else if (arg == "--gpus-per-node") {
                 const int gpus = std::stoi(value);
                 require(gpus >= 0, "--gpus-per-node must be >= 0.");
@@ -291,7 +336,9 @@ static Config parse_args(int argc, char** argv, int rank, int total_ranks) {
                 if (rank == 0) {
                     std::cout << "Using " << cfg.gpus_per_node << " GPUs per node." << std::endl;
                 }
-                std::cout << "Rank " << rank << " of " << total_ranks << " uses GPU index " << (rank % cfg.gpus_per_node) << std::endl;
+                if (cfg.gpus_per_node > 0) {
+                    std::cout << "Rank " << rank << " of " << total_ranks << " uses GPU index " << (rank % cfg.gpus_per_node) << std::endl;
+                }
             } else if (arg == "--input-hdf5") {
                 cfg.input_hdf5 = value;
             } else if (arg == "--output-hdf5") {
@@ -328,6 +375,11 @@ static Config parse_args(int argc, char** argv, int rank, int total_ranks) {
         require(!cfg.model_path.empty(), "--model-path is required.");
         require(!cfg.input_hdf5.empty(), "--input-hdf5 is required.");
         require(!cfg.output_hdf5.empty(), "--output-hdf5 is required.");
+        require(!cfg.model_backend.empty(), "--model-backend must not be empty.");
+        if (cfg.model_backend == "TF") {
+            require(!cfg.model_inputs.empty(), "--model-inputs is required for TF models.");
+            require(!cfg.model_outputs.empty(), "--model-outputs is required for TF models.");
+        }
         require(cfg.steps >= 0, "--steps must be >= 0.");
         require(cfg.save_every > 0, "--save-every must be > 0.");
         require(cfg.triangular_scale >= 1, "--triangular-scale must be >= 1.");
@@ -803,13 +855,45 @@ static double compute_local_step_ml(SmartRedis::Client* client,
         auto put_time = std::chrono::high_resolution_clock::now();
 
 
-        if (cfg.device == "GPU") {
-            if (cfg.gpus_per_node == 0) {
-                throw std::runtime_error("GPU device specified but --gpus-per-node is 0.");
+        const bool use_gpu_model = (cfg.device == "GPU");
+        const bool use_multigpu_api = use_gpu_model && (cfg.model_backend == "TORCH") &&
+                                      (decomp.world_size > 1) && (cfg.gpus_per_node > 1);
+        const int max_model_run_attempts = 3;
+        for (int attempt = 1; attempt <= max_model_run_attempts; ++attempt) {
+            try {
+                if (use_multigpu_api) {
+                    if (cfg.gpus_per_node == 0) {
+                        throw std::runtime_error("GPU device specified but --gpus-per-node is 0.");
+                    }
+                    client->run_model_multigpu("water_step_model_gpu", {water_key, terrain_key}, {pred_key}, decomp.world_rank % cfg.gpus_per_node, 0, cfg.gpus_per_node);
+                } else {
+                    const std::string model_name = use_gpu_model ? "water_step_model_gpu" : "water_step_model";
+                    client->run_model(model_name, {water_key, terrain_key}, {pred_key});
+                }
+                break;
+            } catch (const std::exception& ex) {
+                const std::string msg = ex.what();
+                const bool transient = msg.find("Resource temporarily unavailable") != std::string::npos;
+                if (attempt >= max_model_run_attempts || !transient) {
+                    std::ostringstream oss;
+                    oss << "run_model failed (attempt " << attempt << "/" << max_model_run_attempts << ")"
+                        << " rank=" << decomp.world_rank
+                        << " world_size=" << decomp.world_size
+                        << " batch_size=" << BATCH_SIZE
+                        << " device=" << cfg.device
+                        << " use_multigpu_api=" << (use_multigpu_api ? "true" : "false")
+                        << " water_key=" << water_key
+                        << " terrain_key=" << terrain_key
+                        << " pred_key=" << pred_key
+                        << " error=" << msg;
+                    throw std::runtime_error(oss.str());
+                }
+                if (decomp.world_rank == 0) {
+                    std::cerr << "WARN: transient run_model failure (attempt " << attempt
+                              << "/" << max_model_run_attempts << "): " << msg << std::endl;
+                }
+                std::this_thread::sleep_for(std::chrono::seconds(2));
             }
-            client->run_model_multigpu("water_step_model_gpu", {water_key, terrain_key}, {pred_key}, decomp.world_rank % cfg.gpus_per_node, 0, cfg.gpus_per_node);
-        } else {
-            client->run_model("water_step_model", {water_key, terrain_key}, {pred_key});
         }
 
         auto model_ran_time = std::chrono::high_resolution_clock::now();
@@ -823,7 +907,17 @@ static double compute_local_step_ml(SmartRedis::Client* client,
         SRTensorType large_output_type = SRTensorType::SRTensorTypeFloat;
         SRMemoryLayout large_output_mem_layout = SRMemoryLayout::SRMemLayoutContiguous;
         
-        client->unpack_tensor(pred_key, tile_output.data(), large_output_dims, large_output_type, large_output_mem_layout);
+        try {
+            client->unpack_tensor(pred_key, tile_output.data(), large_output_dims, large_output_type, large_output_mem_layout);
+        } catch (const std::exception& ex) {
+            std::ostringstream oss;
+            oss << "unpack_tensor failed"
+                << " rank=" << decomp.world_rank
+                << " pred_key=" << pred_key
+                << " dims=[" << BATCH_SIZE << "]"
+                << " error=" << ex.what();
+            throw std::runtime_error(oss.str());
+        }
         for (int i = 0; i < decomp.local_nz; ++i) {
             for (int j = 0; j < decomp.local_nx; ++j) {
                 next[local_index(i + 1, j + 1, pitch)] = tile_output[static_cast<size_t>(i * local_nx + j)];
@@ -1872,10 +1966,61 @@ int main(int argc, char** argv) {
                     if (cfg.gpus_per_node == 0) {
                         throw std::runtime_error("GPU device specified but --gpus-per-node is 0.");
                     }
-                    std::cout << "Loading model onto GPU with multi-GPU support, gpus_per_node=" << cfg.gpus_per_node << std::endl;
-                    client->set_model_from_file_multigpu("water_step_model_gpu", cfg.model_path, "TORCH", 0, cfg.gpus_per_node);
+                    const bool use_multigpu_api = (cfg.model_backend == "TORCH") && (world_size > 1) && (cfg.gpus_per_node > 1);
+                    std::cout << "Model load start: path=" << cfg.model_path
+                              << " backend=" << cfg.model_backend
+                              << " device=" << cfg.device
+                              << " world_size=" << world_size
+                              << " gpus_per_node=" << cfg.gpus_per_node
+                              << " use_multigpu_api=" << (use_multigpu_api ? "true" : "false")
+                              << std::endl;
+                    const auto model_load_start = std::chrono::steady_clock::now();
+                    try {
+                        if (use_multigpu_api) {
+                            client->set_model_from_file_multigpu("water_step_model_gpu", cfg.model_path, cfg.model_backend, 0, cfg.gpus_per_node);
+                        } else {
+                            client->set_model_from_file(
+                                "water_step_model_gpu",
+                                cfg.model_path,
+                                cfg.model_backend,
+                                "GPU",
+                                0,
+                                0,
+                                0,
+                                "",
+                                cfg.model_inputs,
+                                cfg.model_outputs
+                            );
+                        }
+                    } catch (const std::exception& ex) {
+                        std::ostringstream oss;
+                        oss << "set_model_from_file failed"
+                            << " path=" << cfg.model_path
+                            << " backend=" << cfg.model_backend
+                            << " device=" << cfg.device
+                            << " world_size=" << world_size
+                            << " gpus_per_node=" << cfg.gpus_per_node
+                            << " use_multigpu_api=" << (use_multigpu_api ? "true" : "false")
+                            << " error=" << ex.what();
+                        throw std::runtime_error(oss.str());
+                    }
+                    const auto model_load_end = std::chrono::steady_clock::now();
+                    std::cout << "Model load done in "
+                              << std::chrono::duration_cast<std::chrono::milliseconds>(model_load_end - model_load_start).count()
+                              << " ms" << std::endl;
                 } else {
-                    client->set_model_from_file("water_step_model", cfg.model_path, "TORCH", cfg.device);
+                    client->set_model_from_file(
+                        "water_step_model",
+                        cfg.model_path,
+                        cfg.model_backend,
+                        cfg.device,
+                        0,
+                        0,
+                        0,
+                        "",
+                        cfg.model_inputs,
+                        cfg.model_outputs
+                    );
                 }
             }
 

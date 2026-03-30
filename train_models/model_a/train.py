@@ -25,6 +25,7 @@
 
 import argparse
 import bisect
+import copy
 import json
 import math
 import os
@@ -48,10 +49,14 @@ import numpy as np
 DEFAULT_DATA_PATH = "../../external_data/circle_r300_d300_s10000_periodic_2160x1080_devel_1n_96t_1c__rank0_gather_none/world_trajectory.h5"
 PREPARED_RECORD_FLOATS = 20
 PREPARED_RECORD_BYTES = PREPARED_RECORD_FLOATS * 4
+MODEL_INPUT_NAMES = ["x_water", "x_terrain"]
+MODEL_OUTPUT_NAMES = ["y"]
+MODEL_INPUT_SHAPE = [None, 1, 3, 3]
+MODEL_OUTPUT_SHAPE = [None]
 
 def parse_args():
     p = argparse.ArgumentParser(description="Train WaterCNN")
-    p.add_argument("--model", choices=["watercnn", "transformer_mlp"],
+    p.add_argument("--model", choices=["watercnn", "transformer_mlp", "perfect_model"],
                    default="watercnn",
                    help="Model architecture to train")
     p.add_argument("--cuda-sdp", choices=["auto", "math"], default="math",
@@ -63,6 +68,9 @@ def parse_args():
     p.add_argument("--prepared-data-path", default=None,
                    help="Path to prepared binary data (.bin file or directory with metadata.json + batch .bin files). "
                         "If set, training reads prepared data instead of HDF5.")
+    p.add_argument("--ignore-prev-val-loss", action="store_true", default=False,
+                   help="When resuming from checkpoint, ignore the previous best validation loss and start fresh. "
+                        "This allows training to continue even if the validation set has changed since the previous run.")
     p.add_argument("--ignore-prepared-counts", action="store_true",
                    help="When using --prepared-data-path, treat each deduplicated record as weight=1 instead of using stored counts")
     # Data loading strategy
@@ -70,12 +78,12 @@ def parse_args():
                    default="stream",
                    help="How to load water data: "
                         "'stream'=lazy HDF5 reads per sample (low memory), "
-                        "'cache'=load all time-steps into RAM at startup (fast), "
-                        "'window'=load only --window-steps time-steps at a time "
+                        "'cache'=load all selected samples into RAM at startup (fast), "
+                        "'window'=load only --window-steps samples at a time "
                         "(middle ground; dataset is refreshed each epoch)")
     p.add_argument("--window-steps",  type=int, default=1000,
-                   help="Number of consecutive time-steps to cache at once "
-                        "(only used when --cache-mode=window)")
+                    help="Number of samples to cache at once in window mode "
+                        "(HDF5: time-steps, prepared data: records)")
     p.add_argument("--max-steps",     type=int, default=None,
                    help="Only consider the first N time-steps of the dataset "
                         "(e.g. 50000 if the system becomes stale afterwards). "
@@ -102,6 +110,19 @@ def parse_args():
     p.add_argument("--inference-output", default="best_model_jit.pt",
                     help="Path to save a TorchScript inference artifact for the best model. "
                         "Use '{model}' placeholder or keep default for automatic model suffix.")
+    p.add_argument("--export-backends", nargs="+", choices=["torch", "onnx", "tf"],
+                   default=["torch"],
+                   help="Primary inference artifact backends to export. "
+                        "Defaults to torch only for backward compatibility.")
+    p.add_argument("--onnx-output", default="best_model.onnx",
+                   help="Path to save the ONNX inference artifact. "
+                        "Use '{model}' placeholder or keep default for automatic model suffix.")
+    p.add_argument("--tf-output", default="best_model_tf.pb",
+                   help="Path to save the TensorFlow frozen-graph inference artifact. "
+                        "Use '{model}' placeholder or keep default for automatic model suffix.")
+    p.add_argument("--artifact-manifest", default="artifact_manifest.json",
+                   help="Path to save a JSON manifest describing exported primary-inference artifacts. "
+                        "Use '{model}' placeholder or keep default for automatic model suffix.")
     p.add_argument("--export-field-inference", action="store_true",
                    help="Export a TorchScript field-inference model (water/terrain tiles with halo -> NxN output)")
     p.add_argument("--field-inference-output", default="best_model_field_jit.pt",
@@ -114,6 +135,12 @@ def parse_args():
                         "Use '{model}' placeholder or keep default for automatic model suffix.")
     p.add_argument("--field-iter-steps", type=int, default=None,
                    help="Number of iterative steps for field-iter export (required if --export-field-iter)")
+    p.add_argument("--export-only", action="store_true",
+                   help="Skip dataset loading and training; load checkpoint from --output and export configured inference artifacts")
+    p.add_argument("--profile-io", action="store_true",
+                   help="Profile training loop timing (data wait, host->device transfer, compute) and print per-epoch summary")
+    p.add_argument("--profile-batches", type=int, default=0,
+                   help="Number of batches per epoch to profile in detail (0 = all batches)")
     return p.parse_args()
 
 H, W = 108, 216
@@ -138,6 +165,51 @@ def resolve_model_output_path(path: str, model_name: str, default_path: str) -> 
     if path == default_path:
         return _append_model_suffix(path, model_name)
     return path
+
+
+def ensure_parent_dir(path: str) -> None:
+    parent = os.path.dirname(path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+
+
+def normalize_export_backends(backends) -> list[str]:
+    normalized = []
+    for backend in backends:
+        backend_name = str(backend).strip().lower()
+        if backend_name not in {"torch", "onnx", "tf"}:
+            raise ValueError(f"Unsupported backend in --export-backends: {backend}")
+        if backend_name not in normalized:
+            normalized.append(backend_name)
+    return normalized
+
+
+def build_artifact_record(model_name: str, backend: str, path: str, *,
+                          inputs=None, outputs=None, input_shapes=None,
+                          output_shapes=None, input_dtypes=None, output_dtypes=None) -> dict:
+    return {
+        "model_name": model_name,
+        "backend": backend.upper(),
+        "path": os.path.abspath(path),
+        "inputs": list(inputs if inputs is not None else MODEL_INPUT_NAMES),
+        "outputs": list(outputs if outputs is not None else MODEL_OUTPUT_NAMES),
+        "input_shapes": list(input_shapes if input_shapes is not None else [MODEL_INPUT_SHAPE, MODEL_INPUT_SHAPE]),
+        "output_shapes": list(output_shapes if output_shapes is not None else [MODEL_OUTPUT_SHAPE]),
+        "input_dtypes": list(input_dtypes if input_dtypes is not None else ["float32", "float32"]),
+        "output_dtypes": list(output_dtypes if output_dtypes is not None else ["float32"]),
+    }
+
+
+def write_artifact_manifest(manifest_path: str, model_name: str, artifacts: list[dict]) -> None:
+    ensure_parent_dir(manifest_path)
+    payload = {
+        "version": 1,
+        "model_name": model_name,
+        "artifacts": artifacts,
+    }
+    with open(manifest_path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2, sort_keys=True)
+        f.write("\n")
 
 
 def load_checkpoint(checkpoint_path, model, optimizer=None, scheduler=None, device="cpu", expected_model_name=None):
@@ -224,6 +296,7 @@ def export_inference_model(model: nn.Module, output_path, device):
     restore_flash = None
     restore_mem_efficient = None
     restore_math = None
+    restore_encoder_layer_states = None
 
     # Transformer inference in some cluster stacks crashes inside
     # torch._transformer_encoder_layer_fwd with CUDA invalid configuration.
@@ -243,6 +316,36 @@ def export_inference_model(model: nn.Module, output_path, device):
             torch.backends.cuda.enable_mem_efficient_sdp(False)
             torch.backends.cuda.enable_math_sdp(True)
 
+        # Additional safety for deployment runtimes (e.g. RedisAI) where backend
+        # flags may not be reliably propagated: keep encoder layers in training
+        # mode (disables Transformer fast-path) but set all dropout probabilities
+        # to 0 so inference remains deterministic.
+        restore_encoder_layer_states = []
+        for layer in model.encoder.layers:
+            layer_dropout_obj = getattr(layer, "dropout", None)
+            state = {
+                "training": bool(layer.training),
+                "dropout_value": layer_dropout_obj,
+                "dropout_p": getattr(layer_dropout_obj, "p", None),
+                "dropout1_p": getattr(getattr(layer, "dropout1", None), "p", None),
+                "dropout2_p": getattr(getattr(layer, "dropout2", None), "p", None),
+                "self_attn_dropout": getattr(getattr(layer, "self_attn", None), "dropout", None),
+            }
+            restore_encoder_layer_states.append((layer, state))
+
+            layer.train()
+            if hasattr(layer, "dropout"):
+                if hasattr(layer.dropout, "p"):
+                    layer.dropout.p = 0.0
+                else:
+                    layer.dropout = 0.0
+            if hasattr(layer, "dropout1") and hasattr(layer.dropout1, "p"):
+                layer.dropout1.p = 0.0
+            if hasattr(layer, "dropout2") and hasattr(layer.dropout2, "p"):
+                layer.dropout2.p = 0.0
+            if hasattr(layer, "self_attn") and hasattr(layer.self_attn, "dropout"):
+                layer.self_attn.dropout = 0.0
+
     example_water = torch.zeros(1, 1, 3, 3, device=device)
     example_terrain = torch.zeros(1, 1, 3, 3, device=device)
     try:
@@ -256,6 +359,23 @@ def export_inference_model(model: nn.Module, output_path, device):
             )
         scripted_model.save(output_path)
     finally:
+        if restore_encoder_layer_states is not None:
+            for layer, state in restore_encoder_layer_states:
+                if hasattr(layer, "dropout"):
+                    if state["dropout_p"] is not None and hasattr(layer.dropout, "p"):
+                        layer.dropout.p = state["dropout_p"]
+                    elif state["dropout_value"] is not None and not hasattr(layer.dropout, "p"):
+                        layer.dropout = state["dropout_value"]
+                if state["dropout1_p"] is not None and hasattr(layer, "dropout1") and hasattr(layer.dropout1, "p"):
+                    layer.dropout1.p = state["dropout1_p"]
+                if state["dropout2_p"] is not None and hasattr(layer, "dropout2") and hasattr(layer.dropout2, "p"):
+                    layer.dropout2.p = state["dropout2_p"]
+                if state["self_attn_dropout"] is not None and hasattr(layer, "self_attn") and hasattr(layer.self_attn, "dropout"):
+                    layer.self_attn.dropout = state["self_attn_dropout"]
+                if state["training"]:
+                    layer.train()
+                else:
+                    layer.eval()
         if restore_mha_fastpath is not None:
             torch.backends.mha.set_fastpath_enabled(restore_mha_fastpath)
         if restore_flash is not None:
@@ -311,6 +431,320 @@ def export_field_iter_model(model: nn.Module, output_path, device, steps, exampl
     scripted_model.save(output_path)
     if was_training:
         model.train()
+
+
+def export_onnx_model(model: nn.Module, output_path: str) -> dict:
+    """Export an ONNX artifact for primary inference."""
+    ensure_parent_dir(output_path)
+    try:
+        import onnx  # noqa: F401
+    except ImportError as exc:
+        raise RuntimeError(
+            "ONNX export requested but the 'onnx' package is not installed in this Python environment."
+        ) from exc
+
+    export_model = copy.deepcopy(model).cpu().eval()
+    example_water = torch.zeros(1, 1, 3, 3, dtype=torch.float32)
+    example_terrain = torch.zeros(1, 1, 3, 3, dtype=torch.float32)
+    with torch.no_grad():
+        torch.onnx.export(
+            export_model,
+            (example_water, example_terrain),
+            output_path,
+            input_names=MODEL_INPUT_NAMES,
+            output_names=MODEL_OUTPUT_NAMES,
+            dynamic_axes={
+                "x_water": {0: "batch"},
+                "x_terrain": {0: "batch"},
+                "y": {0: "batch"},
+            },
+            opset_version=17,
+            do_constant_folding=True,
+        )
+    return build_artifact_record(model_name="", backend="ONNX", path=output_path)
+
+
+class TFRealFunctionModel:
+    def __call__(self, x_water, x_terrain):
+        import tensorflow as tf
+
+        center_w = x_water[:, 1, 1, 0]
+        center_t = x_terrain[:, 1, 1, 0]
+        this_total = center_w + center_t
+        new_value = tf.identity(center_w)
+        quarter = tf.constant(0.25, dtype=tf.float32)
+
+        for nz, nx in ((0, 1), (2, 1), (1, 0), (1, 2)):
+            neighbor_total = x_water[:, nz, nx, 0] + x_terrain[:, nz, nx, 0]
+            diff = this_total - neighbor_total
+            outflow = tf.minimum(center_w, tf.maximum(diff, 0.0)) * quarter
+            inflow = tf.minimum(x_water[:, nz, nx, 0], tf.maximum(-diff, 0.0)) * quarter
+            new_value = new_value - (outflow - inflow)
+        return new_value
+
+
+class TFWaterCNNModel:
+    def __init__(self, model: "WaterCNN"):
+        self.water_kernel = model.water_conv.weight.detach().cpu().permute(2, 3, 1, 0).numpy()
+        self.water_bias = model.water_conv.bias.detach().cpu().numpy()
+        self.terrain_kernel = model.terrain_conv.weight.detach().cpu().permute(2, 3, 1, 0).numpy()
+        self.terrain_bias = model.terrain_conv.bias.detach().cpu().numpy()
+        self.combine1_kernel = model.combine_1x1.weight.detach().cpu().permute(2, 3, 1, 0).numpy()
+        self.combine1_bias = model.combine_1x1.bias.detach().cpu().numpy()
+        self.combine3_kernel = model.combine_3x3.weight.detach().cpu().permute(2, 3, 1, 0).numpy()
+        self.combine3_bias = model.combine_3x3.bias.detach().cpu().numpy()
+        self.fc0_weight = model.fc[0].weight.detach().cpu().numpy()
+        self.fc0_bias = model.fc[0].bias.detach().cpu().numpy()
+        self.fc2_weight = model.fc[2].weight.detach().cpu().numpy()
+        self.fc2_bias = model.fc[2].bias.detach().cpu().numpy()
+
+    def _linear(self, x, weight, bias):
+        import tensorflow as tf
+
+        return tf.linalg.matmul(x, tf.constant(weight, dtype=tf.float32), transpose_b=True) + tf.constant(
+            bias, dtype=tf.float32
+        )
+
+    def __call__(self, x_water, x_terrain):
+        import tensorflow as tf
+
+        out_water = tf.nn.relu(
+            tf.nn.conv2d(x_water, tf.constant(self.water_kernel, dtype=tf.float32), strides=1, padding="VALID")
+            + tf.constant(self.water_bias, dtype=tf.float32)
+        )
+        out_terrain = tf.nn.relu(
+            tf.nn.conv2d(x_terrain, tf.constant(self.terrain_kernel, dtype=tf.float32), strides=1, padding="VALID")
+            + tf.constant(self.terrain_bias, dtype=tf.float32)
+        )
+        combined = tf.concat([x_water, x_terrain], axis=3)
+        out_combined = tf.nn.relu(
+            tf.nn.conv2d(combined, tf.constant(self.combine1_kernel, dtype=tf.float32), strides=1, padding="VALID")
+            + tf.constant(self.combine1_bias, dtype=tf.float32)
+        )
+        out_combined = tf.nn.relu(
+            tf.nn.conv2d(out_combined, tf.constant(self.combine3_kernel, dtype=tf.float32), strides=1, padding="VALID")
+            + tf.constant(self.combine3_bias, dtype=tf.float32)
+        )
+
+        flat = tf.concat(
+            [
+                tf.reshape(out_water, [tf.shape(out_water)[0], -1]),
+                tf.reshape(out_terrain, [tf.shape(out_terrain)[0], -1]),
+                tf.reshape(out_combined, [tf.shape(out_combined)[0], -1]),
+            ],
+            axis=1,
+        )
+        hidden = tf.nn.relu(self._linear(flat, self.fc0_weight, self.fc0_bias))
+        output = self._linear(hidden, self.fc2_weight, self.fc2_bias)
+        return tf.squeeze(output, axis=1)
+
+
+class TFWaterTransformerMLP:
+    def __init__(self, model: "WaterTransformerMLP"):
+        self.d_model = model.input_proj.out_features
+        self.nhead = model.encoder.layers[0].self_attn.num_heads
+        self.head_dim = self.d_model // self.nhead
+        self.input_proj_weight = model.input_proj.weight.detach().cpu().numpy()
+        self.input_proj_bias = model.input_proj.bias.detach().cpu().numpy()
+        self.pos_embed = model.pos_embed.detach().cpu().numpy()
+        self.global_linear1_weight = model.global_mlp[0].weight.detach().cpu().numpy()
+        self.global_linear1_bias = model.global_mlp[0].bias.detach().cpu().numpy()
+        self.global_linear2_weight = model.global_mlp[2].weight.detach().cpu().numpy()
+        self.global_linear2_bias = model.global_mlp[2].bias.detach().cpu().numpy()
+        self.head_linear1_weight = model.head[0].weight.detach().cpu().numpy()
+        self.head_linear1_bias = model.head[0].bias.detach().cpu().numpy()
+        self.head_linear2_weight = model.head[2].weight.detach().cpu().numpy()
+        self.head_linear2_bias = model.head[2].bias.detach().cpu().numpy()
+        self.head_linear3_weight = model.head[4].weight.detach().cpu().numpy()
+        self.head_linear3_bias = model.head[4].bias.detach().cpu().numpy()
+        self.layers = []
+        for layer in model.encoder.layers:
+            self.layers.append(
+                {
+                    "in_proj_weight": layer.self_attn.in_proj_weight.detach().cpu().numpy(),
+                    "in_proj_bias": layer.self_attn.in_proj_bias.detach().cpu().numpy(),
+                    "out_proj_weight": layer.self_attn.out_proj.weight.detach().cpu().numpy(),
+                    "out_proj_bias": layer.self_attn.out_proj.bias.detach().cpu().numpy(),
+                    "linear1_weight": layer.linear1.weight.detach().cpu().numpy(),
+                    "linear1_bias": layer.linear1.bias.detach().cpu().numpy(),
+                    "linear2_weight": layer.linear2.weight.detach().cpu().numpy(),
+                    "linear2_bias": layer.linear2.bias.detach().cpu().numpy(),
+                    "norm1_weight": layer.norm1.weight.detach().cpu().numpy(),
+                    "norm1_bias": layer.norm1.bias.detach().cpu().numpy(),
+                    "norm2_weight": layer.norm2.weight.detach().cpu().numpy(),
+                    "norm2_bias": layer.norm2.bias.detach().cpu().numpy(),
+                    "norm_eps": layer.norm1.eps,
+                }
+            )
+
+    def _linear(self, x, weight, bias):
+        import tensorflow as tf
+
+        return tf.linalg.matmul(x, tf.constant(weight, dtype=tf.float32), transpose_b=True) + tf.constant(
+            bias, dtype=tf.float32
+        )
+
+    def _layer_norm(self, x, weight, bias, eps):
+        import tensorflow as tf
+
+        mean, var = tf.nn.moments(x, axes=[-1], keepdims=True)
+        normalized = (x - mean) * tf.math.rsqrt(var + eps)
+        return normalized * tf.constant(weight, dtype=tf.float32) + tf.constant(bias, dtype=tf.float32)
+
+    def _self_attention(self, x, layer_state):
+        import tensorflow as tf
+
+        proj = self._linear(x, layer_state["in_proj_weight"], layer_state["in_proj_bias"])
+        q, k, v = tf.split(proj, 3, axis=-1)
+
+        def reshape_heads(t):
+            t = tf.reshape(t, [tf.shape(t)[0], tf.shape(t)[1], self.nhead, self.head_dim])
+            return tf.transpose(t, perm=[0, 2, 1, 3])
+
+        q = reshape_heads(q)
+        k = reshape_heads(k)
+        v = reshape_heads(v)
+        scale = tf.math.rsqrt(tf.cast(self.head_dim, tf.float32))
+        scores = tf.matmul(q, k, transpose_b=True) * scale
+        weights = tf.nn.softmax(scores, axis=-1)
+        attn = tf.matmul(weights, v)
+        attn = tf.transpose(attn, perm=[0, 2, 1, 3])
+        attn = tf.reshape(attn, [tf.shape(attn)[0], tf.shape(attn)[1], self.d_model])
+        return self._linear(attn, layer_state["out_proj_weight"], layer_state["out_proj_bias"])
+
+    def __call__(self, x_water, x_terrain):
+        import tensorflow as tf
+
+        x_water = tf.squeeze(x_water, axis=3)
+        x_terrain = tf.squeeze(x_terrain, axis=3)
+        tokens = tf.stack([x_water, x_terrain], axis=-1)
+        tokens = tf.reshape(tokens, [tf.shape(tokens)[0], 9, 2])
+        token_features = self._linear(tokens, self.input_proj_weight, self.input_proj_bias) + tf.constant(
+            self.pos_embed, dtype=tf.float32
+        )
+
+        for layer_state in self.layers:
+            attn = self._self_attention(token_features, layer_state)
+            token_features = self._layer_norm(
+                token_features + attn,
+                layer_state["norm1_weight"],
+                layer_state["norm1_bias"],
+                layer_state["norm_eps"],
+            )
+            ff = self._linear(token_features, layer_state["linear1_weight"], layer_state["linear1_bias"])
+            ff = tf.nn.gelu(ff, approximate=False)
+            ff = self._linear(ff, layer_state["linear2_weight"], layer_state["linear2_bias"])
+            token_features = self._layer_norm(
+                token_features + ff,
+                layer_state["norm2_weight"],
+                layer_state["norm2_bias"],
+                layer_state["norm_eps"],
+            )
+
+        pooled = tf.reduce_mean(token_features, axis=1)
+        global_features = tf.concat(
+            [
+                tf.reshape(x_water, [tf.shape(x_water)[0], -1]),
+                tf.reshape(x_terrain, [tf.shape(x_terrain)[0], -1]),
+            ],
+            axis=1,
+        )
+        global_features = tf.nn.gelu(
+            self._linear(global_features, self.global_linear1_weight, self.global_linear1_bias), approximate=False
+        )
+        global_features = tf.nn.gelu(
+            self._linear(global_features, self.global_linear2_weight, self.global_linear2_bias), approximate=False
+        )
+        fused = tf.concat([pooled, global_features], axis=1)
+        fused = tf.nn.gelu(self._linear(fused, self.head_linear1_weight, self.head_linear1_bias), approximate=False)
+        fused = tf.nn.gelu(self._linear(fused, self.head_linear2_weight, self.head_linear2_bias), approximate=False)
+        output = self._linear(fused, self.head_linear3_weight, self.head_linear3_bias)
+        return tf.squeeze(output, axis=1)
+
+
+def build_tensorflow_export_model(model: nn.Module):
+    if isinstance(model, WaterCNN):
+        return TFWaterCNNModel(model)
+    if isinstance(model, WaterTransformerMLP):
+        return TFWaterTransformerMLP(model)
+    if isinstance(model, RealFunctionModel):
+        return TFRealFunctionModel()
+    raise TypeError(f"TensorFlow export is not implemented for model type: {type(model).__name__}")
+
+
+def export_tensorflow_frozen_model(model: nn.Module, output_path: str) -> dict:
+    """Export a TensorFlow frozen graph for primary inference."""
+    ensure_parent_dir(output_path)
+    try:
+        import tensorflow as tf
+        from tensorflow.python.framework.convert_to_constants import convert_variables_to_constants_v2
+    except ImportError as exc:
+        raise RuntimeError(
+            "TensorFlow export requested but the 'tensorflow' package is not installed in this Python environment."
+        ) from exc
+
+    tf_model = build_tensorflow_export_model(copy.deepcopy(model).cpu().eval())
+
+    @tf.function(
+        input_signature=[
+            tf.TensorSpec(shape=[None, 1, 3, 3], dtype=tf.float32, name="x_water"),
+            tf.TensorSpec(shape=[None, 1, 3, 3], dtype=tf.float32, name="x_terrain"),
+        ]
+    )
+    def model_fn(x_water, x_terrain):
+        x_water_nhwc = tf.transpose(x_water, perm=[0, 2, 3, 1])
+        x_terrain_nhwc = tf.transpose(x_terrain, perm=[0, 2, 3, 1])
+        y = tf_model(x_water_nhwc, x_terrain_nhwc)
+        return tf.identity(y, name="y")
+
+    concrete_func = model_fn.get_concrete_function()
+    frozen_func = convert_variables_to_constants_v2(concrete_func)
+    graph_def = frozen_func.graph.as_graph_def()
+    tf.io.write_graph(graph_def, os.path.dirname(output_path) or ".", os.path.basename(output_path), as_text=False)
+
+    input_names = [tensor.name for tensor in frozen_func.inputs]
+    output_names = [tensor.name for tensor in frozen_func.outputs]
+    return build_artifact_record(
+        model_name="",
+        backend="TF",
+        path=output_path,
+        inputs=input_names,
+        outputs=output_names,
+    )
+
+
+def export_primary_inference_artifacts(model: nn.Module, model_name: str, device, args) -> list[dict]:
+    artifacts: list[dict] = []
+    selected_backends = normalize_export_backends(args.export_backends)
+
+    if args.export_field_inference or args.export_field_iter:
+        if "torch" not in selected_backends:
+            raise ValueError(
+                "Field and iterative field exports are TorchScript-only in this version, "
+                "so --export-backends must include 'torch' when those flags are used."
+            )
+
+    for backend in selected_backends:
+        if backend == "torch":
+            export_inference_model(model, args.inference_output, device)
+            artifacts.append(
+                build_artifact_record(
+                    model_name=model_name,
+                    backend="TORCH",
+                    path=args.inference_output,
+                )
+            )
+        elif backend == "onnx":
+            artifact = export_onnx_model(model, args.onnx_output)
+            artifact["model_name"] = model_name
+            artifacts.append(artifact)
+        elif backend == "tf":
+            artifact = export_tensorflow_frozen_model(model, args.tf_output)
+            artifact["model_name"] = model_name
+            artifacts.append(artifact)
+
+    write_artifact_manifest(args.artifact_manifest, model_name, artifacts)
+    return artifacts
 
 
 # ---------------------------------------------------------------------------
@@ -552,6 +986,118 @@ class PreparedPairDataset(Dataset):
 
         return x_water, x_terrain, y, weight
 
+    def get_raw_row(self, idx: int) -> np.ndarray:
+        file_idx = bisect.bisect_right(self._offsets, idx) - 1
+        local_idx = idx - self._offsets[file_idx]
+        return np.asarray(self._arrays[file_idx][local_idx], dtype=np.float32)
+
+
+class PreparedSubsetDataset(Dataset):
+    """
+    Rank-local subset view over prepared binary records with three modes:
+      - stream: lazy memmap row fetch per sample
+      - cache: preload all local subset rows into RAM
+      - window: preload a random subset of local rows (size=window_steps),
+                refreshable each epoch via refresh().
+    """
+
+    def __init__(self, base_dataset: PreparedPairDataset, indices: np.ndarray,
+                 cache_mode: str = "stream", window_steps: int = 1000):
+        self.base_dataset = base_dataset
+        self.indices = np.asarray(indices, dtype=np.int64)
+        self.cache_mode = cache_mode
+        self.window_steps = window_steps
+
+        self._active_indices: np.ndarray | None = None
+        self._cached_x_water: torch.Tensor | None = None
+        self._cached_x_terrain: torch.Tensor | None = None
+        self._cached_y: torch.Tensor | None = None
+        self._cached_weight: torch.Tensor | None = None
+
+        if self.cache_mode == "cache":
+            self._active_indices = self.indices
+            self._preload(self._active_indices)
+        elif self.cache_mode == "window":
+            self.refresh()
+
+    def _decode_row(self, row: np.ndarray):
+        x_water = np.asarray(row[0:9], dtype=np.float32).reshape(1, 3, 3)
+        x_terrain = np.asarray(row[9:18], dtype=np.float32).reshape(1, 3, 3)
+        y = np.float32(row[18])
+        if self.base_dataset.use_counts:
+            count_u32 = np.asarray(row[19:20], dtype=np.float32).view(np.uint32)[0]
+            count_i32 = np.int32(count_u32)
+            weight = np.float32(max(int(count_i32), 1))
+        else:
+            weight = np.float32(1.0)
+        return x_water, x_terrain, y, weight
+
+    def _preload(self, active_indices: np.ndarray):
+        n = len(active_indices)
+        print(f"Preloading {n} prepared records into RAM …", flush=True)
+        start = time.time()
+
+        x_water = np.empty((n, 1, 3, 3), dtype=np.float32)
+        x_terrain = np.empty((n, 1, 3, 3), dtype=np.float32)
+        y = np.empty((n,), dtype=np.float32)
+        weight = np.empty((n,), dtype=np.float32)
+
+        for i, global_idx in enumerate(active_indices):
+            row = self.base_dataset.get_raw_row(int(global_idx))
+            xw, xt, yy, ww = self._decode_row(row)
+            x_water[i] = xw
+            x_terrain[i] = xt
+            y[i] = yy
+            weight[i] = ww
+
+        self._cached_x_water = torch.from_numpy(x_water)
+        self._cached_x_terrain = torch.from_numpy(x_terrain)
+        self._cached_y = torch.from_numpy(y)
+        self._cached_weight = torch.from_numpy(weight)
+
+        mem_bytes = x_water.nbytes + x_terrain.nbytes + y.nbytes + weight.nbytes
+        print(f"  → preloaded in {time.time() - start:.1f}s, RAM ~{mem_bytes / (1024**3):.2f} GB", flush=True)
+
+    def refresh(self):
+        if self.cache_mode != "window":
+            return
+        n = min(self.window_steps, len(self.indices))
+        if n <= 0:
+            self._active_indices = np.empty((0,), dtype=np.int64)
+            self._cached_x_water = torch.empty((0, 1, 3, 3), dtype=torch.float32)
+            self._cached_x_terrain = torch.empty((0, 1, 3, 3), dtype=torch.float32)
+            self._cached_y = torch.empty((0,), dtype=torch.float32)
+            self._cached_weight = torch.empty((0,), dtype=torch.float32)
+            return
+        chosen = np.random.choice(self.indices, size=n, replace=False)
+        chosen.sort()
+        self._active_indices = chosen
+        self._preload(self._active_indices)
+
+    def __len__(self):
+        if self.cache_mode in ("cache", "window"):
+            return len(self._active_indices)
+        return len(self.indices)
+
+    def __getitem__(self, idx):
+        if self.cache_mode in ("cache", "window"):
+            return (
+                self._cached_x_water[idx],
+                self._cached_x_terrain[idx],
+                self._cached_y[idx],
+                self._cached_weight[idx],
+            )
+
+        global_idx = int(self.indices[idx])
+        row = self.base_dataset.get_raw_row(global_idx)
+        xw, xt, yy, ww = self._decode_row(row)
+        return (
+            torch.from_numpy(xw),
+            torch.from_numpy(xt),
+            torch.tensor(float(yy), dtype=torch.float32),
+            torch.tensor(float(ww), dtype=torch.float32),
+        )
+
 
 class IndexSubsetDataset(Dataset):
     def __init__(self, base_dataset: Dataset, indices: np.ndarray):
@@ -613,6 +1159,26 @@ class WaterCNN(nn.Module):
         return self.fc(flat).squeeze(1)                            # (B,)
 
 
+class StableTransformerEncoderLayer(nn.TransformerEncoderLayer):
+    """
+    Transformer encoder layer variant that avoids SDPA fast kernels by
+    requesting attention weights (need_weights=True).
+    This is more conservative but has proven more robust on some RedisAI/CUDA stacks.
+    """
+
+    def _sa_block(self, x: torch.Tensor, attn_mask, key_padding_mask, is_causal: bool = False) -> torch.Tensor:
+        attn_output, _ = self.self_attn(
+            x,
+            x,
+            x,
+            attn_mask=attn_mask,
+            key_padding_mask=key_padding_mask,
+            need_weights=True,
+            is_causal=is_causal,
+        )
+        return self.dropout1(attn_output)
+
+
 class WaterTransformerMLP(nn.Module):
     """
     Alternative architecture for 3x3 local forecasting.
@@ -626,7 +1192,7 @@ class WaterTransformerMLP(nn.Module):
         super().__init__()
         self.input_proj = nn.Linear(2, d_model)
         self.pos_embed = nn.Parameter(torch.zeros(1, 9, d_model))
-        encoder_layer = nn.TransformerEncoderLayer(
+        encoder_layer = StableTransformerEncoderLayer(
             d_model=d_model,
             nhead=nhead,
             dim_feedforward=ff_dim,
@@ -668,11 +1234,45 @@ class WaterTransformerMLP(nn.Module):
         return self.head(fused).squeeze(1)
 
 
+class RealFunctionModel(nn.Module):
+    """Exact solver update rule for the 3x3 local patch interface."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.register_buffer("quarter", torch.tensor(0.25, dtype=torch.float32))
+
+    def forward(self, x_water: torch.Tensor, x_terrain: torch.Tensor) -> torch.Tensor:
+        if x_water.dim() != 4 or x_terrain.dim() != 4:
+            raise RuntimeError("Expected 4D tensors with shape [B, 1, 3, 3]")
+        if x_water.size(1) != 1 or x_terrain.size(1) != 1:
+            raise RuntimeError("Expected channel dimension C=1")
+        if x_water.size(2) != 3 or x_water.size(3) != 3:
+            raise RuntimeError("Expected x_water shape [B, 1, 3, 3]")
+        if x_terrain.size(2) != 3 or x_terrain.size(3) != 3:
+            raise RuntimeError("Expected x_terrain shape [B, 1, 3, 3]")
+
+        center_w = x_water[:, 0, 1, 1]
+        center_t = x_terrain[:, 0, 1, 1]
+        this_total = center_w + center_t
+        new_value = center_w.clone()
+
+        for nz, nx in ((0, 1), (2, 1), (1, 0), (1, 2)):
+            neighbor_total = x_water[:, 0, nz, nx] + x_terrain[:, 0, nz, nx]
+            diff = this_total - neighbor_total
+            outflow = torch.minimum(center_w, torch.clamp_min(diff, 0.0)) * self.quarter
+            inflow = torch.minimum(x_water[:, 0, nz, nx], torch.clamp_min(-diff, 0.0)) * self.quarter
+            new_value = new_value - (outflow - inflow)
+
+        return new_value
+
+
 def build_model(model_name: str) -> nn.Module:
     if model_name == "watercnn":
         return WaterCNN()
     if model_name == "transformer_mlp":
         return WaterTransformerMLP()
+    if model_name == "perfect_model":
+        return RealFunctionModel()
     raise ValueError(f"Unknown model architecture: {model_name}")
 
 
@@ -753,7 +1353,19 @@ class WaterCNNFieldIter(nn.Module):
 # ---------------------------------------------------------------------------
 # Training helpers
 # ---------------------------------------------------------------------------
-def run_epoch(model, loader, criterion, device, optimizer=None, distributed=False, is_main=False, epoch=None, total_epochs=None):
+def run_epoch(
+    model,
+    loader,
+    criterion,
+    device,
+    optimizer=None,
+    distributed=False,
+    is_main=False,
+    epoch=None,
+    total_epochs=None,
+    profile_io=False,
+    profile_batches=0,
+):
     training = optimizer is not None
     model.train() if training else model.eval()
     total_loss = torch.tensor(0.0, device=device)
@@ -763,18 +1375,62 @@ def run_epoch(model, loader, criterion, device, optimizer=None, distributed=Fals
     batch_count = 0
     log_interval = max(1, len(loader) // 10)  # Log ~10 times per epoch
     phase_start = time.time()
+    profile_batch_limit = int(profile_batches) if profile_batches is not None else 0
+    prof_data_wait = 0.0
+    prof_h2d = 0.0
+    prof_compute = 0.0
+    prof_count = 0
+
+    iter_prev_end = time.perf_counter()
+
+    if is_main:
+        if epoch is not None and total_epochs is not None:
+            print(
+                f"  [{phase}] Epoch {epoch}/{total_epochs} started | "
+                f"batches={len(loader)} | log_interval={log_interval}",
+                flush=True,
+            )
+        else:
+            print(
+                f"  [{phase}] started | batches={len(loader)} | log_interval={log_interval}",
+                flush=True,
+            )
 
     ctx = torch.enable_grad() if training else torch.no_grad()
     with ctx:
         for batch_idx, batch in enumerate(loader):
+            batch_fetch_done = time.perf_counter()
+            do_profile_this_batch = profile_io and (profile_batch_limit <= 0 or batch_idx < profile_batch_limit)
+            if do_profile_this_batch:
+                prof_data_wait += batch_fetch_done - iter_prev_end
+
             if len(batch) == 4:
                 x_w, x_s, y, sample_weight = batch
-                sample_weight = sample_weight.to(device)
             else:
                 x_w, x_s, y = batch
                 sample_weight = None
 
-            x_w, x_s, y = x_w.to(device), x_s.to(device), y.to(device)
+            if do_profile_this_batch:
+                if device.type == "cuda":
+                    torch.cuda.synchronize(device)
+                h2d_start = time.perf_counter()
+
+            x_w, x_s, y = (
+                x_w.to(device, non_blocking=True),
+                x_s.to(device, non_blocking=True),
+                y.to(device, non_blocking=True),
+            )
+            if sample_weight is not None:
+                sample_weight = sample_weight.to(device, non_blocking=True)
+
+            if do_profile_this_batch:
+                if device.type == "cuda":
+                    torch.cuda.synchronize(device)
+                prof_h2d += time.perf_counter() - h2d_start
+
+                if device.type == "cuda":
+                    torch.cuda.synchronize(device)
+                compute_start = time.perf_counter()
             pred = model(x_w, x_s)
             if sample_weight is None:
                 loss = criterion(pred, y)
@@ -791,12 +1447,18 @@ def run_epoch(model, loader, criterion, device, optimizer=None, distributed=Fals
                 loss.backward()
                 optimizer.step()
 
+            if do_profile_this_batch:
+                if device.type == "cuda":
+                    torch.cuda.synchronize(device)
+                prof_compute += time.perf_counter() - compute_start
+                prof_count += 1
+
             total_loss    += weighted_loss_sum.detach()
             total_samples += sample_count.detach()
             batch_count += 1
             
             # Log progress
-            if batch_count % log_interval == 0:
+            if batch_idx == 0 or batch_count % log_interval == 0 or batch_count == len(loader):
                 elapsed = time.time() - phase_start
                 samples_for_rate = total_samples.detach().clone()
                 if distributed:
@@ -812,10 +1474,25 @@ def run_epoch(model, loader, criterion, device, optimizer=None, distributed=Fals
                               f"Samples: {samples_for_rate.item():.0f} | Loss: {(total_loss/total_samples).item():.6f} | "
                               f"Rate: {rate:.0f} samples/s", flush=True)
 
+            iter_prev_end = time.perf_counter()
+
     # Aggregate across all DDP ranks so every process sees the same loss
     if distributed:
         dist.all_reduce(total_loss,    op=dist.ReduceOp.SUM)
         dist.all_reduce(total_samples, op=dist.ReduceOp.SUM)
+
+    if profile_io and is_main and prof_count > 0:
+        prof_total = prof_data_wait + prof_h2d + prof_compute
+        if prof_total > 0.0:
+            print(
+                f"  [{phase}] Profile ({prof_count} batches): "
+                f"wait={prof_data_wait:.3f}s ({100.0 * prof_data_wait / prof_total:.1f}%), "
+                f"h2d={prof_h2d:.3f}s ({100.0 * prof_h2d / prof_total:.1f}%), "
+                f"compute={prof_compute:.3f}s ({100.0 * prof_compute / prof_total:.1f}%)",
+                flush=True,
+            )
+        else:
+            print(f"  [{phase}] Profile ({prof_count} batches): near-zero timing captured", flush=True)
 
     return (total_loss / total_samples).item()
 
@@ -825,9 +1502,15 @@ def run_epoch(model, loader, criterion, device, optimizer=None, distributed=Fals
 # ---------------------------------------------------------------------------
 def main():
     args = parse_args()
+    args.export_backends = normalize_export_backends(args.export_backends)
 
     args.output = resolve_model_output_path(args.output, args.model, "best_model.pt")
     args.inference_output = resolve_model_output_path(args.inference_output, args.model, "best_model_jit.pt")
+    args.onnx_output = resolve_model_output_path(args.onnx_output, args.model, "best_model.onnx")
+    args.tf_output = resolve_model_output_path(args.tf_output, args.model, "best_model_tf.pb")
+    args.artifact_manifest = resolve_model_output_path(
+        args.artifact_manifest, args.model, "artifact_manifest.json"
+    )
     args.field_inference_output = resolve_model_output_path(
         args.field_inference_output, args.model, "best_model_field_jit.pt"
     )
@@ -915,10 +1598,105 @@ def main():
     if is_main:
         print(f"Distributed: {distributed}  world_size: {world_size}  device: {device}", flush=True)
         print(f"Model architecture: {args.model}", flush=True)
+        print(f"Primary export backends: {', '.join(args.export_backends)}", flush=True)
         print(f"Train/Val split: {100.0 * (1.0 - effective_val_ratio):.1f}% / {100.0 * effective_val_ratio:.1f}%", flush=True)
         print(f"CPU threads: {num_threads}  DataLoader workers: {num_workers}", flush=True)
         print(f"Cache mode: {args.cache_mode}"
               + (f"  window_steps: {args.window_steps}" if args.cache_mode == "window" else ""), flush=True)
+
+    # -- Export-only fast path -----------------------------------------------
+    # Useful to re-export an already trained checkpoint without running epochs.
+    if args.export_only or args.model == "perfect_model":
+        model = build_model(args.model).to(device)
+        if distributed and world_size > 1:
+            model = DDP(model, device_ids=[local_rank] if torch.cuda.is_available() else None)
+        model_to_save = model.module if distributed and world_size > 1 else model
+
+        resume_state = None
+        if args.model != "perfect_model":
+            resume_state = load_checkpoint(
+                args.output,
+                model_to_save,
+                optimizer=None,
+                scheduler=None,
+                device=device,
+                expected_model_name=args.model,
+            )
+
+            if not resume_state["loaded"]:
+                if is_main:
+                    if resume_state.get("model_mismatch"):
+                        print(
+                            f"Checkpoint model mismatch: requested '{args.model}' but checkpoint was "
+                            f"'{resume_state.get('checkpoint_model_name')}'.",
+                            flush=True,
+                        )
+                    elif resume_state.get("load_error"):
+                        print(
+                            f"Checkpoint at {args.output} could not be loaded ({resume_state['load_error']}).",
+                            flush=True,
+                        )
+                    else:
+                        print(
+                            f"No checkpoint found at {args.output}. Cannot use --export-only without a saved model.",
+                            flush=True,
+                        )
+                if distributed and world_size > 1:
+                    dist.barrier()
+                    dist.destroy_process_group()
+                raise RuntimeError("--export-only requested, but checkpoint could not be loaded")
+
+        if is_main:
+            if args.model == "perfect_model":
+                checkpoint = {
+                    "epoch": 0,
+                    "model_name": args.model,
+                    "model_state_dict": model_to_save.state_dict(),
+                    "best_val_loss": 0.0,
+                    "epochs_no_improve": 0,
+                }
+                ensure_parent_dir(args.output)
+                torch.save(checkpoint, args.output)
+                print(f"Perfect model selected; exporting deterministic artifacts to {args.output}.", flush=True)
+            else:
+                if resume_state.get("legacy_weights_only"):
+                    print(f"Loaded model weights from {args.output} (legacy checkpoint format).", flush=True)
+                else:
+                    print(f"Loaded checkpoint from {args.output} at epoch {resume_state['start_epoch'] - 1}.", flush=True)
+
+            print("Export-only mode: skipping training and exporting artifacts …", flush=True)
+            artifacts = export_primary_inference_artifacts(model_to_save, args.model, device, args)
+            for artifact in artifacts:
+                print(
+                    f"  {artifact['backend']} inference artifact saved to {artifact['path']}",
+                    flush=True,
+                )
+            print(f"  Artifact manifest saved to {os.path.abspath(args.artifact_manifest)}", flush=True)
+
+            if args.export_field_inference:
+                export_field_inference_model(model_to_save, args.field_inference_output, device)
+                print(f"  Field inference model saved to {args.field_inference_output}", flush=True)
+
+            if args.export_field_iter:
+                if args.field_iter_steps is None:
+                    raise ValueError("--field-iter-steps is required with --export-field-iter")
+                export_field_iter_model(
+                    model_to_save,
+                    args.field_iter_output,
+                    device,
+                    steps=args.field_iter_steps,
+                )
+                print(
+                    f"  Field iterative model saved to {args.field_iter_output} (steps={args.field_iter_steps})",
+                    flush=True,
+                )
+
+            print("Export-only mode complete.", flush=True)
+
+        if distributed and world_size > 1:
+            dist.barrier()
+            dist.destroy_process_group()
+        return
 
     data_h = None
     data_w = None
@@ -1016,8 +1794,18 @@ def main():
             cache_mode=args.cache_mode, window_steps=args.window_steps
         )
     else:
-        train_ds = IndexSubsetDataset(full_prepared_ds, train_idx_local)
-        val_ds = IndexSubsetDataset(full_prepared_ds, val_idx_local)
+        train_ds = PreparedSubsetDataset(
+            full_prepared_ds,
+            train_idx_local,
+            cache_mode=args.cache_mode,
+            window_steps=args.window_steps,
+        )
+        val_ds = PreparedSubsetDataset(
+            full_prepared_ds,
+            val_idx_local,
+            cache_mode=args.cache_mode,
+            window_steps=args.window_steps,
+        )
 
     # -- DataLoaders ---------------------------------------------------------
     # With per-rank index splitting above, we no longer need DistributedSampler
@@ -1068,6 +1856,9 @@ def main():
     )
     start_epoch = resume_state["start_epoch"]
     best_val_loss = resume_state["best_val_loss"]
+    if args.ignore_prev_val_loss:
+        print("Ignoring previous best validation loss from checkpoint and resetting to infinity for early stopping.", flush=True)
+        best_val_loss = float("inf")
     epochs_no_improve = resume_state["epochs_no_improve"]
     final_epoch = args.epochs
 
@@ -1130,6 +1921,7 @@ def main():
             print(f"  Field inference export: {args.field_inference_output}", flush=True)
         if args.export_field_iter:
             print(f"  Field iter export: {args.field_iter_output} (steps={args.field_iter_steps})", flush=True)
+        print(f"  Artifact manifest: {args.artifact_manifest}", flush=True)
         if args.cache_mode == "window" and args.window_steps > 0:
             window_scale = math.sqrt(len(train_idx) / args.window_steps)
             window_scale = max(1, int(round(window_scale)))
@@ -1143,16 +1935,19 @@ def main():
 
     for epoch in range(start_epoch, final_epoch + 1):
         # For window mode: refresh cached window at the start of each epoch
-        if args.prepared_data_path is None:
+        if hasattr(train_ds, "refresh"):
             train_ds.refresh()
+        if hasattr(val_ds, "refresh"):
             val_ds.refresh()
 
         train_loss = run_epoch(model, train_loader, criterion, device,
                                optimizer=optimizer, distributed=distributed,
-                               is_main=is_main, epoch=epoch, total_epochs=final_epoch)
+                               is_main=is_main, epoch=epoch, total_epochs=final_epoch,
+                               profile_io=args.profile_io, profile_batches=args.profile_batches)
         val_loss   = run_epoch(model, val_loader,   criterion, device,
                                distributed=distributed,
-                               is_main=is_main, epoch=epoch, total_epochs=final_epoch)
+                               is_main=is_main, epoch=epoch, total_epochs=final_epoch,
+                               profile_io=args.profile_io, profile_batches=args.profile_batches)
         scheduler.step(val_loss)
 
         if is_main:
@@ -1178,11 +1973,13 @@ def main():
                     "best_val_loss": best_val_loss,
                     "epochs_no_improve": epochs_no_improve,
                 }
+                ensure_parent_dir(args.output)
                 torch.save(checkpoint, args.output)
                 export_ok = True
                 export_error = None
+                exported_artifacts = []
                 try:
-                    export_inference_model(model_to_save, args.inference_output, device)
+                    exported_artifacts = export_primary_inference_artifacts(model_to_save, args.model, device, args)
                     if args.export_field_inference:
                         export_field_inference_model(model_to_save, args.field_inference_output, device)
                     if args.export_field_iter:
@@ -1203,9 +2000,11 @@ def main():
                     flush=True,
                 )
                 if export_ok:
-                    print(f"    Inference model saved to {args.inference_output}", flush=True)
+                    for artifact in exported_artifacts:
+                        print(f"    {artifact['backend']} inference model saved to {artifact['path']}", flush=True)
+                    print(f"    Artifact manifest saved to {os.path.abspath(args.artifact_manifest)}", flush=True)
                 else:
-                    print(f"    WARNING: TorchScript export failed: {export_error}", flush=True)
+                    print(f"    WARNING: artifact export failed: {export_error}", flush=True)
             else:
                 epochs_no_improve += 1
                 early_stop_patience = args.patience * 2

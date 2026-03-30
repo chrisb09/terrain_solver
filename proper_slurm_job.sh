@@ -15,8 +15,8 @@
 ############################
 #SBATCH --partition=c23mm
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=96
+#SBATCH --ntasks-per-node=48
+#SBATCH --cpus-per-task=2
 #SBATCH --mem-per-cpu=5G
 
 #SBATCH hetjob
@@ -27,8 +27,8 @@
 #SBATCH --partition=c23g
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=96
-#SBATCH --gres=gpu:4
+#SBATCH --cpus-per-task=24
+#SBATCH --gres=gpu:1
 #SBATCH --mem-per-cpu=5G
 
 #############################
@@ -58,6 +58,10 @@ DB_HET_GROUP=1
 #MODEL_PATH="train_models/model_a/real_function_jit.pt"
 MODEL_PATH="train_models/model_a/best_model_jit_transformer_mlp.pt"
 #MODEL_PATH="train_models/model_a/best_model_jit_watercnn.pt"
+MODEL_BACKEND="TORCH"
+MODEL_ARTIFACT_MANIFEST="train_models/model_a/artifact_manifest_transformer_mlp.json"
+MODEL_INPUTS=""
+MODEL_OUTPUTS=""
 
 #MODEL_NAME="perfect_model"
 MODEL_NAME="transformer_mlp"
@@ -175,7 +179,7 @@ INIT_MODE="circle" # circle, square, uniform
 RADIUS=500 # radius for circle and square initial conditions
 INIT_DEPTH=100 # initial depth of water
 #TOTAL_STEPS=10000000
-TOTAL_STEPS=1000
+TOTAL_STEPS=100
 #TOTAL_STEPS=10000
 SAVE_EVERY=1
 SAVE_MODE="periodic"        # periodic, triangular
@@ -252,6 +256,26 @@ fi
 if [[ -n "${INIT_MODE_ENV:-}" ]]; then
   INIT_MODE="${INIT_MODE_ENV}"
   echo "Using INIT_MODE from environment variable: ${INIT_MODE}"
+fi
+if [[ -n "${MODEL_PATH_ENV:-}" ]]; then
+  MODEL_PATH="${MODEL_PATH_ENV}"
+  echo "Using MODEL_PATH from environment variable: ${MODEL_PATH}"
+fi
+if [[ -n "${MODEL_BACKEND_ENV:-}" ]]; then
+  MODEL_BACKEND="${MODEL_BACKEND_ENV}"
+  echo "Using MODEL_BACKEND from environment variable: ${MODEL_BACKEND}"
+fi
+if [[ -n "${MODEL_ARTIFACT_MANIFEST_ENV:-}" ]]; then
+  MODEL_ARTIFACT_MANIFEST="${MODEL_ARTIFACT_MANIFEST_ENV}"
+  echo "Using MODEL_ARTIFACT_MANIFEST from environment variable: ${MODEL_ARTIFACT_MANIFEST}"
+fi
+if [[ -n "${MODEL_INPUTS_ENV:-}" ]]; then
+  MODEL_INPUTS="${MODEL_INPUTS_ENV}"
+  echo "Using MODEL_INPUTS from environment variable: ${MODEL_INPUTS}"
+fi
+if [[ -n "${MODEL_OUTPUTS_ENV:-}" ]]; then
+  MODEL_OUTPUTS="${MODEL_OUTPUTS_ENV}"
+  echo "Using MODEL_OUTPUTS from environment variable: ${MODEL_OUTPUTS}"
 fi
 if [[ -n "${RADIUS_ENV:-}" ]]; then
   RADIUS="${RADIUS_ENV}"
@@ -402,7 +426,11 @@ set -euo pipefail
 
 cd /hpcwork/ro092286/smartsim/ || exit
 
-source /hpcwork/ro092286/smartsim/install.sh cpu
+if (( USE_GPU == 1 )); then
+  source /hpcwork/ro092286/smartsim/install.sh cuda-12
+else
+  source /hpcwork/ro092286/smartsim/install.sh cpu
+fi
 #source /hpcwork/ro092286/smartsim/set_env_claix23_cuda12.4.sh
 
 # Suppress OpenMPI PMI s1/s2 component probe warnings on systems without libpmi/libpmi2.
@@ -414,8 +442,8 @@ export OMPI_MCA_io="romio321"
 export OMPI_MCA_fcoll="^dynamic_gen2"
 # Keep SmartRedis logs in Slurm stdout/stderr instead of a separate log file.
 export SR_LOG_FILE="stdout"
-# Keep SmartRedis logs at info level to get important warnings and errors without overwhelming the logs with debug messages.
-export SR_LOG_LEVEL="info"
+# Increase SmartRedis verbosity during debugging so backend issues include more context.
+export SR_LOG_LEVEL="debug"
 
 module -t list
 
@@ -430,7 +458,11 @@ module -t list
 
 
 MINI_APP_DIR="/hpcwork/ro092286/smartsim/mini_app"
-PY_ENV="/hpcwork/ro092286/smartsim/python/smartsim_cpu"
+if (( USE_GPU == 1 )); then
+  PY_ENV="/hpcwork/ro092286/smartsim/python/smartsim_cuda-12"
+else
+  PY_ENV="/hpcwork/ro092286/smartsim/python/smartsim_cpu"
+fi
 EXTERNAL_DIR="/hpcwork/thes2181/mini_app"
 #INPUT_IMAGE="${MINI_APP_DIR}/old/Srtm_ramp2.world.21600x10800.jpg"
 INPUT_IMAGE="${MINI_APP_DIR}/old/World_elevation_map.png"
@@ -463,6 +495,44 @@ else
 fi
 
 cd "${MINI_APP_DIR}" || exit
+
+if [[ -n "${MODEL_ARTIFACT_MANIFEST:-}" ]] && [[ -f "${MODEL_ARTIFACT_MANIFEST}" ]]; then
+  echo "Resolving model artifact from manifest ${MODEL_ARTIFACT_MANIFEST} for model=${MODEL_NAME} backend=${MODEL_BACKEND}"
+  MODEL_RESOLUTION=("${(@f)$(python3 - "${MODEL_ARTIFACT_MANIFEST}" "${MODEL_NAME}" "${MODEL_BACKEND}" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+manifest_path = Path(sys.argv[1])
+model_name = sys.argv[2]
+backend = sys.argv[3].upper()
+payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+for artifact in payload.get("artifacts", []):
+    if artifact.get("model_name") == model_name and str(artifact.get("backend", "")).upper() == backend:
+        print(artifact["path"])
+        print(",".join(artifact.get("inputs", [])))
+        print(",".join(artifact.get("outputs", [])))
+        sys.exit(0)
+raise SystemExit(f"Artifact for model={model_name} backend={backend} not found in {manifest_path}")
+PY
+  )}")
+  if [[ "${#MODEL_RESOLUTION[@]}" -ge 1 ]] && [[ -n "${MODEL_RESOLUTION[1]}" ]]; then
+    MODEL_PATH="${MODEL_RESOLUTION[1]}"
+  fi
+  if [[ "${#MODEL_RESOLUTION[@]}" -ge 2 ]] && [[ -n "${MODEL_RESOLUTION[2]}" ]]; then
+    MODEL_INPUTS="${MODEL_RESOLUTION[2]}"
+  fi
+  if [[ "${#MODEL_RESOLUTION[@]}" -ge 3 ]] && [[ -n "${MODEL_RESOLUTION[3]}" ]]; then
+    MODEL_OUTPUTS="${MODEL_RESOLUTION[3]}"
+  fi
+  echo "Resolved MODEL_PATH=${MODEL_PATH}"
+  if [[ -n "${MODEL_INPUTS}" ]]; then
+    echo "Resolved MODEL_INPUTS=${MODEL_INPUTS}"
+  fi
+  if [[ -n "${MODEL_OUTPUTS}" ]]; then
+    echo "Resolved MODEL_OUTPUTS=${MODEL_OUTPUTS}"
+  fi
+fi
 
 CREATE_NEW_H5=1
 RUN_SOLVER=1
@@ -650,6 +720,14 @@ if [[ "${RUN_SOLVER}" -eq 1 ]]; then
     OVERWRITE_ARG+=(--overwrite-output)
   fi
 
+  MODEL_IO_ARGS=()
+  if [[ -n "${MODEL_INPUTS}" ]]; then
+    MODEL_IO_ARGS+=(--model-inputs "${MODEL_INPUTS}")
+  fi
+  if [[ -n "${MODEL_OUTPUTS}" ]]; then
+    MODEL_IO_ARGS+=(--model-outputs "${MODEL_OUTPUTS}")
+  fi
+
   # For multi-node jobs, use --distribution=block to evenly spread tasks across nodes.
   # This prevents task desynchronization at shutdown (especially in rank0_gather I/O mode).
   SRUN_DIST="--distribution=block"
@@ -669,6 +747,8 @@ if [[ "${RUN_SOLVER}" -eq 1 ]]; then
     --device "${device}" \
     --gpus-per-node "${GPUS_PER_NODE}" \
     --model-path "${MODEL_PATH}" \
+    --model-backend "${MODEL_BACKEND}" \
+    "${MODEL_IO_ARGS[@]}" \
     --input-hdf5 "${PREP_H5}" \
     --output-hdf5 "${TRAJ_H5}" \
     --steps "${TOTAL_STEPS}" \
