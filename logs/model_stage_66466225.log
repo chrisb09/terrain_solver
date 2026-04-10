@@ -1,0 +1,8 @@
+srun: error: Unable to create step for job 66466225: Requested node configuration is not available
+MODEL_STAGE_ERROR label=solver het_group=0 host=(null) attempt=1/2 rc=1
+srun: error: Unable to create step for job 66466225: Requested node configuration is not available
+srun: error: Unable to create step for job 66466225: Requested node configuration is not available
+MODEL_STAGE_ERROR label=solver het_group=0 host=(null) attempt=2/2 rc=1
+srun: error: Unable to create step for job 66466225: Requested node configuration is not available
+Error: model staging failed for het-group 0 (solver); failed_nodes=1
+Warning: local model staging failed on at least one node. Falling back to shared model path: /rwthfs/rz/cluster/hpcwork/ro092286/smartsim/mini_app/train_models/model_a/best_model_jit_benchmark_giant_mlp.pt

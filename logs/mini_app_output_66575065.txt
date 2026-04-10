@@ -1,0 +1,283 @@
+DB_HET_GROUP=1 Slurm raw vars: SLURM_GPUS_PER_NODE_HET_GROUP_1='', SLURM_GPUS_PER_TASK_HET_GROUP_1='', SLURM_TRES_PER_TASK_HET_GROUP_1='cpu=72', SLURM_NTASKS_PER_NODE_HET_GROUP_1='1', SLURM_GPUS_ON_NODE_HET_GROUP_1='' -> parsed: gpus_per_task=, gpus_per_node=, gpus_on_node=; computed GPUS_PER_NODE=0, DB_NODES=1, ML_INFERENCE_CPU_CORES=72; TOTAL_GPU_COUNT=0
+Configuring for CPU-based ML inference with 72 CPU cores per task.
+Calculated MPI_RANKS=72 from _nodes=1, _ntasks_per_node=72, SLURM_NTASKS=72, and _solver_ntasks_var=
+Using preliminary job name: circle_r500_d100_s10_periodic_8640x4320_c23mm_1n_72t_c-1n___rank0_gather_none
+Calculated REDUCED_HEIGHT=540 to achieve 16:9 aspect ratio in final video with TARGET_WIDTH=8640 and TARGET_HEIGHT=4320
+Using CUSTOM_JOB_NAME_SUFFIX from environment variable: _72cpu_benchmark_giant_mlp_revamped_prepare
+Warning: OVERWRITE_JOB_NAME_ENV is set to 1 but neither JOB_NAME_ENV nor JOB_NAME_TEMPLATE_ENV is set. Using default naming scheme with template: circle_r${RADIUS}_d${INIT_DEPTH}_s${TOTAL_STEPS}_${SAVE_MODE}_${TARGET_WIDTH}x${TARGET_HEIGHT}_${_partition}_${_nodes}n_${_ntasks_per_node}t_${_cpus_per_task}c-${DB_NODES}n_${DB}__${IO_MODE}_${MPI_SYNC_MODE}${CUSTOM_JOB_NAME_SUFFIX}
+Module OpenSSL/1.1 is not loaded. Purging and loading required modules.
+Purging and loading required modules for SmartSim...
+Loading required modules...
+[INFO] Module OpenSSL/1.1 loaded.
+[WARN] This node does not have a GPU installed. CUDA will not work.
+[WARN] Please refer to https://help.itc.rwth-aachen.de for information on which
+nodes feature GPUs. 
+[INFO] Module CUDA/12.4.0 loaded.
+[INFO] Module GCCcore/11.3.0 loaded.
+[INFO] Module Clang/15.0.5 loaded.
+[INFO] Module GCC/11.3.0 loaded.
+[INFO] Module OpenMPI/4.1.4 loaded.
+[INFO] Module FFTW.MPI/3.3.10 loaded.
+[INFO] Module HDF5/1.12.2 loaded.
+[INFO] Module PnetCDF/1.12.3 loaded.
+[INFO] Module cuDNN/8.9.7.29-CUDA-12.4.0 loaded.
+[INFO] Module imkl/2024.2.0 loaded.
+Using SmartSim runtime root: /home/thes2181/python
+Using SmartSim runtime tar dir: /home/thes2181/python
+Keeping existing '/hpcwork/ro092286/smartsim/python' directory (not replacing with symlink).
+Overriding devices via argument: cpu
+
+=== Installing SmartSim for device: cpu ===
+Including backend: torch
+Including backend: onnxruntime
+Including backend: tensorflow
+SmartSim build command: smart build --device cpu
+Install location: /home/thes2181/python/smartsim_cpu/
+Base directory for SmartSim installation: /hpcwork/ro092286/smartsim/
+Python virtual environment already exists at /home/thes2181/python/smartsim_cpu/
+Activating Python virtual environment for device: cpu
+smartsim is already installed in the virtual environment.
+Checking SmartSim build status...
+command succeeded
+SmartSim' redis is already built and available.
+SmartSim' has TensorFlow support.
+SmartSim is already fully built with all backends.
+Warning: bundled runtime libstdc++ does not report GLIBCXX_3.4.32 (source: /cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/13.2.0/lib64/libstdc++.so.6)
+
+--- Creating SmartSim runtime tar bundles ---
+Runtime changed since last tar; rebuilding: /home/thes2181/python/smartsim_cpu.tar
+Packing /home/thes2181/python/smartsim_cpu -> /home/thes2181/python/smartsim_cpu.tar
+Installation of the smartsim 'backend' complete. This includes the SmartRedis Python client. The Fortran/C/C++ clients can be built from source as needed.
+
+--- Installing SmartRedis C/C++ client ---
+SmartRedis directory already exists. Skipping clone.
+Already on the correct branch: develop
+Already at the correct commit: a5e235564f5d3912eec9541ea3ebce9dd42eccf7
+Current directory: /hpcwork/ro092286/smartsim
+OpenSSL/1.1
+CUDA/12.4.0
+GCCcore/11.3.0
+zlib/1.2.12
+binutils/2.38
+numactl/2.0.14
+XZ/5.2.5
+libxml2/2.9.13
+libpciaccess/0.16
+hwloc/2.7.1
+ncurses/6.3
+GMP/6.2.1
+Z3/4.10.2
+Clang/15.0.5
+GCC/11.3.0
+libevent/2.1.12
+UCX/1.12.1
+PMIx/4.1.2
+UCC/1.0.0
+OpenMPI/4.1.4
+FFTW/3.3.10
+FFTW.MPI/3.3.10
+Szip/2.1.1
+HDF5/1.12.2
+PnetCDF/1.12.3
+cuDNN/8.9.7.29-CUDA-12.4.0
+imkl/2024.2.0
+Warning: /hpcwork/thes2181/mini_app is not empty.
+Warning: /hpcwork/thes2181/mini_app/circle_r500_d100_s10_periodic_8640x4320_c23mm_1n_72t_c-1n___rank0_gather_none_72cpu_benchmark_giant_mlp_revamped_prepare is not empty.
+Using runtime extra libs from /home/thes2181/python/smartsim_cpu/runtime_libs
+Resolving model artifact from manifest train_models/model_a/artifact_manifest_benchmark_giant_mlp.json for model=benchmark_giant_mlp backend=TORCH
+Resolved MODEL_PATH=/rwthfs/rz/cluster/hpcwork/ro092286/smartsim/mini_app/train_models/model_a/best_model_jit_benchmark_giant_mlp.pt
+Resolved MODEL_INPUTS=x_water,x_terrain
+Resolved MODEL_OUTPUTS=y
+Staging model file to fast volatile storage. Source: /rwthfs/rz/cluster/hpcwork/ro092286/smartsim/mini_app/train_models/model_a/best_model_jit_benchmark_giant_mlp.pt
+Model cache root (fixed local path): /tmp/ro092286/model (fs_type=xfs)
+Warning: Could not resolve explicit node list for het-group 1; falling back to single srun staging.
+MODEL_STAGE_PER_NODE label=db het_group=1 host=r23m0113.hpc.itc.rwth-aachen.de duration_s=1 path=/tmp/ro092286/model/best_model_jit_benchmark_giant_mlp.pt
+Model staged on het-groups 0 and 1; total staging time: 1s
+No existing trajectory found. Starting fresh...
+Prepared dataset: terrain=(4320, 8640) water_nonzero=785349 output=/hpcwork/thes2181/mini_app/circle_r500_d100_s10_periodic_8640x4320_c23mm_1n_72t_c-1n___rank0_gather_none_72cpu_benchmark_giant_mlp_revamped_prepare/world_init.h5
+Preparation time: 7 seconds
+Compiling solver...
+-- The CXX compiler identification is GNU 11.3.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/11.3.0/bin/g++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found MPI_CXX: /cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/OpenMPI/4.1.4-GCC-11.3.0/lib/libmpi.so (found version "3.1") 
+-- Found MPI: TRUE (found version "3.1") found components: CXX 
+-- Found HDF5: /cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/HDF5/1.12.2-gompi-2022a/lib/libhdf5.so;/usr/lib64/libpthread.a;/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/Szip/2.1.1-GCCcore-11.3.0/lib/libsz.so;/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/zlib/1.2.12-GCCcore-11.3.0/lib/libz.so;/usr/lib64/libdl.a;/usr/lib64/libm.so;/usr/lib64/libm.so;/usr/lib64/libpthread.a (found version "1.12.2") found components: C 
+-- HDF5 parallel support: YES
+-- Configuring done (3.5s)
+-- Generating done (0.1s)
+-- Build files have been written to: /hpcwork/ro092286/smartsim/mini_app/solver_cpp/build
+[ 50%] Building CXX object CMakeFiles/terrain_solver.dir/terrain_solver.cpp.o
+[100%] Linking CXX executable terrain_solver
+[100%] Built target terrain_solver
+Compilation time: 10 seconds
+Running DB node preflight checks (ib0, port 6780, local write)...
+DB_PREFLIGHT host=r23m0113.hpc.itc.rwth-aachen.de ib0=134.61.44.205/22
+DB_PREFLIGHT port_bind_6780=ok
+DB_PREFLIGHT fs_write=ok root=/tmp
+Starting SmartSim controller in the background...
+DB_NODES=1 <= 1, using SmartSim Standalone mode
+Using Python interpreter at /home/thes2181/python/smartsim_cpu/bin/python3 for SmartSim controller
+Wait until database hostname file db_hostname_66575065.txt is created by the SmartSim controller...(attempt 1/2, at most 300s)
+Database hostname obtained from SmartSim controller: 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Using 0 GPUs per node.
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Expecting smartsim database/orchestrator at 134.61.44.205:6780
+Successfully connected to SmartRedis database as terrain_solver_63
+Successfully connected to SmartRedis database as terrain_solver_46
+Successfully connected to SmartRedis database as terrain_solver_8
+Successfully connected to SmartRedis database as terrain_solver_7
+Successfully connected to SmartRedis database as terrain_solver_17
+Successfully connected to SmartRedis database as terrain_solver_41
+Successfully connected to SmartRedis database as terrain_solver_30
+Successfully connected to SmartRedis database as terrain_solver_24
+Successfully connected to SmartRedis database as terrain_solver_68
+Successfully connected to SmartRedis database as terrain_solver_12
+Successfully connected to SmartRedis database as terrain_solver_56
+Successfully connected to SmartRedis database as terrain_solver_58
+Successfully connected to SmartRedis database as terrain_solver_2
+Successfully connected to SmartRedis database as terrain_solver_14
+Successfully connected to SmartRedis database as terrain_solver_54
+Successfully connected to SmartRedis database as terrain_solver_23
+Successfully connected to SmartRedis database as terrain_solver_28
+Successfully connected to SmartRedis database as terrain_solver_20
+Successfully connected to SmartRedis database as terrain_solver_36
+Successfully connected to SmartRedis database as terrain_solver_1
+Successfully connected to SmartRedis database as terrain_solver_19
+Successfully connected to SmartRedis database as terrain_solver_27
+Successfully connected to SmartRedis database as terrain_solver_57
+Successfully connected to SmartRedis database as terrain_solver_22
+Successfully connected to SmartRedis database as terrain_solver_34
+Successfully connected to SmartRedis database as terrain_solver_6
+Successfully connected to SmartRedis database as terrain_solver_16
+Successfully connected to SmartRedis database as terrain_solver_48
+Successfully connected to SmartRedis database as terrain_solver_65
+Successfully connected to SmartRedis database as terrain_solver_69
+Successfully connected to SmartRedis database as terrain_solver_45
+Successfully connected to SmartRedis database as terrain_solver_39
+Successfully connected to SmartRedis database as terrain_solver_43
+Successfully connected to SmartRedis database as terrain_solver_53
+Successfully connected to SmartRedis database as terrain_solver_61
+Successfully connected to SmartRedis database as terrain_solver_66
+Successfully connected to SmartRedis database as terrain_solver_52
+Successfully connected to SmartRedis database as terrain_solver_55
+Successfully connected to SmartRedis database as terrain_solver_42
+Successfully connected to SmartRedis database as terrain_solver_44
+Successfully connected to SmartRedis database as terrain_solver_62
+Successfully connected to SmartRedis database as terrain_solver_21
+Successfully connected to SmartRedis database as terrain_solver_29
+Successfully connected to SmartRedis database as terrain_solver_32
+Successfully connected to SmartRedis database as terrain_solver_67
+Successfully connected to SmartRedis database as terrain_solver_47
+Successfully connected to SmartRedis database as terrain_solver_13
+Successfully connected to SmartRedis database as terrain_solver_3
+Successfully connected to SmartRedis database as terrain_solver_25
+Successfully connected to SmartRedis database as terrain_solver_50
+Successfully connected to SmartRedis database as terrain_solver_10
+Successfully connected to SmartRedis database as terrain_solver_40
+Successfully connected to SmartRedis database as terrain_solver_59
+Successfully connected to SmartRedis database as terrain_solver_0
+Successfully connected to SmartRedis database as terrain_solver_11
+Successfully connected to SmartRedis database as terrain_solver_18
+Successfully connected to SmartRedis database as terrain_solver_49
+Successfully connected to SmartRedis database as terrain_solver_70
+Successfully connected to SmartRedis database as terrain_solver_9
+Successfully connected to SmartRedis database as terrain_solver_33
+Successfully connected to SmartRedis database as terrain_solver_60
+Successfully connected to SmartRedis database as terrain_solver_64
+Successfully connected to SmartRedis database as terrain_solver_31
+Successfully connected to SmartRedis database as terrain_solver_71
+Successfully connected to SmartRedis database as terrain_solver_15
+Successfully connected to SmartRedis database as terrain_solver_37
+Successfully connected to SmartRedis database as terrain_solver_5
+Successfully connected to SmartRedis database as terrain_solver_35
+Successfully connected to SmartRedis database as terrain_solver_51
+Successfully connected to SmartRedis database as terrain_solver_4
+Successfully connected to SmartRedis database as terrain_solver_26
+Successfully connected to SmartRedis database as terrain_solver_38
+ERROR: Redis error when executing command: Could not run 'aten::empty_strided' with arguments from the 'CUDA' backend. This could be because the operator doesn't exist for this backend, or was omitted during the selective/custom build process (if using custom build). If you are a Facebook employee using PyTorch on mobile, please visit https://fburl.com/ptmfixes for possible resolutions. 'aten::empty_strided' is only available for these backends: [CPU, Meta, QuantizedCPU, BackendSelect, Python, FuncTorchDynamicLayerBackMode, Functionalize, Named, Conjugate, Negative, ZeroTensor, ADInplaceOrView, AutogradOther, AutogradCPU, AutogradCUDA, AutogradHIP, AutogradXLA, AutogradMPS, AutogradIPU, AutogradXPU, AutogradHPU, AutogradVE, AutogradLazy, AutogradMTIA, AutogradPrivateUse1, AutogradPrivateUse2, AutogradPrivateUse3, AutogradMeta, AutogradNestedTensor, Tracer, AutocastCPU, AutocastXPU, AutocastCUDA, FuncTorchBatched, BatchedNestedTensor, FuncTorchVmapMode, Batched, VmapMode, FuncTorchGradWrapper, PythonTLSSnapshot, FuncTorchDynamicLayerFrontMode, PreDispatch, PythonDispatcher].  CPU: registered at aten/src/ATen/RegisterCPU.cpp:30455 [kernel] Meta: registered at aten/src/ATen/RegisterMeta.cpp:26993 [kernel] QuantizedCPU: registered at aten/src/ATen/RegisterQuantizedCPU.cpp:951 [kernel] BackendSelect: registered at aten/src/ATen/RegisterBackendSelect.cpp:815 [kernel] Python: registered at ../aten/src/ATen/core/PythonFallbackKernel.cpp:153 [backend fallback] FuncTorchDynamicLayerBackMode: registered at ../aten/src/ATen/functorch/DynamicLayer.cpp:497 [backend fallback] Functionalize: registered at ../aten/src/ATen/FunctionalizeFallbackKernel.cpp:349 [backend fallback] Named: registered at ../aten/src/ATen/core/NamedRegistrations.cpp:7 [backend fallback] Conjugate: fallthrough registered at ../aten/src/ATen/ConjugateFallback.cpp:21 [kernel] Negative: fallthrough registered at ../aten/src/ATen/native/NegateFallback.cpp:22 [kernel] ZeroTensor: fallthrough registered at ../aten/src/ATen/ZeroTensorFallback.cpp:90 [kernel] ADInplaceOrView: fallthrough registered at ../aten/src/ATen/core/VariableFallbackKernel.cpp:86 [backend fallback] AutogradOther: registered at ../torch/csrc/autograd/generated/VariableType_2.cpp:19857 [autograd kernel] AutogradCPU: registered at ../torch/csrc/autograd/generated/VariableType_2.cpp:19857 [autograd kernel] AutogradCUDA: registered at ../torch/csrc/autograd/generated/VariableType_2.cpp:19857 [autograd kernel] AutogradHIP: registered at ../torch/csrc/autograd/generated/VariableType_2.cpp:19857 [autograd kernel] AutogradXLA: registered at ../torch/csrc/autograd/generated/VariableType_2.cpp:19857 [autograd kernel] AutogradMPS: registered at ../torch/csrc/autograd/generated/VariableType_2.cpp:19857 [autograd kernel] AutogradIPU: registered at ../torch/csrc/autograd/generated/VariableType_2.cpp:19857 [autograd kernel] AutogradXPU: registered at ../torch/csrc/autograd/generated/VariableType_2.cpp:19857 [autograd kernel] AutogradHPU: registered at ../torch/csrc/autograd/generated/VariableType_2.cpp:19857 [autograd kernel] AutogradVE: registered at ../torch/csrc/autograd/generated/VariableType_2.cpp:19857 [autograd kernel] AutogradLazy: registered at ../torch/csrc/autograd/generated/VariableType_2.cpp:19857 [autograd kernel] AutogradMTIA: registered at ../torch/csrc/autograd/generated/VariableType_2.cpp:19857 [autograd kernel] AutogradPrivateUse1: registered at ../torch/csrc/autograd/generated/VariableType_2.cpp:19857 [autograd kernel] AutogradPrivateUse2: registered at ../torch/csrc/autograd/generated/VariableType_2.cpp:19857 [autograd kernel] AutogradPrivateUse3: registered at ../torch/csrc/autograd/generated/VariableType_2.cpp:19857 [autograd kernel] AutogradMeta: registered at ../torch/csrc/autograd/generated/VariableType_2.cpp:19857 [autograd kernel] AutogradNestedTensor: registered at ../torch/csrc/autograd/generated/VariableType_2.cpp:19857 [autograd kernel] Tracer: registered at ../torch/csrc/autograd/generated/TraceType_2.cpp:17623 [kernel] AutocastCPU: fallthrough registered at ../aten/src/ATen/autocast_mode.cpp:209 [backend fallback] AutocastXPU: fallthrough registered at ../aten/src/ATen/autocast_mode.cpp:351 [backend fallback] AutocastCUDA: fallthrough registered at ../aten/src/ATen/autocast_mode.cpp:165 [backend fallback] FuncTorchBatched: registered at ../aten/src/ATen/functorch/LegacyBatchingRegistrations.cpp:731 [backend fallback] BatchedNestedTensor: registered at ../aten/src/ATen/functorch/LegacyBatchingRegistrations.cpp:758 [backend fallback] FuncTorchVmapMode: fallthrough registered at ../aten/src/ATen/functorch/VmapModeRegistrations.cpp:27 [backend fallback] Batched: registered at ../aten/src/ATen/LegacyBatchingRegistrations.cpp:1075 [backend fallback] VmapMode: fallthrough registered at ../aten/src/ATen/VmapModeRegistrations.cpp:33 [backend fallback] FuncTorchGradWrapper: registered at ../aten/src/ATen/functorch/TensorWrapper.cpp:207 [backend fallback] PythonTLSSnapshot: registered at ../aten/src/ATen/core/PythonFallbackKernel.cpp:161 [backend fallback] FuncTorchDynamicLayerFrontMode: registered at ../aten/src/ATen/functorch/DynamicLayer.cpp:493 [backend fallback] PreDispatch: registered at ../aten/src/ATen/core/PythonFallbackKernel.cpp:165 [backend fallback] PythonDispatcher: registered at ../aten/src/ATen/core/PythonFallbackKernel.cpp:157 [backend fallback]  Exception raised from reportError at ../aten/src/ATen/core/dispatch/OperatorEntry.cpp:547 (most recent call first): frame #0: c10::Error::Error(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0xb0 (0x153cb1b37fc0 in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/lib/backends/redisai_torch/lib/libc10.so) frame #1: <unknown function> + 0x11ad6ad (0x153b9cc646ad in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/lib/backends/redisai_torch/lib/libtorch_cpu.so) frame #2: <unknown function> + 0x2736c0b (0x153b9e1edc0b in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/lib/backends/redisai_torch/lib/libtorch_cpu.so) frame #3: at::_ops::empty_strided::redispatch(c10::DispatchKeySet, c10::ArrayRef<c10::SymInt>, c10::ArrayRef<c10::SymInt>, std::optional<c10::ScalarType>, std::optional<c10::Layout>, std::optional<c10::Device>, std::optional<bool>) + 0xa4 (0x153b9e4d3ac4 in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/lib/backends/redisai_torch/lib/libtorch_cpu.so) frame #4: <unknown function> + 0x2e2e6db (0x153b9e8e56db in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/lib/backends/redisai_torch/lib/libtorch_cpu.so) frame #5: at::_ops::empty_strided::call(c10::ArrayRef<c10::SymInt>, c10::ArrayRef<c10::SymInt>, std::optional<c10::ScalarType>, std::optional<c10::Layout>, std::optional<c10::Device>, std::optional<bool>) + 0x1b9 (0x153b9e525389 in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/lib/backends/redisai_torch/lib/libtorch_cpu.so) frame #6: <unknown function> + 0x1ce6959 (0x153b9d79d959 in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/lib/backends/redisai_torch/lib/libtorch_cpu.so) frame #7: at::native::_to_copy(at::Tensor const&, std::optional<c10::ScalarType>, std::optional<c10::Layout>, std::optional<c10::Device>, std::optional<bool>, bool, std::optional<c10::MemoryFormat>) + 0x1db4 (0x153b9db79d44 in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/lib/backends/redisai_torch/lib/libtorch_cpu.so) frame #8: <unknown function> + 0x3043bdf (0x153b9eafabdf in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/lib/backends/redisai_torch/lib/libtorch_cpu.so) frame #9: at::_ops::_to_copy::redispatch(c10::DispatchKeySet, at::Tensor const&, std::optional<c10::ScalarType>, std::optional<c10::Layout>, std::optional<c10::Device>, std::optional<bool>, bool, std::optional<c10::MemoryFormat>) + 0x109 (0x153b9e105969 in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/lib/backends/redisai_torch/lib/libtorch_cpu.so) frame #10: <unknown function> + 0x2e31fea (0x153b9e8e8fea in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/lib/backends/redisai_torch/lib/libtorch_cpu.so) frame #11: at::_ops::_to_copy::redispatch(c10::DispatchKeySet, at::Tensor const&, std::optional<c10::ScalarType>, std::optional<c10::Layout>, std::optional<c10::Device>, std::optional<bool>, bool, std::optional<c10::MemoryFormat>) + 0x109 (0x153b9e105969 in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/lib/backends/redisai_torch/lib/libtorch_cpu.so) frame #12: <unknown function> + 0x4afd32f (0x153ba05b432f in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/lib/backends/redisai_torch/lib/libtorch_cpu.so) frame #13: <unknown function> + 0x4afd7d2 (0x153ba05b47d2 in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/lib/backends/redisai_torch/lib/libtorch_cpu.so) frame #14: at::_ops::_to_copy::call(at::Tensor const&, std::optional<c10::ScalarType>, std::optional<c10::Layout>, std::optional<c10::Device>, std::optional<bool>, bool, std::optional<c10::MemoryFormat>) + 0x1fe (0x153b9e1a3ffe in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/lib/backends/redisai_torch/lib/libtorch_cpu.so) frame #15: at::native::to(at::Tensor const&, c10::Device, c10::ScalarType, bool, bool, std::optional<c10::MemoryFormat>) + 0xf7 (0x153b9db76997 in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/lib/backends/redisai_torch/lib/libtorch_cpu.so) frame #16: <unknown function> + 0x3298d1d (0x153b9ed4fd1d in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/lib/backends/redisai_torch/lib/libtorch_cpu.so) frame #17: at::_ops::to_device::call(at::Tensor const&, c10::Device, c10::ScalarType, bool, bool, std::optional<c10::MemoryFormat>) + 0x1ce (0x153b9e37503e in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/lib/backends/redisai_torch/lib/libtorch_cpu.so) frame #18: torch::jit::Unpickler::readInstruction() + 0x1c53 (0x153ba187a803 in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/lib/backends/redisai_torch/lib/libtorch_cpu.so) frame #19: torch::jit::Unpickler::run() + 0xa8 (0x153ba187bb18 in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/lib/backends/redisai_torch/lib/libtorch_cpu.so) frame #20: torch::jit::Unpickler::parse_ivalue() + 0x32 (0x153ba187d252 in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/lib/backends/redisai_torch/lib/libtorch_cpu.so) frame #21: torch::jit::readArchiveAndTensors(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::optional<std::function<c10::StrongTypePtr (c10::QualifiedName const&)> >, std::optional<std::function<c10::intrusive_ptr<c10::ivalue::Object, c10::detail::intrusive_target_default_null_type<c10::ivalue::Object> > (c10::StrongTypePtr const&, c10::IValue)> >, std::optional<c10::Device>, caffe2::serialize::PyTorchStreamReader&, c10::Type::SingletonOrSharedTypePtr<c10::Type> (*)(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&), std::shared_ptr<torch::jit::DeserializationStorageContext>) + 0x569 (0x153ba18377a9 in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/lib/backends/redisai_torch/lib/libtorch_cpu.so) frame #22: <unknown function> + 0x5d75328 (0x153ba182c328 in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/lib/backends/redisai_torch/lib/libtorch_cpu.so) frame #23: <unknown function> + 0x5d78133 (0x153ba182f133 in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/lib/backends/redisai_torch/lib/libtorch_cpu.so) frame #24: torch::jit::import_ir_module(std::shared_ptr<torch::jit::CompilationUnit>, std::istream&, std::optional<c10::Device>, std::unordered_map<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > >&, bool, bool) + 0x1d6 (0x153ba1834196 in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/lib/backends/redisai_torch/lib/libtorch_cpu.so) frame #25: torch::jit::import_ir_module(std::shared_ptr<torch::jit::CompilationUnit>, std::istream&, std::optional<c10::Device>, bool) + 0x92 (0x153ba18344f2 in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/lib/backends/redisai_torch/lib/libtorch_cpu.so) frame #26: torch::jit::load(std::istream&, std::optional<c10::Device>, bool) + 0xc0 (0x153ba1834600 in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/lib/backends/redisai_torch/lib/libtorch_cpu.so) frame #27: torchLoadModel + 0x2a2 (0x153cb1bc0542 in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/lib/backends/redisai_torch/redisai_torch.so) frame #28: RAI_ModelCreateTorch + 0xb9 (0x153cb1bb77a9 in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/lib/backends/redisai_torch/redisai_torch.so) frame #29: RAI_ModelCreate + 0x219 (0x153cc078fa49 in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/lib) frame #30: RedisAI_ModelStore_RedisCommand + 0xb4d (0x153cc077f0bd in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/lib) frame #31: RedisModuleCommandDispatcher + 0x87 (0x535a67 in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/bin/redis-server 134.61.44.205:6780) frame #32: call + 0x13d (0x4620fd in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/bin/redis-server 134.61.44.205:6780) frame #33: processCommand + 0xa74 (0x463344 in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/bin/redis-server 134.61.44.205:6780) frame #34: processInputBuffer + 0xdb (0x481fab in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/bin/redis-server 134.61.44.205:6780) frame #35: readQueryFromClient + 0x308 (0x482468 in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/bin/redis-server 134.61.44.205:6780) frame #36: /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/bin/redis-server 134.61.44.205:6780() [0x57be5b] frame #37: aeMain + 0xe1 (0x457b71 in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/bin/redis-server 134.61.44.205:6780) frame #38: main + 0x3c8 (0x44d228 in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/bin/redis-server 134.61.44.205:6780) frame #39: <unknown function> + 0x295d0 (0x153cc0a295d0 in /lib64/libc.so.6) frame #40: __libc_start_main + 0x80 (0x153cc0a29680 in /lib64/libc.so.6) frame #41: _start + 0x25 (0x44d975 in /rwthfs/rz/cluster/home/thes2181/python/smartsim_cpu/lib/python3.9/site-packages/smartsim/_core/bin/redis-server 134.61.44.205:6780) 
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+with errorcode 1.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------
+srun: Job step aborted: Waiting up to 92 seconds for job step to finish.
+[2026-04-09T11:33:35.185] error: *** STEP 66575065.4 ON r23m0040 CANCELLED AT 2026-04-09T11:33:35 DUE to SIGNAL Killed ***
+srun: error: r23m0040: task 0: Exited with exit code 1
+srun: error: r23m0040: tasks 1-71: Killed

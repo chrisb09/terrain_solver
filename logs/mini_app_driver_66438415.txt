@@ -1,0 +1,38 @@
+Experiment configuration:
+  Database nodes: 2
+  Use GPU: True
+  CPU cores per node for database: 24
+  Heterogeneous group: 1
+  Hostname file: db_hostname_66438415.txt
+Using device: GPU (device=GPU, python_env=/hpcwork/ro092286/smartsim/python/smartsim_cuda-12, queue=c23g)
+GPU debug environment:
+  CUDA_LAUNCH_BLOCKING=1
+  CUDA_VISIBLE_DEVICES=<unset>
+  SLURM_JOB_GPUS=<unset>
+  SLURM_STEP_GPUS=<unset>
+  SLURM_GPUS_ON_NODE=<unset>
+  SLURM_GPUS_PER_NODE=<unset>
+  SLURM_GPUS_PER_TASK=<unset>
+Torch CUDA diagnostics:
+  torch.__version__=2.4.0+cu124
+  torch.cuda.is_available()=False
+  torch.cuda.device_count()=0
+nvidia-smi diagnostics failed: [Errno 2] No such file or directory: 'nvidia-smi'
+Traceback (most recent call last):
+  File "/rwthfs/rz/cluster/hpcwork/ro092286/smartsim/mini_app/smartsim_controller.py", line 80, in <module>
+    db = exp.create_database(port=6780,
+  File "/hpcwork/ro092286/smartsim/python/smartsim_cuda-12/lib64/python3.9/site-packages/smartsim/log.py", line 353, in _contextual
+    return ctx.run(_ctx_modifier)
+  File "/hpcwork/ro092286/smartsim/python/smartsim_cuda-12/lib64/python3.9/site-packages/smartsim/log.py", line 348, in _ctx_modifier
+    result = fn(self, *args, **kwargs)
+  File "/hpcwork/ro092286/smartsim/python/smartsim_cuda-12/lib64/python3.9/site-packages/smartsim/experiment.py", line 784, in create_database
+    return Orchestrator(
+  File "/hpcwork/ro092286/smartsim/python/smartsim_cuda-12/lib64/python3.9/site-packages/smartsim/database/orchestrator.py", line 236, in __init__
+    super().__init__(
+  File "/hpcwork/ro092286/smartsim/python/smartsim_cuda-12/lib64/python3.9/site-packages/smartsim/entity/entityList.py", line 131, in __init__
+    super().__init__(name, path, **kwargs)
+  File "/hpcwork/ro092286/smartsim/python/smartsim_cuda-12/lib64/python3.9/site-packages/smartsim/entity/entityList.py", line 76, in __init__
+    self._initialize_entities(**kwargs)
+  File "/hpcwork/ro092286/smartsim/python/smartsim_cuda-12/lib64/python3.9/site-packages/smartsim/database/orchestrator.py", line 797, in _initialize_entities
+    raise SSUnsupportedError("Orchestrator does not support clusters of size 2")
+smartsim.error.errors.SSUnsupportedError: Orchestrator does not support clusters of size 2

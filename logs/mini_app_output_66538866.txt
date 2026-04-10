@@ -1,0 +1,85 @@
+DB_HET_GROUP=1 Slurm raw vars: SLURM_GPUS_PER_NODE_HET_GROUP_1='', SLURM_GPUS_PER_TASK_HET_GROUP_1='', SLURM_TRES_PER_TASK_HET_GROUP_1='cpu=24', SLURM_NTASKS_PER_NODE_HET_GROUP_1='1', SLURM_GPUS_ON_NODE_HET_GROUP_1='' -> parsed: gpus_per_task=, gpus_per_node=, gpus_on_node=; computed GPUS_PER_NODE=0, DB_NODES=1, ML_INFERENCE_CPU_CORES=24; TOTAL_GPU_COUNT=0
+Configuring for CPU-based ML inference with 24 CPU cores per task.
+Calculated MPI_RANKS=24 from _nodes=1, _ntasks_per_node=24, SLURM_NTASKS=24, and _solver_ntasks_var=
+Using preliminary job name: circle_r500_d100_s10_periodic_8640x4320_c23mm_1n_24t_c-1n___rank0_gather_none
+Calculated REDUCED_HEIGHT=540 to achieve 16:9 aspect ratio in final video with TARGET_WIDTH=8640 and TARGET_HEIGHT=4320
+Using CUSTOM_JOB_NAME_SUFFIX from environment variable: _24cpu_benchmark_giant_mlp_revamped_prepare
+Warning: OVERWRITE_JOB_NAME_ENV is set to 1 but neither JOB_NAME_ENV nor JOB_NAME_TEMPLATE_ENV is set. Using default naming scheme with template: circle_r${RADIUS}_d${INIT_DEPTH}_s${TOTAL_STEPS}_${SAVE_MODE}_${TARGET_WIDTH}x${TARGET_HEIGHT}_${_partition}_${_nodes}n_${_ntasks_per_node}t_${_cpus_per_task}c-${DB_NODES}n_${DB}__${IO_MODE}_${MPI_SYNC_MODE}${CUSTOM_JOB_NAME_SUFFIX}
+Module OpenSSL/1.1 is not loaded. Purging and loading required modules.
+Purging and loading required modules for SmartSim...
+Loading required modules...
+[INFO] Module OpenSSL/1.1 loaded.
+[WARN] This node does not have a GPU installed. CUDA will not work.
+[WARN] Please refer to https://help.itc.rwth-aachen.de for information on which
+nodes feature GPUs. 
+[INFO] Module CUDA/12.4.0 loaded.
+[INFO] Module GCCcore/11.3.0 loaded.
+[INFO] Module Clang/15.0.5 loaded.
+[INFO] Module GCC/11.3.0 loaded.
+[INFO] Module OpenMPI/4.1.4 loaded.
+[INFO] Module FFTW.MPI/3.3.10 loaded.
+[INFO] Module HDF5/1.12.2 loaded.
+[INFO] Module PnetCDF/1.12.3 loaded.
+[INFO] Module cuDNN/8.9.7.29-CUDA-12.4.0 loaded.
+[INFO] Module imkl/2024.2.0 loaded.
+Using SmartSim runtime root: /home/thes2181/python
+Using SmartSim runtime tar dir: /home/thes2181/python
+Keeping existing '/hpcwork/ro092286/smartsim/python' directory (not replacing with symlink).
+Overriding devices via argument: cpu
+
+=== Installing SmartSim for device: cpu ===
+Including backend: torch
+Including backend: onnxruntime
+Including backend: tensorflow
+SmartSim build command: smart build --device cpu
+Install location: /home/thes2181/python/smartsim_cpu/
+Base directory for SmartSim installation: /hpcwork/ro092286/smartsim/
+Python virtual environment already exists at /home/thes2181/python/smartsim_cpu/
+Activating Python virtual environment for device: cpu
+smartsim is already installed in the virtual environment.
+Checking SmartSim build status...
+command succeeded
+SmartSim' redis is already built and available.
+SmartSim' has TensorFlow support.
+SmartSim is already fully built with all backends.
+
+--- Creating SmartSim runtime tar bundles ---
+Runtime tar is up-to-date; skipping: /home/thes2181/python/smartsim_cpu.tar
+Installation of the smartsim 'backend' complete. This includes the SmartRedis Python client. The Fortran/C/C++ clients can be built from source as needed.
+
+--- Installing SmartRedis C/C++ client ---
+SmartRedis directory already exists. Skipping clone.
+Already on the correct branch: develop
+Already at the correct commit: a5e235564f5d3912eec9541ea3ebce9dd42eccf7
+Current directory: /hpcwork/ro092286/smartsim
+OpenSSL/1.1
+CUDA/12.4.0
+GCCcore/11.3.0
+zlib/1.2.12
+binutils/2.38
+numactl/2.0.14
+XZ/5.2.5
+libxml2/2.9.13
+libpciaccess/0.16
+hwloc/2.7.1
+ncurses/6.3
+GMP/6.2.1
+Z3/4.10.2
+Clang/15.0.5
+GCC/11.3.0
+libevent/2.1.12
+UCX/1.12.1
+PMIx/4.1.2
+UCC/1.0.0
+OpenMPI/4.1.4
+FFTW/3.3.10
+FFTW.MPI/3.3.10
+Szip/2.1.1
+HDF5/1.12.2
+PnetCDF/1.12.3
+cuDNN/8.9.7.29-CUDA-12.4.0
+imkl/2024.2.0
+Warning: /hpcwork/thes2181/mini_app is not empty.
+Staging SmartSim runtime tar to local storage. Source: /home/thes2181/python/smartsim_cpu.tar
+sbcast: error: REQUEST_FILE_BCAST(n23m0217): No such file or directory
+sbcast: error: Failed to broadcast to JobId=66538867 nodes

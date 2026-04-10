@@ -1,0 +1,1 @@
+{"src": "login23-g-1", "targets": ["login23-g-1"], "samples": 2, "rows": [{"sample": 0, "time": "15:02:10", "src": "login23-g-1", "rtt_ms": {"login23-g-1": 0.0}}, {"sample": 1, "time": "15:02:11", "src": "login23-g-1", "rtt_ms": {"login23-g-1": 0.0}}]}

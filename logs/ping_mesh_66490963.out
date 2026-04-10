@@ -1,0 +1,14 @@
+Ping mesh diagnostic
+  JobID: 66490963
+  Nodes: n23g0005,n23g0014,n23g0015
+  Samples: 180
+  Timeout(sec): 1
+  Raw dir: logs/ping_mesh_raw_66490963
+  Output CSV: logs/ping_mesh_66490963.csv
+  Stats CSV: logs/ping_mesh_66490963_stats.csv
+  P95 matrix CSV: logs/ping_mesh_66490963_p95_matrix.csv
+  Loss matrix CSV: logs/ping_mesh_66490963_loss_matrix.csv
+Done. CSV written to logs/ping_mesh_66490963.csv
+Stats written to logs/ping_mesh_66490963_stats.csv
+P95 matrix written to logs/ping_mesh_66490963_p95_matrix.csv
+Loss matrix written to logs/ping_mesh_66490963_loss_matrix.csv

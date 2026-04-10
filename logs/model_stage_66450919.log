@@ -1,0 +1,5 @@
+MODEL_STAGE_PER_NODE label=solver het_group=0 host=n23m0368.hpc.itc.rwth-aachen.de duration_s=2 path=/hpcwork/ro092286/smartsim/tmp/mini_app_model_cache_66450919/best_model_jit_benchmark_giant_mlp.pt
+MODEL_STAGE_PER_NODE label=db het_group=1 host=n23g0003.hpc.itc.rwth-aachen.de duration_s=2 path=/hpcwork/ro092286/smartsim/tmp/mini_app_model_cache_66450919/best_model_jit_benchmark_giant_mlp.pt
+MODEL_STAGE_PER_NODE label=db het_group=1 host=n23g0005.hpc.itc.rwth-aachen.de duration_s=5 path=/hpcwork/ro092286/smartsim/tmp/mini_app_model_cache_66450919/best_model_jit_benchmark_giant_mlp.pt
+MODEL_STAGE_PER_NODE label=db het_group=1 host=n23g0006.hpc.itc.rwth-aachen.de duration_s=6 path=/hpcwork/ro092286/smartsim/tmp/mini_app_model_cache_66450919/best_model_jit_benchmark_giant_mlp.pt
+MODEL_STAGE_PER_NODE label=db het_group=1 host=n23g0001.hpc.itc.rwth-aachen.de duration_s=6 path=/hpcwork/ro092286/smartsim/tmp/mini_app_model_cache_66450919/best_model_jit_benchmark_giant_mlp.pt

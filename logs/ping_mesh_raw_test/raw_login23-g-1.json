@@ -1,0 +1,1 @@
+{"src": "login23-g-1", "targets": ["localhost", "127.0.0.1"], "samples": 2, "rows": [{"sample": 0, "time": "15:00:35", "src": "login23-g-1", "rtt_ms": {"localhost": null, "127.0.0.1": null}}, {"sample": 1, "time": "15:00:36", "src": "login23-g-1", "rtt_ms": {"localhost": null, "127.0.0.1": null}}]}

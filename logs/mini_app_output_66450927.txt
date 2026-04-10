@@ -1,0 +1,78 @@
+DB_HET_GROUP=1 Slurm raw vars: SLURM_GPUS_PER_NODE_HET_GROUP_1='', SLURM_GPUS_PER_TASK_HET_GROUP_1='', SLURM_TRES_PER_TASK_HET_GROUP_1='cpu=24', SLURM_NTASKS_PER_NODE_HET_GROUP_1='1', SLURM_GPUS_ON_NODE_HET_GROUP_1='' -> parsed: gpus_per_task=, gpus_per_node=1, gpus_on_node=5; computed GPUS_PER_NODE=1, DB_NODES=5, ML_INFERENCE_CPU_CORES=24; TOTAL_GPU_COUNT=5
+Configuring for GPU-based ML inference with 1 GPUs per node.
+Calculated MPI_RANKS=96 from _nodes=1, _ntasks_per_node=96, SLURM_NTASKS=96, and _solver_ntasks_var=
+Using preliminary job name: circle_r500_d100_s10_periodic_8640x4320_c23mm_1n_96t_c-5n___rank0_gather_none
+Calculated REDUCED_HEIGHT=540 to achieve 16:9 aspect ratio in final video with TARGET_WIDTH=8640 and TARGET_HEIGHT=4320
+Using CUSTOM_JOB_NAME_SUFFIX from environment variable: _1gpu_benchmark_giant_mlp_revamped_prepare
+Warning: OVERWRITE_JOB_NAME_ENV is set to 1 but neither JOB_NAME_ENV nor JOB_NAME_TEMPLATE_ENV is set. Using default naming scheme with template: circle_r${RADIUS}_d${INIT_DEPTH}_s${TOTAL_STEPS}_${SAVE_MODE}_${TARGET_WIDTH}x${TARGET_HEIGHT}_${_partition}_${_nodes}n_${_ntasks_per_node}t_${_cpus_per_task}c-${DB_NODES}n_${DB}__${IO_MODE}_${MPI_SYNC_MODE}${CUSTOM_JOB_NAME_SUFFIX}
+Overriding devices via argument: cuda-12
+
+=== Installing SmartSim for device: cuda-12 ===
+Including backend: torch
+Excluding torch backend for device cuda-12 to avoid CUDA 12.4 compatibility issues with PyTorch. We will install it separately using pip after the smartsim build.
+Including backend: onnxruntime
+Including backend: tensorflow
+SmartSim build command: smart build --device cuda-12 --skip-torch
+Install location: ./python/smartsim_cuda-12/
+Base directory for SmartSim installation: /hpcwork/ro092286/smartsim/
+Python virtual environment already exists at ./python/smartsim_cuda-12/
+Python virtual environment is already activated. (VIRTUAL_ENV=/rwthfs/rz/cluster/hpcwork/ro092286/smartsim/python/smartsim_cuda-12)
+smartsim is already installed in the virtual environment.
+Checking SmartSim build status...
+command succeeded
+SmartSim' redis is already built and available.
+SmartSim' has TensorFlow support.
+SmartSim is already fully built with all backends.
+Installation of the smartsim 'backend' complete. This includes the SmartRedis Python client. The Fortran/C/C++ clients can be built from source as needed.
+
+--- Installing SmartRedis C/C++ client ---
+SmartRedis directory already exists. Skipping clone.
+Already on the correct branch: develop
+Already at the correct commit: a5e235564f5d3912eec9541ea3ebce9dd42eccf7
+Current directory: /hpcwork/ro092286/smartsim
+OpenSSL/1.1
+CUDA/12.4.0
+GCCcore/11.3.0
+zlib/1.2.12
+binutils/2.38
+numactl/2.0.14
+XZ/5.2.5
+libxml2/2.9.13
+libpciaccess/0.16
+hwloc/2.7.1
+ncurses/6.3
+GMP/6.2.1
+Z3/4.10.2
+Clang/15.0.5
+GCC/11.3.0
+libevent/2.1.12
+UCX/1.12.1
+PMIx/4.1.2
+UCC/1.0.0
+OpenMPI/4.1.4
+FFTW/3.3.10
+FFTW.MPI/3.3.10
+Szip/2.1.1
+HDF5/1.12.2
+PnetCDF/1.12.3
+cuDNN/8.9.7.29-CUDA-12.4.0
+imkl/2024.2.0
+Warning: /hpcwork/thes2181/mini_app is not empty.
+Resolving model artifact from manifest train_models/model_a/artifact_manifest_benchmark_giant_mlp.json for model=benchmark_giant_mlp backend=TORCH
+Resolved MODEL_PATH=/rwthfs/rz/cluster/hpcwork/ro092286/smartsim/mini_app/train_models/model_a/best_model_jit_benchmark_giant_mlp.pt
+Resolved MODEL_INPUTS=x_water,x_terrain
+Resolved MODEL_OUTPUTS=y
+Staging model file to fast volatile storage. Source: /rwthfs/rz/cluster/hpcwork/ro092286/smartsim/mini_app/train_models/model_a/best_model_jit_benchmark_giant_mlp.pt
+Model cache root: /hpcwork/ro092286/smartsim/tmp
+MODEL_STAGE_PER_NODE label=solver het_group=0 host=n23m0368.hpc.itc.rwth-aachen.de duration_s=3 path=/hpcwork/ro092286/smartsim/tmp/mini_app_model_cache_66450927/best_model_jit_benchmark_giant_mlp.pt
+MODEL_STAGE_PER_NODE label=db het_group=1 host=n23g0007.hpc.itc.rwth-aachen.de duration_s=3 path=/hpcwork/ro092286/smartsim/tmp/mini_app_model_cache_66450927/best_model_jit_benchmark_giant_mlp.pt
+MODEL_STAGE_PER_NODE label=db het_group=1 host=n23g0003.hpc.itc.rwth-aachen.de duration_s=7 path=/hpcwork/ro092286/smartsim/tmp/mini_app_model_cache_66450927/best_model_jit_benchmark_giant_mlp.pt
+srun: First task exited 5s ago
+srun: StepId=66450928.1 tasks 0,2-3: running
+srun: StepId=66450928.1 tasks 1,4: exited
+srun: Terminating StepId=66450928.1
+[2026-04-05T22:12:20.387] error: *** STEP 66450928.1 ON n23g0001 CANCELLED AT 2026-04-05T22:12:20 DUE to SIGNAL Killed ***
+srun: Job step aborted: Waiting up to 92 seconds for job step to finish.
+srun: error: n23g0006: task 3: Killed
+srun: error: n23g0001: task 0: Killed
+srun: error: n23g0005: task 2: Killed

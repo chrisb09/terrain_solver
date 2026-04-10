@@ -1,0 +1,2 @@
+link,src,dst,samples,received,loss_pct,min_ms,avg_ms,p50_ms,p95_ms,max_ms
+login23-g-1->login23-g-1,login23-g-1,login23-g-1,2,2,0.000,0.000,0.000,0.000,0.000,0.000

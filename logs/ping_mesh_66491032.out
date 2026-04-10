@@ -1,0 +1,15 @@
+Ping mesh diagnostic
+  JobID: 66491032
+  Nodes: n23g0013,n23g0015,n23g0016,n23g0017,n23g0018,n23g0019,n23g0022,n23g0024
+  Samples: 180
+  Timeout(sec): 1
+  Raw dir: logs/ping_mesh_raw_66491032
+  Output CSV: logs/ping_mesh_66491032.csv
+  Stats CSV: logs/ping_mesh_66491032_stats.csv
+  P95 matrix CSV: logs/ping_mesh_66491032_p95_matrix.csv
+  Loss matrix CSV: logs/ping_mesh_66491032_loss_matrix.csv
+[2026-04-07T15:24:16.487] error: Can't propagate RLIMIT_NPROC of 2060228 from submit host: Invalid argument
+Done. CSV written to logs/ping_mesh_66491032.csv
+Stats written to logs/ping_mesh_66491032_stats.csv
+P95 matrix written to logs/ping_mesh_66491032_p95_matrix.csv
+Loss matrix written to logs/ping_mesh_66491032_loss_matrix.csv

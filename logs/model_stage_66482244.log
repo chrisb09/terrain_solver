@@ -1,0 +1,13 @@
+MODEL_STAGE_PER_NODE label=solver het_group=0 host=n23m0088.hpc.itc.rwth-aachen.de duration_s=1 path=/hpcwork/ro092286/smartsim/tmp/mini_app_model_cache_66482244/best_model_jit_benchmark_giant_mlp.pt
+Warning: Could not resolve explicit node list for het-group 1; falling back to single srun staging.
+MODEL_STAGE_PER_NODE label=db het_group=1 host=n23g0004.hpc.itc.rwth-aachen.de duration_s=2 path=/hpcwork/ro092286/smartsim/tmp/mini_app_model_cache_66482244/best_model_jit_benchmark_giant_mlp.pt
+MODEL_STAGE_PER_NODE label=db het_group=1 host=n23g0009.hpc.itc.rwth-aachen.de duration_s=3 path=/hpcwork/ro092286/smartsim/tmp/mini_app_model_cache_66482244/best_model_jit_benchmark_giant_mlp.pt
+srun: First task exited 5s ago
+srun: StepId=66482245.1 tasks 2-3: running
+srun: StepId=66482245.1 tasks 0-1: exited
+srun: Terminating StepId=66482245.1
+srun: Job step aborted: Waiting up to 92 seconds for job step to finish.
+srun: error: n23g0013: task 2: Killed
+srun: error: n23g0014: task 3: Killed
+Error: model staging failed for het-group 1 (db) with exit code 137
+Warning: local model staging failed on at least one node. Falling back to shared model path: /rwthfs/rz/cluster/hpcwork/ro092286/smartsim/mini_app/train_models/model_a/best_model_jit_benchmark_giant_mlp.pt
