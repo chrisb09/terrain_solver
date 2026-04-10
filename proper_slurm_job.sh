@@ -6,7 +6,7 @@
 ############################
 #SBATCH --job-name=terrain_solver_coupled
 #SBATCH --account=thes2181
-#SBATCH --time=00:20:00
+#SBATCH --time=01:30:00
 #SBATCH --exclusive
 #SBATCH --output=logs/mini_app_output_%j.txt
 
@@ -15,8 +15,8 @@
 ############################
 #SBATCH --partition=c23mm
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=48
-#SBATCH --cpus-per-task=2
+#SBATCH --ntasks-per-node=96
+#SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=5G
 
 #SBATCH hetjob
@@ -25,10 +25,10 @@
 # Component 1a: GPU (c23g)
 ############################
 #SBATCH --partition=c23g
-#SBATCH --nodes=1
+#SBATCH --nodes=4
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=24
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:4
 #SBATCH --mem-per-cpu=5G
 
 #############################
@@ -37,7 +37,7 @@
 ##SBATCH --partition=c23mm
 ##SBATCH --nodes=1
 ##SBATCH --ntasks-per-node=1
-##SBATCH --cpus-per-task=24
+##SBATCH --cpus-per-task=72
 ##SBATCH --mem-per-cpu=5G
 
 
@@ -49,6 +49,12 @@ DB_HOSTNAME_FILE="db_hostname_${SLURM_JOB_ID}.txt"
 SOLVER_STEP_LOG="logs/mini_app_output_${SLURM_JOB_ID}.txt"
 
 
+########## SmartSim Timout Envs ##########
+
+export SR_MODEL_TIMEOUT=300000
+export SR_CMD_TIMEOUT=300000
+export SR_SOCKET_TIMEOUT=300000
+
 ########## SmartSim/ML Parameters ##########
 
 USE_SMARTSIM=1
@@ -56,16 +62,39 @@ SOLVER_HET_GROUP=0
 DB_HET_GROUP=1
 
 #MODEL_PATH="train_models/model_a/real_function_jit.pt"
-MODEL_PATH="train_models/model_a/best_model_jit_transformer_mlp.pt"
+#MODEL_PATH="train_models/model_a/best_model_jit_transformer_mlp.pt"
 #MODEL_PATH="train_models/model_a/best_model_jit_watercnn.pt"
+MODEL_PATH="train_models/model_a/best_model_jit_benchmark_giant_mlp.pt"
 MODEL_BACKEND="TORCH"
-MODEL_ARTIFACT_MANIFEST="train_models/model_a/artifact_manifest_transformer_mlp.json"
+ML_BATCH_SIZE=50000
+MODEL_STAGE_MAX_RETRIES=2
+MODEL_STAGE_FALLBACK_TO_SHARED=1
+MODEL_STAGE_DB_GROUP=1
+DB_NODE_PREFLIGHT=1
+MODEL_ARTIFACT_MANIFEST="train_models/model_a/artifact_manifest_benchmark_giant_mlp.json"
+#MODEL_ARTIFACT_MANIFEST="train_models/model_a/artifact_manifest_perfect_model.json"
 MODEL_INPUTS=""
 MODEL_OUTPUTS=""
+MODEL_PATH_SOURCE=""
+MODEL_PATH_FOR_SOLVER=""
+USE_LOCAL_MODEL_CACHE=1 # if 1, we copy the model to /tmp on the component 1 nodes, to bypass the shared filesystem which is slow for model loading at high GPU/node counts, and set MODEL_PATH_FOR_SOLVER to the local path; if 0, we use the original MODEL_PATH_SOURCE which is on the shared filesystem and can be accessed by all nodes but may have slower load times at high GPU/node counts
+TORCH_CPU_MODEL_CONVERT=1 # if 1 and running CPU+TORCH, rewrite TorchScript model with map_location=cpu before staging/loading
+MODEL_STAGE_LOG=""
+MODEL_STAGE_DURATION_SOLVER=0
+MODEL_STAGE_DURATION_DB=0
+MODEL_STAGE_TOTAL_DURATION=0
+LOCAL_FAST_ROOT=""
+CONTROLLER_START_MAX_RETRIES=2
+SMARTSIM_RUNTIME_ROOT="/home/thes2181/python"
+USE_LOCAL_RUNTIME_STAGE=0
+RUNTIME_STAGE_MAX_RETRIES=2
+RUNTIME_STAGE_LOG=""
+RUNTIME_STAGE_DURATION=0
 
 #MODEL_NAME="perfect_model"
-MODEL_NAME="transformer_mlp"
+#MODEL_NAME="transformer_mlp"
 #MODEL_NAME="watercnn_a"
+MODEL_NAME="benchmark_giant_mlp"
 
 # Derive DB/ML settings from Slurm het-group component selected by DB_HET_GROUP.
 _db_nodes_var="SLURM_JOB_NUM_NODES_HET_GROUP_${DB_HET_GROUP}"
@@ -148,7 +177,13 @@ if [[ "${GPUS_PER_NODE}" != <-> ]] || [[ "${GPUS_PER_NODE}" -lt 0 ]]; then
   GPUS_PER_NODE=0
 fi
 
-echo "DB_HET_GROUP=${DB_HET_GROUP} Slurm raw vars: ${_db_gpus_per_node_var}='${(P)_db_gpus_per_node_var:-${SLURM_GPUS_PER_NODE:-}}', ${_db_gpus_per_task_var}='${(P)_db_gpus_per_task_var:-${SLURM_GPUS_PER_TASK:-}}', ${_db_tres_per_task_var}='${(P)_db_tres_per_task_var:-${SLURM_TRES_PER_TASK:-}}', ${_db_ntasks_per_node_var}='${(P)_db_ntasks_per_node_var:-${SLURM_NTASKS_PER_NODE:-}}', ${_db_gpus_on_node_var}='${(P)_db_gpus_on_node_var:-${SLURM_GPUS_ON_NODE:-}}' -> parsed: gpus_per_task=${_gpus_per_task_raw}, gpus_per_node=${_gpus_per_node_raw}, gpus_on_node=${_gpus_on_node_raw}; computed GPUS_PER_NODE=${GPUS_PER_NODE}, DB_NODES=${DB_NODES}, ML_INFERENCE_CPU_CORES=${ML_INFERENCE_CPU_CORES}"
+TOTAL_GPU_COUNT=0
+
+if (( GPUS_PER_NODE > 0 )); then
+  TOTAL_GPU_COUNT=$(( GPUS_PER_NODE * DB_NODES ))
+fi
+
+echo "DB_HET_GROUP=${DB_HET_GROUP} Slurm raw vars: ${_db_gpus_per_node_var}='${(P)_db_gpus_per_node_var:-${SLURM_GPUS_PER_NODE:-}}', ${_db_gpus_per_task_var}='${(P)_db_gpus_per_task_var:-${SLURM_GPUS_PER_TASK:-}}', ${_db_tres_per_task_var}='${(P)_db_tres_per_task_var:-${SLURM_TRES_PER_TASK:-}}', ${_db_ntasks_per_node_var}='${(P)_db_ntasks_per_node_var:-${SLURM_NTASKS_PER_NODE:-}}', ${_db_gpus_on_node_var}='${(P)_db_gpus_on_node_var:-${SLURM_GPUS_ON_NODE:-}}' -> parsed: gpus_per_task=${_gpus_per_task_raw}, gpus_per_node=${_gpus_per_node_raw}, gpus_on_node=${_gpus_on_node_raw}; computed GPUS_PER_NODE=${GPUS_PER_NODE}, DB_NODES=${DB_NODES}, ML_INFERENCE_CPU_CORES=${ML_INFERENCE_CPU_CORES}; TOTAL_GPU_COUNT=${TOTAL_GPU_COUNT}"
 
 USE_GPU=$(( GPUS_PER_NODE > 0 ? 1 : 0 ))
 
@@ -172,25 +207,25 @@ export OVERWRITE_JOB_NAME_ENV=1
 
 CUSTOM_JOB_NAME_SUFFIX="" # optional suffix to add to the job name for easier identification in job queues and output files, e.g. "_test" or "_render_only"
 
-job_name_template='circle_r${RADIUS}_d${INIT_DEPTH}_s${TOTAL_STEPS}_${SAVE_MODE}_${TARGET_WIDTH}x${TARGET_HEIGHT}_${_partition}_${_nodes}n_${_ntasks_per_node}t_${_cpus_per_task}c__${IO_MODE}_${MPI_SYNC_MODE}${CUSTOM_JOB_NAME_SUFFIX}'
+job_name_template='circle_r${RADIUS}_d${INIT_DEPTH}_s${TOTAL_STEPS}_${SAVE_MODE}_${TARGET_WIDTH}x${TARGET_HEIGHT}_${_partition}_${_nodes}n_${_ntasks_per_node}t_${_cpus_per_task}c-${DB_NODES}n_${DB}__${IO_MODE}_${MPI_SYNC_MODE}${CUSTOM_JOB_NAME_SUFFIX}'
 
 
 INIT_MODE="circle" # circle, square, uniform
 RADIUS=500 # radius for circle and square initial conditions
 INIT_DEPTH=100 # initial depth of water
 #TOTAL_STEPS=10000000
-TOTAL_STEPS=100
+TOTAL_STEPS=10
 #TOTAL_STEPS=10000
 SAVE_EVERY=1
-SAVE_MODE="periodic"        # periodic, triangular
-#SAVE_MODE="periodic"          # periodic, triangular
+#SAVE_MODE="triangular"        # periodic, triangular
+SAVE_MODE="periodic"          # periodic, triangular
 TRIANGULAR_SCALE=1          # scale factor for triangular save schedule (>=1, only used when SAVE_MODE=triangular)
 #TARGET_WIDTH=21600
 #TARGET_HEIGHT=10800
-#TARGET_WIDTH=8640
-#TARGET_HEIGHT=4320
-TARGET_WIDTH=2160
-TARGET_HEIGHT=1080
+TARGET_WIDTH=8640
+TARGET_HEIGHT=4320
+#TARGET_WIDTH=2160
+#TARGET_HEIGHT=1080
 #TARGET_WIDTH=216
 #TARGET_HEIGHT=108
 CHUNK_SIZE=60
@@ -239,6 +274,9 @@ OVERWRITE_OUTPUT=1          # 1 = pass --overwrite-output
 
 SKIP_COMPILE=0
 SKIP_RENDERING=0
+
+#VIDEO_FPS=60
+VIDEO_FPS=1
 #REDUCED_HEIGHT=135 # ensure that TARGET_WIDTH / (TARGET_HEIGHT + REDUCED_HEIGHT) is close to 16:9 aspect ratio for the combined video
 REDUCED_HEIGHT=$((TARGET_WIDTH * 9 / 16 - TARGET_HEIGHT)) # automatically calculate the reduced height needed to achieve 16:9 aspect ratio in the final video when combined with the original TARGET_HEIGHT, overrides the default of 135 if set
 echo "Calculated REDUCED_HEIGHT=${REDUCED_HEIGHT} to achieve 16:9 aspect ratio in final video with TARGET_WIDTH=${TARGET_WIDTH} and TARGET_HEIGHT=${TARGET_HEIGHT}"
@@ -353,6 +391,10 @@ if [[ -n "${FFMPEG_THREADS_ENV:-}" ]]; then
   FFMPEG_THREADS="${FFMPEG_THREADS_ENV}"
   echo "Using FFMPEG_THREADS from environment variable: ${FFMPEG_THREADS}"
 fi
+if [[ -n "${VIDEO_FPS_ENV:-}" ]]; then
+  VIDEO_FPS="${VIDEO_FPS_ENV}"
+  echo "Using VIDEO_FPS from environment variable: ${VIDEO_FPS}"
+fi
 if [[ -n "${RENDER_CPUS_ENV:-}" ]]; then
   RENDER_CPUS="${RENDER_CPUS_ENV}"
   echo "Using RENDER_CPUS from environment variable: ${RENDER_CPUS}"
@@ -364,6 +406,22 @@ fi
 if [[ -n "${HEIGHT_MIN_ENV:-}" ]]; then
   HEIGHT_MIN="${HEIGHT_MIN_ENV}"
   echo "Using HEIGHT_MIN from environment variable: ${HEIGHT_MIN}"
+fi
+if [[ -n "${USE_LOCAL_MODEL_CACHE_ENV:-}" ]]; then
+  USE_LOCAL_MODEL_CACHE="${USE_LOCAL_MODEL_CACHE_ENV}"
+  echo "Using USE_LOCAL_MODEL_CACHE from environment variable: ${USE_LOCAL_MODEL_CACHE}"
+fi
+if [[ -n "${TORCH_CPU_MODEL_CONVERT_ENV:-}" ]]; then
+  TORCH_CPU_MODEL_CONVERT="${TORCH_CPU_MODEL_CONVERT_ENV}"
+  echo "Using TORCH_CPU_MODEL_CONVERT from environment variable: ${TORCH_CPU_MODEL_CONVERT}"
+fi
+if [[ -n "${SMARTSIM_RUNTIME_ROOT_ENV:-}" ]]; then
+  SMARTSIM_RUNTIME_ROOT="${SMARTSIM_RUNTIME_ROOT_ENV}"
+  echo "Using SMARTSIM_RUNTIME_ROOT from environment variable: ${SMARTSIM_RUNTIME_ROOT}"
+fi
+if [[ -n "${USE_LOCAL_RUNTIME_STAGE_ENV:-}" ]]; then
+  USE_LOCAL_RUNTIME_STAGE="${USE_LOCAL_RUNTIME_STAGE_ENV}"
+  echo "Using USE_LOCAL_RUNTIME_STAGE from environment variable: ${USE_LOCAL_RUNTIME_STAGE}"
 fi
 
 if [[ -n "${OVERWRITE_JOB_NAME_ENV:-}" ]]; then
@@ -426,6 +484,8 @@ set -euo pipefail
 
 cd /hpcwork/ro092286/smartsim/ || exit
 
+export SMARTSIM_RUNTIME_ROOT
+
 if (( USE_GPU == 1 )); then
   source /hpcwork/ro092286/smartsim/install.sh cuda-12
 else
@@ -459,9 +519,11 @@ module -t list
 
 MINI_APP_DIR="/hpcwork/ro092286/smartsim/mini_app"
 if (( USE_GPU == 1 )); then
-  PY_ENV="/hpcwork/ro092286/smartsim/python/smartsim_cuda-12"
+  RUNTIME_DEVICE="smartsim_cuda-12"
+  PY_ENV="${SMARTSIM_RUNTIME_ROOT}/${RUNTIME_DEVICE}"
 else
-  PY_ENV="/hpcwork/ro092286/smartsim/python/smartsim_cpu"
+  RUNTIME_DEVICE="smartsim_cpu"
+  PY_ENV="${SMARTSIM_RUNTIME_ROOT}/${RUNTIME_DEVICE}"
 fi
 EXTERNAL_DIR="/hpcwork/thes2181/mini_app"
 #INPUT_IMAGE="${MINI_APP_DIR}/old/Srtm_ramp2.world.21600x10800.jpg"
@@ -486,12 +548,138 @@ else
 fi
 
 
+if [[ "${USE_SMARTSIM}" -eq 1 ]] && [[ "${USE_LOCAL_RUNTIME_STAGE}" -eq 1 ]]; then
+  RUNTIME_TAR_PATH="${SMARTSIM_RUNTIME_ROOT}/${RUNTIME_DEVICE}.tar"
+  LOCAL_RUNTIME_BASE="/tmp/${USER}/smartsim_runtime"
+  LOCAL_RUNTIME_TAR="/tmp/${USER}_${SLURM_JOB_ID}_${RUNTIME_DEVICE}.tar"
+  LOCAL_RUNTIME_ENV="${LOCAL_RUNTIME_BASE}/${RUNTIME_DEVICE}"
+  RUNTIME_STAGE_LOG="logs/runtime_stage_${SLURM_JOB_ID}.log"
+
+  if [[ ! -f "${RUNTIME_TAR_PATH}" ]]; then
+    echo "Error: Runtime tarball not found at ${RUNTIME_TAR_PATH}. Run install.sh first to create it."
+    exit 1
+  fi
+
+  mkdir -p logs
+  : > "${RUNTIME_STAGE_LOG}"
+
+  echo "Staging SmartSim runtime tar to local storage. Source: ${RUNTIME_TAR_PATH}"
+  runtime_stage_start=$(date +%s)
+
+  copy_runtime_tar_to_group() {
+    local het_group="$1"
+    local node_count="$2"
+    local label="$3"
+    local cp_rc
+
+    setopt pipefail
+    srun --export=ALL --het-group="${het_group}" --nodes "${node_count}" --ntasks-per-node 1 --cpus-per-task 1 \
+      $([[ "${node_count}" -gt 1 ]] && echo "--distribution=block") \
+      /bin/zsh -lc "set -euo pipefail; cp -f '${RUNTIME_TAR_PATH}' '${LOCAL_RUNTIME_TAR}'; test -s '${LOCAL_RUNTIME_TAR}'; echo RUNTIME_TAR_COPY_PER_NODE label=${label} het_group=${het_group} host=\$(hostname) tar='${LOCAL_RUNTIME_TAR}'" \
+      2>&1 | tee -a "${RUNTIME_STAGE_LOG}"
+    cp_rc=${pipestatus[1]}
+    unsetopt pipefail
+    return "${cp_rc}"
+  }
+
+  sbcast_ok=0
+  if command -v sbcast >/dev/null 2>&1; then
+    set +e
+    sbcast --force "${RUNTIME_TAR_PATH}" "${LOCAL_RUNTIME_TAR}" 2>&1 | tee -a "${RUNTIME_STAGE_LOG}"
+    sbcast_rc=${pipestatus[1]}
+    set -e
+    if [[ "${sbcast_rc}" -eq 0 ]]; then
+      sbcast_ok=1
+    else
+      echo "Warning: sbcast failed with rc=${sbcast_rc}; falling back to per-group srun copy." | tee -a "${RUNTIME_STAGE_LOG}"
+    fi
+  else
+    echo "Warning: sbcast not found; falling back to per-group srun copy." | tee -a "${RUNTIME_STAGE_LOG}"
+  fi
+
+  if [[ "${sbcast_ok}" -ne 1 ]]; then
+    if ! copy_runtime_tar_to_group "${SOLVER_HET_GROUP}" "${_nodes:-1}" "solver"; then
+      echo "Error: Runtime tar copy failed on solver group ${SOLVER_HET_GROUP}." | tee -a "${RUNTIME_STAGE_LOG}"
+      exit 1
+    fi
+    if [[ "${DB_HET_GROUP}" -ne "${SOLVER_HET_GROUP}" ]]; then
+      if ! copy_runtime_tar_to_group "${DB_HET_GROUP}" "${DB_NODES}" "db"; then
+        echo "Error: Runtime tar copy failed on db group ${DB_HET_GROUP}." | tee -a "${RUNTIME_STAGE_LOG}"
+        exit 1
+      fi
+    fi
+  fi
+
+  unpack_runtime_on_group() {
+    local het_group="$1"
+    local node_count="$2"
+    local label="$3"
+    local stage_rc
+
+    setopt pipefail
+    srun --export=ALL --het-group="${het_group}" --nodes "${node_count}" --ntasks-per-node 1 --cpus-per-task 1 \
+      $([[ "${node_count}" -gt 1 ]] && echo "--distribution=block") \
+      /bin/zsh -lc "set -euo pipefail; mkdir -p '${LOCAL_RUNTIME_BASE}'; tar -xf '${LOCAL_RUNTIME_TAR}' -C '${LOCAL_RUNTIME_BASE}'; test -x '${LOCAL_RUNTIME_ENV}/bin/python3'; echo RUNTIME_STAGE_PER_NODE label=${label} het_group=${het_group} host=\$(hostname) runtime='${LOCAL_RUNTIME_ENV}'" \
+      2>&1 | tee -a "${RUNTIME_STAGE_LOG}"
+    stage_rc=${pipestatus[1]}
+    unsetopt pipefail
+    return "${stage_rc}"
+  }
+
+  if ! unpack_runtime_on_group "${SOLVER_HET_GROUP}" "${_nodes:-1}" "solver"; then
+    echo "Error: Runtime staging/unpack failed on solver group ${SOLVER_HET_GROUP}." | tee -a "${RUNTIME_STAGE_LOG}"
+    exit 1
+  fi
+
+  if [[ "${DB_HET_GROUP}" -ne "${SOLVER_HET_GROUP}" ]]; then
+    if ! unpack_runtime_on_group "${DB_HET_GROUP}" "${DB_NODES}" "db"; then
+      echo "Error: Runtime staging/unpack failed on db group ${DB_HET_GROUP}." | tee -a "${RUNTIME_STAGE_LOG}"
+      exit 1
+    fi
+  fi
+
+  runtime_stage_end=$(date +%s)
+  RUNTIME_STAGE_DURATION=$((runtime_stage_end - runtime_stage_start))
+  echo "Runtime staged to local path ${LOCAL_RUNTIME_ENV}; duration: ${RUNTIME_STAGE_DURATION}s"
+
+  PY_ENV="${LOCAL_RUNTIME_ENV}"
+fi
+
 if [[ -f "${PY_ENV}/bin/activate" ]]; then
   # shellcheck disable=SC1090
   source "${PY_ENV}/bin/activate" || { echo "Failed to activate Python environment at ${PY_ENV}"; exit 1; }
 else
   echo "Python environment not found at ${PY_ENV}"
   exit 1
+fi
+
+RUNTIME_EXTRA_LIB_DIR="${PY_ENV}/runtime_libs"
+if [[ -d "${RUNTIME_EXTRA_LIB_DIR}" ]]; then
+  export LD_LIBRARY_PATH="${RUNTIME_EXTRA_LIB_DIR}:${LD_LIBRARY_PATH:-}"
+  echo "Using runtime extra libs from ${RUNTIME_EXTRA_LIB_DIR}"
+else
+  echo "Warning: runtime extra lib directory not found: ${RUNTIME_EXTRA_LIB_DIR}"
+fi
+
+if [[ "${USE_SMARTSIM}" -eq 1 ]]; then
+  _backend_req="${MODEL_BACKEND:u}"
+  _smart_info_out="$(smart info 2>/dev/null || true)"
+  if [[ "${_backend_req}" == "TORCH" ]]; then
+    if ! echo "${_smart_info_out}" | grep -Eiq "Torch.*True"; then
+      echo "Error: SmartSim runtime at ${PY_ENV} does not report Torch backend support in 'smart info'."
+      echo "Refusing to run with MODEL_BACKEND=${MODEL_BACKEND} to avoid runtime RedisAI backend-load failure."
+      exit 1
+    fi
+  elif [[ "${_backend_req}" == "ONNX" || "${_backend_req}" == "ONNXRUNTIME" ]]; then
+    if ! echo "${_smart_info_out}" | grep -Eiq "ONNX.*True|ONNXRuntime.*True"; then
+      echo "Warning: Could not confirm ONNX backend support from 'smart info' output at ${PY_ENV}."
+    fi
+  elif [[ "${_backend_req}" == "TF" || "${_backend_req}" == "TENSORFLOW" || "${_backend_req}" == "TFLITE" ]]; then
+    if ! echo "${_smart_info_out}" | grep -Eiq "Tensorflow.*True"; then
+      echo "Error: SmartSim runtime at ${PY_ENV} does not report Tensorflow backend support in 'smart info'."
+      exit 1
+    fi
+  fi
 fi
 
 cd "${MINI_APP_DIR}" || exit
@@ -532,6 +720,216 @@ PY
   if [[ -n "${MODEL_OUTPUTS}" ]]; then
     echo "Resolved MODEL_OUTPUTS=${MODEL_OUTPUTS}"
   fi
+fi
+
+if [[ "${MODEL_PATH}" = /* ]]; then
+  MODEL_PATH_SOURCE="${MODEL_PATH}"
+else
+  MODEL_PATH_SOURCE="${MINI_APP_DIR}/${MODEL_PATH}"
+fi
+if [[ ! -f "${MODEL_PATH_SOURCE}" ]]; then
+  echo "Error: Model file not found at ${MODEL_PATH_SOURCE}"
+  exit 1
+fi
+
+if [[ "${USE_GPU}" -eq 0 ]] && [[ "${MODEL_BACKEND:u}" == "TORCH" ]] && [[ "${TORCH_CPU_MODEL_CONVERT}" -eq 1 ]]; then
+  MODEL_CPU_CONVERT_DIR="/tmp/${USER}/model_cpu_converted_${SLURM_JOB_ID}"
+  MODEL_CPU_CONVERT_PATH="${MODEL_CPU_CONVERT_DIR}/$(basename "${MODEL_PATH_SOURCE%.*}")_cpu.pt"
+  mkdir -p "${MODEL_CPU_CONVERT_DIR}"
+  echo "Converting Torch model to CPU-compatible artifact: ${MODEL_PATH_SOURCE} -> ${MODEL_CPU_CONVERT_PATH}"
+  if ! python3 - "${MODEL_PATH_SOURCE}" "${MODEL_CPU_CONVERT_PATH}" <<'PY'
+import sys
+import torch
+
+src = sys.argv[1]
+dst = sys.argv[2]
+
+model = torch.jit.load(src, map_location="cpu")
+model = model.eval()
+torch.jit.save(model, dst)
+print(f"MODEL_CPU_CONVERT_OK src={src} dst={dst}")
+PY
+  then
+    echo "Error: CPU conversion failed for Torch model at ${MODEL_PATH_SOURCE}."
+    exit 1
+  fi
+  MODEL_PATH_SOURCE="${MODEL_CPU_CONVERT_PATH}"
+fi
+
+MODEL_PATH_FOR_SOLVER="${MODEL_PATH_SOURCE}"
+MODEL_STAGE_LOG="logs/model_stage_${SLURM_JOB_ID}.log"
+
+if [[ "${USE_LOCAL_MODEL_CACHE}" -eq 1 ]]; then
+  LOCAL_FAST_ROOT="/tmp/${USER}/model"
+  fs_type="$(stat -f -c %T "/tmp" 2>/dev/null || true)"
+  MODEL_LOCAL_DIR="${LOCAL_FAST_ROOT}"
+  MODEL_LOCAL_PATH="${MODEL_LOCAL_DIR}/$(basename "${MODEL_PATH_SOURCE}")"
+  MODEL_PATH_FOR_SOLVER="${MODEL_LOCAL_PATH}"
+
+  mkdir -p logs
+  : > "${MODEL_STAGE_LOG}"
+
+  echo "Staging model file to fast volatile storage. Source: ${MODEL_PATH_SOURCE}"
+  echo "Model cache root (fixed local path): ${LOCAL_FAST_ROOT} (fs_type=${fs_type:-unknown})"
+
+  get_nodes_for_het_group() {
+    local het_group="$1"
+    local nodelist_var="SLURM_NODELIST_HET_GROUP_${het_group}"
+    local raw_nodelist=""
+    local component_job_id="${SLURM_JOB_ID}+${het_group}"
+    local component_job_info=""
+
+    if command -v scontrol >/dev/null 2>&1; then
+      component_job_info="$(scontrol show job "${component_job_id}" 2>/dev/null || true)"
+      if [[ -n "${component_job_info}" ]] && [[ "${component_job_info}" =~ 'NodeList=([^[:space:]]+)' ]]; then
+        raw_nodelist="${match[1]}"
+      fi
+    fi
+
+    if [[ "${raw_nodelist:l}" == "(null)" || "${raw_nodelist:l}" == "null" || "${raw_nodelist:l}" == "none" || "${raw_nodelist:l}" == "n/a" ]]; then
+      raw_nodelist=""
+    fi
+
+    if [[ -z "${raw_nodelist}" ]]; then
+      raw_nodelist="${(P)nodelist_var:-}"
+    fi
+
+    if [[ "${raw_nodelist:l}" == "(null)" || "${raw_nodelist:l}" == "null" || "${raw_nodelist:l}" == "none" || "${raw_nodelist:l}" == "n/a" ]]; then
+      raw_nodelist=""
+    fi
+
+    if [[ -z "${raw_nodelist}" ]]; then
+      if [[ "${het_group}" -eq "${SOLVER_HET_GROUP}" ]]; then
+        raw_nodelist="${SLURM_JOB_NODELIST:-}"
+      else
+        return 1
+      fi
+    fi
+
+    if [[ -z "${raw_nodelist}" ]]; then
+      return 1
+    fi
+
+    scontrol show hostnames "${raw_nodelist}" 2>/dev/null
+  }
+
+  stage_model_to_group() {
+    local het_group="$1"
+    local node_count="$2"
+    local label="$3"
+    local stage_start stage_end
+    local rc=0
+    local total_failed=0
+    local node
+    local attempt
+    local node_ok
+    local stage_rc
+
+    local -a group_nodes
+    local nodes_out
+    nodes_out="$(get_nodes_for_het_group "${het_group}" || true)"
+    if [[ -n "${nodes_out}" ]]; then
+      group_nodes=("${(@f)nodes_out}")
+    fi
+
+    if [[ "${#group_nodes[@]}" -eq 0 ]]; then
+      echo "Warning: Could not resolve explicit node list for het-group ${het_group}; falling back to single srun staging." | tee -a "${MODEL_STAGE_LOG}"
+      setopt pipefail
+      srun --export=ALL --het-group="${het_group}" --nodes "${node_count}" --ntasks-per-node 1 --cpus-per-task 1 \
+        $([[ "${node_count}" -gt 1 ]] && echo "--distribution=block") \
+        /bin/zsh -lc "set -euo pipefail; _t0=\$(date +%s); mkdir -p \"${MODEL_LOCAL_DIR}\"; cp -f \"${MODEL_PATH_SOURCE}\" \"${MODEL_LOCAL_PATH}\"; test -s \"${MODEL_LOCAL_PATH}\"; _t1=\$(date +%s); echo MODEL_STAGE_PER_NODE label=${label} het_group=${het_group} host=\$(hostname) duration_s=\$((_t1-_t0)) path=${MODEL_LOCAL_PATH}" \
+        2>&1 | tee -a "${MODEL_STAGE_LOG}"
+      stage_rc=${pipestatus[1]}
+      unsetopt pipefail
+      if [[ "${stage_rc}" -ne 0 ]]; then
+        echo "Error: model staging failed for het-group ${het_group} (${label}) with exit code ${stage_rc}" | tee -a "${MODEL_STAGE_LOG}"
+        return "${stage_rc}"
+      fi
+      stage_start=$(date +%s)
+      stage_end=$(date +%s)
+    else
+      stage_start=$(date +%s)
+      for node in "${group_nodes[@]}"; do
+        node_ok=0
+        for attempt in {1..${MODEL_STAGE_MAX_RETRIES}}; do
+          set +e
+          srun --export=ALL --het-group="${het_group}" --nodes 1 --ntasks 1 --cpus-per-task 1 --nodelist "${node}" \
+            /bin/zsh -lc "set -euo pipefail; _t0=\$(date +%s); mkdir -p \"${MODEL_LOCAL_DIR}\"; cp -f \"${MODEL_PATH_SOURCE}\" \"${MODEL_LOCAL_PATH}\"; test -s \"${MODEL_LOCAL_PATH}\"; _t1=\$(date +%s); echo MODEL_STAGE_PER_NODE label=${label} het_group=${het_group} host=\$(hostname) duration_s=\$((_t1-_t0)) path=${MODEL_LOCAL_PATH}" \
+            >> "${MODEL_STAGE_LOG}" 2>&1
+          stage_rc=$?
+          set -e
+
+          if [[ "${stage_rc}" -eq 0 ]]; then
+            node_ok=1
+            break
+          fi
+
+          echo "MODEL_STAGE_ERROR label=${label} het_group=${het_group} host=${node} attempt=${attempt}/${MODEL_STAGE_MAX_RETRIES} rc=${stage_rc}" | tee -a "${MODEL_STAGE_LOG}"
+
+          set +e
+          srun --export=ALL --het-group="${het_group}" --nodes 1 --ntasks 1 --cpus-per-task 1 --nodelist "${node}" \
+            /bin/zsh -lc "set +e; echo MODEL_STAGE_DIAG host=\$(hostname); echo MODEL_STAGE_DIAG pwd=\$(pwd); ls -ld \"${LOCAL_FAST_ROOT}\" \"${MODEL_LOCAL_DIR}\" 2>/dev/null || true; df -h \"${LOCAL_FAST_ROOT}\" 2>/dev/null || true; df -i \"${LOCAL_FAST_ROOT}\" 2>/dev/null || true; test -r \"${MODEL_PATH_SOURCE}\" && echo MODEL_STAGE_DIAG model_source_readable=1 || echo MODEL_STAGE_DIAG model_source_readable=0" \
+            >> "${MODEL_STAGE_LOG}" 2>&1
+          set -e
+          sleep 2
+        done
+
+        if [[ "${node_ok}" -ne 1 ]]; then
+          total_failed=$((total_failed + 1))
+          rc=1
+        fi
+      done
+      stage_end=$(date +%s)
+    fi
+
+    if [[ "${rc}" -ne 0 ]]; then
+      echo "Error: model staging failed for het-group ${het_group} (${label}); failed_nodes=${total_failed}" | tee -a "${MODEL_STAGE_LOG}"
+      return 1
+    fi
+
+    if [[ "${label}" == "solver" ]]; then
+      MODEL_STAGE_DURATION_SOLVER=$((stage_end - stage_start))
+    elif [[ "${label}" == "db" ]]; then
+      MODEL_STAGE_DURATION_DB=$((stage_end - stage_start))
+    fi
+
+    return 0
+  }
+
+  local_cache_ok=1
+  if ! stage_model_to_group "${SOLVER_HET_GROUP}" "${_nodes:-1}" "solver"; then
+    local_cache_ok=0
+  fi
+
+  if [[ "${local_cache_ok}" -eq 1 ]] && [[ "${MODEL_STAGE_DB_GROUP}" -eq 1 ]] && [[ "${DB_HET_GROUP}" -ne "${SOLVER_HET_GROUP}" ]]; then
+    if ! stage_model_to_group "${DB_HET_GROUP}" "${DB_NODES}" "db"; then
+      local_cache_ok=0
+    fi
+  fi
+
+  if [[ "${local_cache_ok}" -eq 0 ]]; then
+    if [[ "${MODEL_STAGE_FALLBACK_TO_SHARED}" -eq 1 ]]; then
+      echo "Warning: local model staging failed on at least one node. Falling back to shared model path: ${MODEL_PATH_SOURCE}" | tee -a "${MODEL_STAGE_LOG}"
+      MODEL_PATH_FOR_SOLVER="${MODEL_PATH_SOURCE}"
+      MODEL_LOCAL_DIR=""
+      MODEL_LOCAL_PATH=""
+      MODEL_STAGE_DURATION_SOLVER=0
+      MODEL_STAGE_DURATION_DB=0
+      MODEL_STAGE_TOTAL_DURATION=0
+    else
+      echo "Error: local model staging failed and fallback is disabled (MODEL_STAGE_FALLBACK_TO_SHARED=0)." | tee -a "${MODEL_STAGE_LOG}"
+      exit 1
+    fi
+  else
+    MODEL_STAGE_TOTAL_DURATION=$((MODEL_STAGE_DURATION_SOLVER + MODEL_STAGE_DURATION_DB))
+    if [[ "${MODEL_STAGE_DB_GROUP}" -eq 1 ]] && [[ "${DB_HET_GROUP}" -ne "${SOLVER_HET_GROUP}" ]]; then
+      echo "Model staged on het-groups ${SOLVER_HET_GROUP} and ${DB_HET_GROUP}; total staging time: ${MODEL_STAGE_TOTAL_DURATION}s"
+    else
+      echo "Model staged on solver het-group ${SOLVER_HET_GROUP}; total staging time: ${MODEL_STAGE_TOTAL_DURATION}s"
+    fi
+  fi
+else
+  echo "USE_LOCAL_MODEL_CACHE=${USE_LOCAL_MODEL_CACHE}; using shared filesystem model path: ${MODEL_PATH_SOURCE}"
 fi
 
 CREATE_NEW_H5=1
@@ -673,33 +1071,81 @@ if [[ "${RUN_SOLVER}" -eq 1 ]]; then
   DB_HOSTNAME="127.0.0.1:6379"
 
   if [[ "${USE_SMARTSIM}" -eq 1 ]]; then
+    if [[ "${DB_NODE_PREFLIGHT}" -eq 1 ]]; then
+      echo "Running DB node preflight checks (ib0, port 6780, local write)..."
+      DB_PREFLIGHT_LOG="logs/db_preflight_${SLURM_JOB_ID}.log"
+      mkdir -p logs
+      : > "${DB_PREFLIGHT_LOG}"
+      set +e
+      srun --export=ALL --het-group="${DB_HET_GROUP}" --nodes "${DB_NODES}" --ntasks-per-node 1 --cpus-per-task 1 \
+        $([[ "${DB_NODES}" -gt 1 ]] && echo "--distribution=block") \
+        /bin/zsh -lc 'set +e; _host=$(hostname); _ib=$(ip -o -4 addr show ib0 2>/dev/null | awk "{print \$4}" | head -n1); if [[ -z "${_ib}" ]]; then _ib="missing"; fi; echo "DB_PREFLIGHT host=${_host} ib0=${_ib}"; python3 -c "import socket; s=socket.socket(); s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1); s.bind((\"0.0.0.0\", 6780)); s.close(); print(\"DB_PREFLIGHT port_bind_6780=ok\")" 2>/dev/null || echo "DB_PREFLIGHT port_bind_6780=fail"; _root="${LOCAL_FAST_ROOT:-/tmp}"; _probe="${_root%/}/.db_preflight_${SLURM_JOB_ID}_$$"; mkdir -p "${_probe}" 2>/dev/null && echo "DB_PREFLIGHT fs_write=ok root=${_root}" && rmdir "${_probe}" 2>/dev/null || echo "DB_PREFLIGHT fs_write=fail root=${_root}"' \
+        2>&1 | tee -a "${DB_PREFLIGHT_LOG}"
+      db_preflight_rc=$?
+      set -e
+      if [[ "${db_preflight_rc}" -ne 0 ]]; then
+        echo "Warning: DB preflight step returned non-zero (${db_preflight_rc}). Continuing; see ${DB_PREFLIGHT_LOG}."
+      fi
+    fi
+
     echo "Starting SmartSim controller in the background..."
 
     # SmartRedis defaults to clustered mode unless SR_DB_TYPE is set.
     # Our mini_app launches a single non-cluster Redis instance.
-    export SR_DB_TYPE="Standalone"
+    
+    # Let's check if the het-group 1 node count is larger than 1, in which case we should use "Clustered" mode, otherwise we can use "Standalone" mode which is more lightweight and doesn't require the controller to manage cluster topology.
+    if [[ "${DB_NODES}" -gt 1 ]]; then
+      echo "DB_NODES=${DB_NODES} > 1, using SmartSim Clustered mode"
+      export SR_DB_TYPE="Clustered"
+    else
+      echo "DB_NODES=${DB_NODES} <= 1, using SmartSim Standalone mode"
+      export SR_DB_TYPE="Standalone"
+    fi
   
     # pipe the output of the SmartSim controller to a log file for debugging
-    python_path=""
-    if [[ $USE_GPU -eq 1 ]]; then
-      python_path="/hpcwork/ro092286/smartsim/python/smartsim_cuda-12/bin/python3"
-    else
-      python_path="/hpcwork/ro092286/smartsim/python/smartsim_cpu/bin/python3"
-    fi
+    python_path="${PY_ENV}/bin/python3"
     echo "Using Python interpreter at ${python_path} for SmartSim controller"
-    ${python_path} smartsim_controller.py --db_nodes "${DB_NODES}" --het_group="${DB_HET_GROUP}" --hostname_file="${DB_HOSTNAME_FILE}" $([ "${USE_GPU}" -eq 1 ] && echo "--use_gpu") --cpu_cores_per_node="${ML_INFERENCE_CPU_CORES}" > "logs/mini_app_driver_${SLURM_JOB_ID}.txt" 2>&1 &
-    DRIVER_PID=$!
     max_wait_time=300 # seconds
-    echo "Wait until database hostname file ${DB_HOSTNAME_FILE} is created by the SmartSim controller...(at most ${max_wait_time} seconds)"
-    wait_time=0
-    while [[ ! -f "${DB_HOSTNAME_FILE}" ]]; do
-      sleep 1
-      wait_time=$((wait_time + 1))
-      if [[ ${wait_time} -ge ${max_wait_time} ]]; then
-        echo "ERROR: Timeout waiting for database hostname file ${DB_HOSTNAME_FILE}"
-        exit 1
+    driver_log="logs/mini_app_driver_${SLURM_JOB_ID}.txt"
+    controller_started=0
+    controller_attempt=1
+    while [[ "${controller_attempt}" -le "${CONTROLLER_START_MAX_RETRIES}" ]]; do
+      rm -f "${DB_HOSTNAME_FILE}"
+      echo "=== CONTROLLER_ATTEMPT ${controller_attempt}/${CONTROLLER_START_MAX_RETRIES} ===" >> "${driver_log}"
+      ${python_path} smartsim_controller.py --db_nodes "${DB_NODES}" --het_group="${DB_HET_GROUP}" --hostname_file="${DB_HOSTNAME_FILE}" $([ "${USE_GPU}" -eq 1 ] && echo "--use_gpu") --cpu_cores_per_node="${ML_INFERENCE_CPU_CORES}" >> "${driver_log}" 2>&1 &
+      DRIVER_PID=$!
+      echo "Wait until database hostname file ${DB_HOSTNAME_FILE} is created by the SmartSim controller...(attempt ${controller_attempt}/${CONTROLLER_START_MAX_RETRIES}, at most ${max_wait_time}s)"
+      wait_time=0
+      while [[ ! -f "${DB_HOSTNAME_FILE}" ]]; do
+        if ! ps -p "${DRIVER_PID}" > /dev/null 2>&1; then
+          echo "Warning: SmartSim controller exited before writing ${DB_HOSTNAME_FILE} (attempt ${controller_attempt}/${CONTROLLER_START_MAX_RETRIES})."
+          break
+        fi
+        sleep 1
+        wait_time=$((wait_time + 1))
+        if [[ ${wait_time} -ge ${max_wait_time} ]]; then
+          echo "Warning: Timeout waiting for ${DB_HOSTNAME_FILE} (attempt ${controller_attempt}/${CONTROLLER_START_MAX_RETRIES})."
+          if ps -p "${DRIVER_PID}" > /dev/null 2>&1; then
+            kill "${DRIVER_PID}" 2>/dev/null || true
+          fi
+          break
+        fi
+      done
+
+      if [[ -f "${DB_HOSTNAME_FILE}" ]]; then
+        controller_started=1
+        break
       fi
+
+      controller_attempt=$((controller_attempt + 1))
+      sleep 2
     done
+
+    if [[ "${controller_started}" -ne 1 ]]; then
+      echo "ERROR: SmartSim controller failed to provide ${DB_HOSTNAME_FILE} after ${CONTROLLER_START_MAX_RETRIES} attempts. See ${driver_log}."
+      exit 1
+    fi
+
     DB_HOSTNAME=$(cat "${DB_HOSTNAME_FILE}")
     echo "Database hostname obtained from SmartSim controller: ${DB_HOSTNAME}"
     rm "${DB_HOSTNAME_FILE}"
@@ -740,13 +1186,15 @@ if [[ "${RUN_SOLVER}" -eq 1 ]]; then
   if (( USE_GPU == 1 )); then
     device="GPU"
   fi
-  SSDB="${DB_HOSTNAME}" srun --het-group="${SOLVER_HET_GROUP}" --ntasks-per-node "${_ntasks_per_node_num}" \
+
+  SSDB="${DB_HOSTNAME}" srun --export=ALL --het-group="${SOLVER_HET_GROUP}" --ntasks-per-node "${_ntasks_per_node_num}" \
     --cpus-per-task 1 \
     ${SRUN_DIST} \
     ./solver_cpp/build/terrain_solver \
     --device "${device}" \
     --gpus-per-node "${GPUS_PER_NODE}" \
-    --model-path "${MODEL_PATH}" \
+    --ml-batch-size "${ML_BATCH_SIZE}" \
+    --model-path "${MODEL_PATH_FOR_SOLVER}" \
     --model-backend "${MODEL_BACKEND}" \
     "${MODEL_IO_ARGS[@]}" \
     --input-hdf5 "${PREP_H5}" \
@@ -785,6 +1233,9 @@ if [[ "${USE_SMARTSIM}" -eq 1 ]]; then
   echo "Done" > "close_driver_${SLURM_JOB_ID}.txt"
   echo "Waiting 10s before killing driver to allow for graceful shutdown..."
   sleep 10
+  if [[ -z "${DRIVER_PID:-}" ]]; then
+    echo "SmartSim controller PID is not set (controller may not have started in this run). Skipping controller termination."
+  else
   # check if process is still running before attempting to kill
   if ps -p "${DRIVER_PID}" > /dev/null 2>&1; then
     echo "Driver process with PID ${DRIVER_PID} is still running, attempting to terminate..."
@@ -796,6 +1247,7 @@ if [[ "${USE_SMARTSIM}" -eq 1 ]]; then
     fi
   else
   echo "Driver process with PID ${DRIVER_PID} has already exited."
+  fi
   fi
 fi
 
@@ -901,7 +1353,7 @@ else
   TOP_VIEW_VIDEO_START_TIME=$(date +%s)
 
   ffmpeg \
-    -framerate 60 \
+    -framerate ${VIDEO_FPS} \
     -pattern_type glob \
     -i 'rendered_frames/frame_*.png' \
     -c:v libx265 \
@@ -917,7 +1369,7 @@ else
   SLICE_FULL_HEIGHT_VIDEO_START_TIME=$(date +%s)
 
   ffmpeg \
-    -framerate 60 \
+    -framerate ${VIDEO_FPS} \
     -pattern_type glob \
     -i 'rendered_slices/frame_*.png' \
     -c:v libx265 \
@@ -946,7 +1398,7 @@ else
     --top-pattern "${EXTERNAL_DIR}/${JOB_NAME}/rendered_frames/frame_*.png" \
     --slice-pattern "${EXTERNAL_DIR}/${JOB_NAME}/rendered_slices/frame_*.png" \
     --output "${EXTERNAL_DIR}/${JOB_NAME}/dual_1x1.mp4" \
-    --fps 60 \
+    --fps ${VIDEO_FPS} \
     --threads ${FFMPEG_THREADS}
 
   COMBINED_VIDEO_1_1_END_TIME=$(date +%s)
@@ -963,7 +1415,7 @@ else
     --width ${TARGET_WIDTH} \
     --top-height ${TARGET_HEIGHT} \
     --bottom-height ${REDUCED_HEIGHT} \
-    --fps 60 \
+    --fps ${VIDEO_FPS} \
     --threads ${FFMPEG_THREADS}
 
   COMBINED_VIDEO_16_9_END_TIME=$(date +%s)
@@ -1026,7 +1478,26 @@ TIMING_FILE="${EXTERNAL_DIR}/${JOB_NAME}/timing_and_parameters.txt"
   echo "RENDER_CPUS: ${RENDER_CPUS}"
   echo "REDUCED_HEIGHT: ${REDUCED_HEIGHT}"
   echo "HEIGHT_MIN: ${HEIGHT_MIN}"
+  echo "USE_LOCAL_MODEL_CACHE: ${USE_LOCAL_MODEL_CACHE}"
+  echo "SMARTSIM_RUNTIME_ROOT: ${SMARTSIM_RUNTIME_ROOT}"
+  echo "USE_LOCAL_RUNTIME_STAGE: ${USE_LOCAL_RUNTIME_STAGE}"
+  echo "RUNTIME_STAGE_LOG: ${RUNTIME_STAGE_LOG:-N/A}"
+  echo "RUNTIME_STAGE_DURATION: ${RUNTIME_STAGE_DURATION}"
+  echo "LOCAL_FAST_ROOT: ${LOCAL_FAST_ROOT:-N/A}"
+  echo "MODEL_STAGE_LOG: ${MODEL_STAGE_LOG:-N/A}"
+  echo "MODEL_STAGE_DURATION_SOLVER: ${MODEL_STAGE_DURATION_SOLVER}"
+  echo "MODEL_STAGE_DURATION_DB: ${MODEL_STAGE_DURATION_DB}"
+  echo "MODEL_STAGE_DURATION_TOTAL: ${MODEL_STAGE_TOTAL_DURATION}"
+  echo "MODEL_PATH_SOURCE: ${MODEL_PATH_SOURCE}"
+  echo "MODEL_PATH_FOR_SOLVER: ${MODEL_PATH_FOR_SOLVER}"
   echo "SOLVER_STEP_LOG: ${SOLVER_STEP_LOG}"
+  echo ""
+  echo "Model staging per-node log:"
+  if [[ -f "${MODEL_STAGE_LOG}" ]]; then
+    grep "^MODEL_STAGE_PER_NODE" "${MODEL_STAGE_LOG}" || echo "  No per-node staging lines found in ${MODEL_STAGE_LOG}"
+  else
+    echo "  Staging log not found: ${MODEL_STAGE_LOG}"
+  fi
   echo ""
   echo "Solver step statistics (parsed from solver log):"
   if [[ -f "${SOLVER_STEP_LOG}" ]]; then
@@ -1124,6 +1595,10 @@ PY
   fi
   echo ""
   echo "Timings (seconds):"
+  echo "Runtime staging total: ${RUNTIME_STAGE_DURATION}"
+  echo "Model staging total: ${MODEL_STAGE_TOTAL_DURATION}"
+  echo "Model staging solver-group: ${MODEL_STAGE_DURATION_SOLVER}"
+  echo "Model staging db-group: ${MODEL_STAGE_DURATION_DB}"
   echo "Preparation: ${PREP_DURATION}"
   echo "Compilation: ${COMPILE_DURATION}"
   echo "Solving: ${SOLVE_DURATION}"
@@ -1134,7 +1609,7 @@ PY
   echo "Slice full height video: ${SLICE_FULL_HEIGHT_VIDEO_DURATION}"
   echo "Combined video 1:1: ${COMBINED_VIDEO_1_1_DURATION}"
   echo "Combined video 16:9: ${COMBINED_VIDEO_16_9_DURATION}"
-  echo "Total: $((PREP_DURATION + COMPILE_DURATION + SOLVE_DURATION + RENDER_TOP_VIEW_DURATION + RENDER_SLICE_FULL_HEIGHT_DURATION + RENDER_SLICE_REDUCED_HEIGHT_DURATION + TOP_VIEW_VIDEO_DURATION + SLICE_FULL_HEIGHT_VIDEO_DURATION + COMBINED_VIDEO_1_1_DURATION + COMBINED_VIDEO_16_9_DURATION))"
+  echo "Total: $((RUNTIME_STAGE_DURATION + MODEL_STAGE_TOTAL_DURATION + PREP_DURATION + COMPILE_DURATION + SOLVE_DURATION + RENDER_TOP_VIEW_DURATION + RENDER_SLICE_FULL_HEIGHT_DURATION + RENDER_SLICE_REDUCED_HEIGHT_DURATION + TOP_VIEW_VIDEO_DURATION + SLICE_FULL_HEIGHT_VIDEO_DURATION + COMBINED_VIDEO_1_1_DURATION + COMBINED_VIDEO_16_9_DURATION))"
 } > "${TIMING_FILE}"
 
 echo "Timing and parameters saved to: ${TIMING_FILE}"
@@ -1143,6 +1618,10 @@ echo "Timing and parameters saved to: ${TIMING_FILE}"
 echo ""
 echo "================================"
 
+echo "Runtime staging time: ${RUNTIME_STAGE_DURATION} seconds"
+echo "Model staging total time: ${MODEL_STAGE_TOTAL_DURATION} seconds"
+echo "Model staging solver-group time: ${MODEL_STAGE_DURATION_SOLVER} seconds"
+echo "Model staging db-group time: ${MODEL_STAGE_DURATION_DB} seconds"
 echo "Preparation time: ${PREP_DURATION} seconds"
 echo "Compilation time: ${COMPILE_DURATION} seconds"
 echo "Solving time: ${SOLVE_DURATION} seconds"
@@ -1154,4 +1633,4 @@ echo "Slice (full height) video rendering time: ${SLICE_FULL_HEIGHT_VIDEO_DURATI
 echo "Combined video (1:1) rendering time: ${COMBINED_VIDEO_1_1_DURATION} seconds"
 echo "Combined video (16:9) rendering time: ${COMBINED_VIDEO_16_9_DURATION} seconds"
 echo "================================"
-echo "Total time: $((PREP_DURATION + COMPILE_DURATION + SOLVE_DURATION + RENDER_TOP_VIEW_DURATION + RENDER_SLICE_FULL_HEIGHT_DURATION + RENDER_SLICE_REDUCED_HEIGHT_DURATION + TOP_VIEW_VIDEO_DURATION + SLICE_FULL_HEIGHT_VIDEO_DURATION + COMBINED_VIDEO_1_1_DURATION + COMBINED_VIDEO_16_9_DURATION)) seconds"
+echo "Total time: $((RUNTIME_STAGE_DURATION + MODEL_STAGE_TOTAL_DURATION + PREP_DURATION + COMPILE_DURATION + SOLVE_DURATION + RENDER_TOP_VIEW_DURATION + RENDER_SLICE_FULL_HEIGHT_DURATION + RENDER_SLICE_REDUCED_HEIGHT_DURATION + TOP_VIEW_VIDEO_DURATION + SLICE_FULL_HEIGHT_VIDEO_DURATION + COMBINED_VIDEO_1_1_DURATION + COMBINED_VIDEO_16_9_DURATION)) seconds"
