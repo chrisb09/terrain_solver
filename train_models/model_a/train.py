@@ -56,7 +56,7 @@ MODEL_OUTPUT_SHAPE = [None]
 
 def parse_args():
     p = argparse.ArgumentParser(description="Train WaterCNN")
-    p.add_argument("--model", choices=["watercnn", "transformer_mlp", "perfect_model"],
+    p.add_argument("--model", choices=["watercnn", "transformer_mlp", "perfect_model", "benchmark_giant_mlp"],
                    default="watercnn",
                    help="Model architecture to train")
     p.add_argument("--cuda-sdp", choices=["auto", "math"], default="math",
@@ -141,6 +141,12 @@ def parse_args():
                    help="Profile training loop timing (data wait, host->device transfer, compute) and print per-epoch summary")
     p.add_argument("--profile-batches", type=int, default=0,
                    help="Number of batches per epoch to profile in detail (0 = all batches)")
+    p.add_argument("--benchmark-mlp-width", type=int, default=4096,
+                   help="Hidden width for the export-only benchmark_giant_mlp model")
+    p.add_argument("--benchmark-mlp-depth", type=int, default=12,
+                   help="Number of residual hidden blocks for the export-only benchmark_giant_mlp model")
+    p.add_argument("--benchmark-mlp-seed", type=int, default=1337,
+                   help="Initialization seed for the export-only benchmark_giant_mlp model")
     return p.parse_args()
 
 H, W = 108, 216
@@ -228,7 +234,7 @@ def load_checkpoint(checkpoint_path, model, optimizer=None, scheduler=None, devi
             "epochs_no_improve": 0,
         }
 
-    checkpoint = torch.load(checkpoint_path, map_location=device)
+    checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=True)
 
     # Backward compatibility with older checkpoints that only saved weights.
     if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
@@ -444,6 +450,8 @@ def export_onnx_model(model: nn.Module, output_path: str) -> dict:
         ) from exc
 
     export_model = copy.deepcopy(model).cpu().eval()
+    if isinstance(export_model, WaterTransformerMLP):
+        export_model = ONNXWaterTransformerMLP(export_model).eval()
     example_water = torch.zeros(1, 1, 3, 3, dtype=torch.float32)
     example_terrain = torch.zeros(1, 1, 3, 3, dtype=torch.float32)
     with torch.no_grad():
@@ -462,6 +470,131 @@ def export_onnx_model(model: nn.Module, output_path: str) -> dict:
             do_constant_folding=True,
         )
     return build_artifact_record(model_name="", backend="ONNX", path=output_path)
+
+
+class ONNXWaterTransformerMLP(nn.Module):
+    """
+    ONNX-friendly rewrite of WaterTransformerMLP.
+
+    PyTorch's native TransformerEncoder may lower to fused ops such as
+    aten::_transformer_encoder_layer_fwd, which ONNX export cannot serialize.
+    This wrapper keeps the learned weights but expresses the forward pass using
+    plain tensor ops that export cleanly.
+    """
+
+    def __init__(self, model: "WaterTransformerMLP"):
+        super().__init__()
+        self.d_model = model.input_proj.out_features
+        self.nhead = model.encoder.layers[0].self_attn.num_heads
+        self.head_dim = self.d_model // self.nhead
+
+        self.register_buffer("input_proj_weight", model.input_proj.weight.detach().cpu().clone())
+        self.register_buffer("input_proj_bias", model.input_proj.bias.detach().cpu().clone())
+        self.register_buffer("pos_embed", model.pos_embed.detach().cpu().clone())
+
+        self.register_buffer("global_linear1_weight", model.global_mlp[0].weight.detach().cpu().clone())
+        self.register_buffer("global_linear1_bias", model.global_mlp[0].bias.detach().cpu().clone())
+        self.register_buffer("global_linear2_weight", model.global_mlp[2].weight.detach().cpu().clone())
+        self.register_buffer("global_linear2_bias", model.global_mlp[2].bias.detach().cpu().clone())
+
+        self.register_buffer("head_linear1_weight", model.head[0].weight.detach().cpu().clone())
+        self.register_buffer("head_linear1_bias", model.head[0].bias.detach().cpu().clone())
+        self.register_buffer("head_linear2_weight", model.head[2].weight.detach().cpu().clone())
+        self.register_buffer("head_linear2_bias", model.head[2].bias.detach().cpu().clone())
+        self.register_buffer("head_linear3_weight", model.head[4].weight.detach().cpu().clone())
+        self.register_buffer("head_linear3_bias", model.head[4].bias.detach().cpu().clone())
+
+        self.norm_eps = []
+        for idx, layer in enumerate(model.encoder.layers):
+            self.register_buffer(f"layer_{idx}_in_proj_weight", layer.self_attn.in_proj_weight.detach().cpu().clone())
+            self.register_buffer(f"layer_{idx}_in_proj_bias", layer.self_attn.in_proj_bias.detach().cpu().clone())
+            self.register_buffer(f"layer_{idx}_out_proj_weight", layer.self_attn.out_proj.weight.detach().cpu().clone())
+            self.register_buffer(f"layer_{idx}_out_proj_bias", layer.self_attn.out_proj.bias.detach().cpu().clone())
+            self.register_buffer(f"layer_{idx}_linear1_weight", layer.linear1.weight.detach().cpu().clone())
+            self.register_buffer(f"layer_{idx}_linear1_bias", layer.linear1.bias.detach().cpu().clone())
+            self.register_buffer(f"layer_{idx}_linear2_weight", layer.linear2.weight.detach().cpu().clone())
+            self.register_buffer(f"layer_{idx}_linear2_bias", layer.linear2.bias.detach().cpu().clone())
+            self.register_buffer(f"layer_{idx}_norm1_weight", layer.norm1.weight.detach().cpu().clone())
+            self.register_buffer(f"layer_{idx}_norm1_bias", layer.norm1.bias.detach().cpu().clone())
+            self.register_buffer(f"layer_{idx}_norm2_weight", layer.norm2.weight.detach().cpu().clone())
+            self.register_buffer(f"layer_{idx}_norm2_bias", layer.norm2.bias.detach().cpu().clone())
+            self.norm_eps.append(layer.norm1.eps)
+        self.num_layers = len(model.encoder.layers)
+
+    def _linear(self, x: torch.Tensor, weight: torch.Tensor, bias: torch.Tensor) -> torch.Tensor:
+        return F.linear(x, weight, bias)
+
+    def _layer_norm(self, x: torch.Tensor, weight: torch.Tensor, bias: torch.Tensor, eps: float) -> torch.Tensor:
+        return F.layer_norm(x, (self.d_model,), weight, bias, eps)
+
+    def _self_attention(self, x: torch.Tensor, idx: int) -> torch.Tensor:
+        in_proj_weight = getattr(self, f"layer_{idx}_in_proj_weight")
+        in_proj_bias = getattr(self, f"layer_{idx}_in_proj_bias")
+        out_proj_weight = getattr(self, f"layer_{idx}_out_proj_weight")
+        out_proj_bias = getattr(self, f"layer_{idx}_out_proj_bias")
+
+        qkv = self._linear(x, in_proj_weight, in_proj_bias)
+        q, k, v = torch.chunk(qkv, 3, dim=-1)
+
+        batch, tokens, _ = q.shape
+        q = q.view(batch, tokens, self.nhead, self.head_dim).transpose(1, 2)
+        k = k.view(batch, tokens, self.nhead, self.head_dim).transpose(1, 2)
+        v = v.view(batch, tokens, self.nhead, self.head_dim).transpose(1, 2)
+
+        scale = float(self.head_dim) ** -0.5
+        scores = torch.matmul(q, k.transpose(-2, -1)) * scale
+        weights = torch.softmax(scores, dim=-1)
+        attn = torch.matmul(weights, v)
+        attn = attn.transpose(1, 2).contiguous().view(batch, tokens, self.d_model)
+        return self._linear(attn, out_proj_weight, out_proj_bias)
+
+    def forward(self, x_water: torch.Tensor, x_terrain: torch.Tensor) -> torch.Tensor:
+        batch = x_water.shape[0]
+        tokens = torch.stack([x_water.squeeze(1), x_terrain.squeeze(1)], dim=-1).view(batch, 9, 2)
+        token_features = self._linear(tokens, self.input_proj_weight, self.input_proj_bias) + self.pos_embed
+
+        for idx in range(self.num_layers):
+            attn = self._self_attention(token_features, idx)
+            token_features = self._layer_norm(
+                token_features + attn,
+                getattr(self, f"layer_{idx}_norm1_weight"),
+                getattr(self, f"layer_{idx}_norm1_bias"),
+                self.norm_eps[idx],
+            )
+            ff = self._linear(
+                token_features,
+                getattr(self, f"layer_{idx}_linear1_weight"),
+                getattr(self, f"layer_{idx}_linear1_bias"),
+            )
+            ff = F.gelu(ff, approximate="none")
+            ff = self._linear(
+                ff,
+                getattr(self, f"layer_{idx}_linear2_weight"),
+                getattr(self, f"layer_{idx}_linear2_bias"),
+            )
+            token_features = self._layer_norm(
+                token_features + ff,
+                getattr(self, f"layer_{idx}_norm2_weight"),
+                getattr(self, f"layer_{idx}_norm2_bias"),
+                self.norm_eps[idx],
+            )
+
+        pooled = token_features.mean(dim=1)
+        global_features = torch.cat([x_water.flatten(1), x_terrain.flatten(1)], dim=1)
+        global_features = F.gelu(
+            self._linear(global_features, self.global_linear1_weight, self.global_linear1_bias),
+            approximate="none",
+        )
+        global_features = F.gelu(
+            self._linear(global_features, self.global_linear2_weight, self.global_linear2_bias),
+            approximate="none",
+        )
+
+        fused = torch.cat([pooled, global_features], dim=1)
+        fused = F.gelu(self._linear(fused, self.head_linear1_weight, self.head_linear1_bias), approximate="none")
+        fused = F.gelu(self._linear(fused, self.head_linear2_weight, self.head_linear2_bias), approximate="none")
+        output = self._linear(fused, self.head_linear3_weight, self.head_linear3_bias)
+        return output.squeeze(1)
 
 
 class TFRealFunctionModel:
@@ -662,11 +795,74 @@ class TFWaterTransformerMLP:
         return tf.squeeze(output, axis=1)
 
 
+class TFBenchmarkGiantMLP:
+    def __init__(self, model: "BenchmarkGiantMLP"):
+        self.width = model.width
+        self.depth = model.depth
+        self.input_proj_weight = model.input_proj.weight.detach().cpu().numpy()
+        self.input_proj_bias = model.input_proj.bias.detach().cpu().numpy()
+        self.final_norm_weight = model.final_norm.weight.detach().cpu().numpy()
+        self.final_norm_bias = model.final_norm.bias.detach().cpu().numpy()
+        self.final_norm_eps = model.final_norm.eps
+        self.head_linear1_weight = model.head[0].weight.detach().cpu().numpy()
+        self.head_linear1_bias = model.head[0].bias.detach().cpu().numpy()
+        self.head_linear2_weight = model.head[2].weight.detach().cpu().numpy()
+        self.head_linear2_bias = model.head[2].bias.detach().cpu().numpy()
+        self.blocks = []
+        for block in model.blocks:
+            self.blocks.append(
+                {
+                    "linear1_weight": block[0].weight.detach().cpu().numpy(),
+                    "linear1_bias": block[0].bias.detach().cpu().numpy(),
+                    "linear2_weight": block[2].weight.detach().cpu().numpy(),
+                    "linear2_bias": block[2].bias.detach().cpu().numpy(),
+                }
+            )
+
+    def _linear(self, x, weight, bias):
+        import tensorflow as tf
+
+        return tf.linalg.matmul(x, tf.constant(weight, dtype=tf.float32), transpose_b=True) + tf.constant(
+            bias, dtype=tf.float32
+        )
+
+    def _layer_norm(self, x, weight, bias, eps):
+        import tensorflow as tf
+
+        mean, var = tf.nn.moments(x, axes=[-1], keepdims=True)
+        normalized = (x - mean) * tf.math.rsqrt(var + eps)
+        return normalized * tf.constant(weight, dtype=tf.float32) + tf.constant(bias, dtype=tf.float32)
+
+    def __call__(self, x_water, x_terrain):
+        import tensorflow as tf
+
+        features = tf.concat(
+            [
+                tf.reshape(x_water, [tf.shape(x_water)[0], -1]),
+                tf.reshape(x_terrain, [tf.shape(x_terrain)[0], -1]),
+            ],
+            axis=1,
+        )
+        hidden = tf.nn.gelu(self._linear(features, self.input_proj_weight, self.input_proj_bias), approximate=False)
+        for block in self.blocks:
+            residual = hidden
+            hidden = self._linear(hidden, block["linear1_weight"], block["linear1_bias"])
+            hidden = tf.nn.gelu(hidden, approximate=False)
+            hidden = self._linear(hidden, block["linear2_weight"], block["linear2_bias"])
+            hidden = residual + hidden
+        hidden = self._layer_norm(hidden, self.final_norm_weight, self.final_norm_bias, self.final_norm_eps)
+        hidden = tf.nn.gelu(self._linear(hidden, self.head_linear1_weight, self.head_linear1_bias), approximate=False)
+        output = self._linear(hidden, self.head_linear2_weight, self.head_linear2_bias)
+        return tf.squeeze(output, axis=1)
+
+
 def build_tensorflow_export_model(model: nn.Module):
     if isinstance(model, WaterCNN):
         return TFWaterCNNModel(model)
     if isinstance(model, WaterTransformerMLP):
         return TFWaterTransformerMLP(model)
+    if isinstance(model, BenchmarkGiantMLP):
+        return TFBenchmarkGiantMLP(model)
     if isinstance(model, RealFunctionModel):
         return TFRealFunctionModel()
     raise TypeError(f"TensorFlow export is not implemented for model type: {type(model).__name__}")
@@ -702,8 +898,8 @@ def export_tensorflow_frozen_model(model: nn.Module, output_path: str) -> dict:
     graph_def = frozen_func.graph.as_graph_def()
     tf.io.write_graph(graph_def, os.path.dirname(output_path) or ".", os.path.basename(output_path), as_text=False)
 
-    input_names = [tensor.name for tensor in frozen_func.inputs]
-    output_names = [tensor.name for tensor in frozen_func.outputs]
+    input_names = [tensor.name.split(":", 1)[0] for tensor in frozen_func.inputs]
+    output_names = [tensor.name.split(":", 1)[0] for tensor in frozen_func.outputs]
     return build_artifact_record(
         model_name="",
         backend="TF",
@@ -1234,6 +1430,57 @@ class WaterTransformerMLP(nn.Module):
         return self.head(fused).squeeze(1)
 
 
+class BenchmarkGiantMLP(nn.Module):
+    """
+    Large untrained export-only benchmark model with the same public interface:
+      (B, 1, 3, 3), (B, 1, 3, 3) -> (B,)
+
+    The goal is to create substantial compute and parameter volume while keeping
+    the caller contract identical to the smaller surrogate models.
+    """
+
+    def __init__(self, width: int = 4096, depth: int = 12, seed: int = 1337):
+        super().__init__()
+        if width <= 0:
+            raise ValueError("benchmark MLP width must be positive")
+        if depth <= 0:
+            raise ValueError("benchmark MLP depth must be positive")
+        self.width = int(width)
+        self.depth = int(depth)
+        self.seed = int(seed)
+
+        rng_state = torch.random.get_rng_state()
+        torch.manual_seed(self.seed)
+        try:
+            self.input_proj = nn.Linear(18, self.width)
+            self.blocks = nn.ModuleList(
+                [
+                    nn.Sequential(
+                        nn.Linear(self.width, self.width),
+                        nn.GELU(),
+                        nn.Linear(self.width, self.width),
+                    )
+                    for _ in range(self.depth)
+                ]
+            )
+            self.final_norm = nn.LayerNorm(self.width)
+            self.head = nn.Sequential(
+                nn.Linear(self.width, self.width),
+                nn.GELU(),
+                nn.Linear(self.width, 1),
+            )
+        finally:
+            torch.random.set_rng_state(rng_state)
+
+    def forward(self, x_water: torch.Tensor, x_terrain: torch.Tensor) -> torch.Tensor:
+        features = torch.cat([x_water.flatten(1), x_terrain.flatten(1)], dim=1)
+        hidden = F.gelu(self.input_proj(features), approximate="none")
+        for block in self.blocks:
+            hidden = hidden + block(hidden)
+        hidden = self.final_norm(hidden)
+        return self.head(hidden).squeeze(1)
+
+
 class RealFunctionModel(nn.Module):
     """Exact solver update rule for the 3x3 local patch interface."""
 
@@ -1266,13 +1513,18 @@ class RealFunctionModel(nn.Module):
         return new_value
 
 
-def build_model(model_name: str) -> nn.Module:
+def build_model(model_name: str, args=None) -> nn.Module:
     if model_name == "watercnn":
         return WaterCNN()
     if model_name == "transformer_mlp":
         return WaterTransformerMLP()
     if model_name == "perfect_model":
         return RealFunctionModel()
+    if model_name == "benchmark_giant_mlp":
+        width = 4096 if args is None else args.benchmark_mlp_width
+        depth = 12 if args is None else args.benchmark_mlp_depth
+        seed = 1337 if args is None else args.benchmark_mlp_seed
+        return BenchmarkGiantMLP(width=width, depth=depth, seed=seed)
     raise ValueError(f"Unknown model architecture: {model_name}")
 
 
@@ -1606,14 +1858,20 @@ def main():
 
     # -- Export-only fast path -----------------------------------------------
     # Useful to re-export an already trained checkpoint without running epochs.
-    if args.export_only or args.model == "perfect_model":
-        model = build_model(args.model).to(device)
+    if args.model == "benchmark_giant_mlp" and not args.export_only:
+        raise RuntimeError(
+            "benchmark_giant_mlp is export-only by design. "
+            "Use --export-only with --export-backends to build deployable benchmark artifacts."
+        )
+
+    if args.export_only or args.model in {"perfect_model", "benchmark_giant_mlp"}:
+        model = build_model(args.model, args).to(device)
         if distributed and world_size > 1:
             model = DDP(model, device_ids=[local_rank] if torch.cuda.is_available() else None)
         model_to_save = model.module if distributed and world_size > 1 else model
 
         resume_state = None
-        if args.model != "perfect_model":
+        if args.model not in {"perfect_model", "benchmark_giant_mlp"}:
             resume_state = load_checkpoint(
                 args.output,
                 model_to_save,
@@ -1647,7 +1905,7 @@ def main():
                 raise RuntimeError("--export-only requested, but checkpoint could not be loaded")
 
         if is_main:
-            if args.model == "perfect_model":
+            if args.model in {"perfect_model", "benchmark_giant_mlp"}:
                 checkpoint = {
                     "epoch": 0,
                     "model_name": args.model,
@@ -1657,7 +1915,15 @@ def main():
                 }
                 ensure_parent_dir(args.output)
                 torch.save(checkpoint, args.output)
-                print(f"Perfect model selected; exporting deterministic artifacts to {args.output}.", flush=True)
+                if args.model == "perfect_model":
+                    print(f"Perfect model selected; exporting deterministic artifacts to {args.output}.", flush=True)
+                else:
+                    print(
+                        "Benchmark giant MLP selected; exporting deterministic artifacts "
+                        f"(width={args.benchmark_mlp_width}, depth={args.benchmark_mlp_depth}, seed={args.benchmark_mlp_seed}) "
+                        f"to {args.output}.",
+                        flush=True,
+                    )
             else:
                 if resume_state.get("legacy_weights_only"):
                     print(f"Loaded model weights from {args.output} (legacy checkpoint format).", flush=True)
@@ -1819,7 +2085,7 @@ def main():
                               num_workers=num_workers, pin_memory=True)
 
     # -- Model / optimizer ---------------------------------------------------
-    model     = build_model(args.model).to(device)
+    model     = build_model(args.model, args).to(device)
     if distributed and world_size > 1:
         model = DDP(model, device_ids=[local_rank] if torch.cuda.is_available() else None)
     criterion = nn.MSELoss()
