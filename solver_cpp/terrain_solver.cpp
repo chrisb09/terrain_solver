@@ -69,6 +69,7 @@ struct Config {
     bool overwrite_output = false;
     bool print_build_timestamp = false;
     int gpus_per_node = 1;
+    int ml_batch_size = 50000;
 };
 
 struct Range {
@@ -119,6 +120,7 @@ static void usage() {
         << "  --model-outputs <csv>           Optional model output names (required for TF graph models)\n"
         << "  --device <cpu|gpu>               Device to run the solver on (default: cpu)\n"
         << "  --gpus-per-node <int>            Number of GPUs per node (default: 1)\n"
+        << "  --ml-batch-size <int>            Max per-rank ML batch size (default: 50000)\n"
         << "  --steps <int>                    Number of simulation steps (default: 100)\n"
         << "  --save-every <int>               Save every N steps (default: 1)\n"
         << "  --save-mode <periodic|triangular>\n"
@@ -164,6 +166,160 @@ static std::string get_env_string(const char* key, const std::string& default_va
         return default_value;
     }
     return std::string(raw);
+}
+
+static std::string escape_binary_for_log(const std::string& value) {
+    std::ostringstream oss;
+    oss << std::uppercase << std::hex;
+    for (unsigned char c : value) {
+        if (c >= 0x20 && c <= 0x7E && c != '\\') {
+            oss << static_cast<char>(c);
+        } else if (c == '\\') {
+            oss << "\\\\";
+        } else {
+            oss << "\\x"
+                << std::setw(2) << std::setfill('0')
+                << static_cast<int>(c);
+        }
+    }
+    return oss.str();
+}
+
+static std::string get_processor_name() {
+    std::array<char, MPI_MAX_PROCESSOR_NAME> name{};
+    int length = 0;
+    MPI_Get_processor_name(name.data(), &length);
+    if (length < 0) {
+        length = 0;
+    }
+    return std::string(name.data(), static_cast<std::size_t>(length));
+}
+
+static void log_cluster_shard_map(SmartRedis::Client* client,
+                                  const Decomposition& decomp) {
+    if (client == nullptr || decomp.world_rank != 0) {
+        return;
+    }
+
+    try {
+        const std::vector<SmartRedis::ClusterShardInfo> shards = client->get_cluster_shards();
+        if (shards.empty()) {
+            std::cout << "SMARTREDIS_CLUSTER_MAP mode=standalone" << std::endl;
+            return;
+        }
+
+        for (std::size_t i = 0; i < shards.size(); ++i) {
+            const auto& shard = shards[i];
+            std::cout << "SMARTREDIS_CLUSTER_MAP"
+                      << " shard_index=" << i
+                      << " shard_address=" << shard.shard_address
+                      << " shard_name=" << shard.shard_name
+                      << " shard_prefix=" << escape_binary_for_log(shard.shard_prefix)
+                      << " shard_slot_range=[" << shard.shard_slot_first
+                      << "," << shard.shard_slot_last << "]"
+                      << std::endl;
+        }
+    } catch (const std::exception& ex) {
+        std::cerr << "WARN: failed to log SmartRedis cluster shard map: "
+                  << ex.what() << std::endl;
+    }
+}
+
+static void log_tensor_shard_location(SmartRedis::Client* client,
+                                      const Decomposition& decomp,
+                                      const std::string& tensor_name,
+                                      const std::string& phase) {
+    if (client == nullptr) {
+        return;
+    }
+
+    try {
+        const SmartRedis::KeyLocation location = client->get_tensor_key_location(tensor_name);
+        std::ostringstream oss;
+        oss << "SMARTREDIS_SHARD_LOG"
+            << " phase=" << phase
+            << " rank=" << decomp.world_rank
+            << " tensor=" << tensor_name
+            << " redis_key=" << escape_binary_for_log(location.key)
+            << " hash_slot=" << location.hash_slot;
+
+        if (location.is_cluster) {
+            oss << " shard_address=" << location.shard_address
+                << " shard_name=" << location.shard_name
+                << " shard_prefix=" << escape_binary_for_log(location.shard_prefix)
+                << " shard_slot_range=[" << location.shard_slot_first
+                << "," << location.shard_slot_last << "]";
+        } else {
+            oss << " shard_address=standalone";
+        }
+
+        std::cout << oss.str() << std::endl;
+    } catch (const std::exception& ex) {
+        std::cerr << "WARN: failed to resolve shard placement for tensor "
+                  << tensor_name << " on rank " << decomp.world_rank
+                  << ": " << ex.what() << std::endl;
+    }
+}
+
+static void log_model_execution_route(SmartRedis::Client* client,
+                                      const Decomposition& decomp,
+                                      const std::string& model_name,
+                                      const std::string& first_input_name,
+                                      const std::string& output_name,
+                                      bool use_multigpu,
+                                      int gpu_index) {
+    if (client == nullptr) {
+        return;
+    }
+
+    try {
+        const SmartRedis::KeyLocation input_location =
+            client->get_tensor_key_location(first_input_name, true);
+        const SmartRedis::KeyLocation output_location =
+            client->get_tensor_key_location(output_name, false);
+        const std::string processor_name = get_processor_name();
+
+        std::ostringstream oss;
+        oss << "SMARTREDIS_MODEL_EXEC"
+            << " rank=" << decomp.world_rank
+            << " processor=" << processor_name
+            << " mode=" << (use_multigpu ? "run_model_multigpu" : "run_model")
+            << " model_name=" << model_name
+            << " first_input=" << escape_binary_for_log(input_location.key)
+            << " first_input_hash_slot=" << input_location.hash_slot
+            << " output_key=" << escape_binary_for_log(output_location.key);
+
+        if (use_multigpu) {
+            oss << " gpu=" << gpu_index
+                << " model_key="
+                << escape_binary_for_log(input_location.is_cluster
+                                             ? "{" + input_location.shard_prefix + "}." +
+                                                   model_name + ".GPU:" + std::to_string(gpu_index)
+                                             : model_name + ".GPU:" + std::to_string(gpu_index));
+        } else {
+            oss << " model_key="
+                << escape_binary_for_log(input_location.is_cluster
+                                             ? "{" + input_location.shard_prefix + "}." + model_name
+                                             : model_name);
+        }
+
+        if (input_location.is_cluster) {
+            oss << " exec_shard_address=" << input_location.shard_address
+                << " exec_shard_name=" << input_location.shard_name
+                << " exec_shard_prefix=" << escape_binary_for_log(input_location.shard_prefix)
+                << " exec_shard_slot_range=[" << input_location.shard_slot_first
+                << "," << input_location.shard_slot_last << "]"
+                << " routing_rule=first_input_hash_slot";
+        } else {
+            oss << " exec_shard_address=standalone";
+        }
+
+        std::cout << oss.str() << std::endl;
+    } catch (const std::exception& ex) {
+        std::cerr << "WARN: failed to log model execution route for model "
+                  << model_name << " on rank " << decomp.world_rank
+                  << ": " << ex.what() << std::endl;
+    }
 }
 
 static std::string sync_mode_to_string(SyncMode mode) {
@@ -315,7 +471,7 @@ static Config parse_args(int argc, char** argv, int rank, int total_ranks) {
         } else if (arg == "--model-path" || arg == "--model-backend" || arg == "--model-inputs" || arg == "--model-outputs" ||
                    arg == "--input-hdf5" || arg == "--output-hdf5" ||
                    arg == "--steps" || arg == "--device" ||
-                   arg == "--gpus-per-node" ||
+                   arg == "--gpus-per-node" || arg == "--ml-batch-size" ||
                    arg == "--save-every" || arg == "--save-mode" || arg == "--triangular-scale" || arg == "--chunk-size" || arg == "--io-mode" ||
                    arg == "--mpi-sync-mode" || arg == "--hdf5-xfer-mode" || arg == "--rank-grid-x" || arg == "--rank-grid-z" || arg == "--clamp-epsilon") {
             require(i + 1 < argc, "Missing value for argument: " + arg);
@@ -339,6 +495,8 @@ static Config parse_args(int argc, char** argv, int rank, int total_ranks) {
                 if (cfg.gpus_per_node > 0) {
                     std::cout << "Rank " << rank << " of " << total_ranks << " uses GPU index " << (rank % cfg.gpus_per_node) << std::endl;
                 }
+            } else if (arg == "--ml-batch-size") {
+                cfg.ml_batch_size = std::stoi(value);
             } else if (arg == "--input-hdf5") {
                 cfg.input_hdf5 = value;
             } else if (arg == "--output-hdf5") {
@@ -384,6 +542,7 @@ static Config parse_args(int argc, char** argv, int rank, int total_ranks) {
         require(cfg.save_every > 0, "--save-every must be > 0.");
         require(cfg.triangular_scale >= 1, "--triangular-scale must be >= 1.");
         require(cfg.chunk_size > 0, "--chunk-size must be > 0.");
+        require(cfg.ml_batch_size > 0, "--ml-batch-size must be > 0.");
         require(cfg.rank_grid_x >= 0, "--rank-grid-x must be >= 0.");
         require(cfg.rank_grid_z >= 0, "--rank-grid-z must be >= 0.");
     }
@@ -741,13 +900,6 @@ long long total_unpack_time = 0;
 long long total_cleanup_time = 0;
 long long total_ml_step_wall_time = 0;
 
-struct MlNestedBatchView {
-    std::vector<float***> batch;
-    std::vector<float**> channels;
-    std::vector<float*> rows;
-    const float* base_data = nullptr;
-};
-
 struct StepScratch {
     std::vector<float> q_west;
     std::vector<float> q_east;
@@ -772,36 +924,61 @@ struct StepScratch {
     }
 };
 
-static MlNestedBatchView create_ml_nested_batch_view(const std::vector<float>& field, const Decomposition& decomp) {
-    MlNestedBatchView view;
-    const int local_nz = decomp.local_nz;
+static void build_nested_view_for_field_chunk(
+    const std::vector<float>& field,
+    const Decomposition& decomp,
+    std::size_t chunk_begin,
+    std::size_t chunk_count,
+    std::vector<float***>& batch,
+    std::vector<float**>& channels,
+    std::vector<float*>& rows) {
     const int local_nx = decomp.local_nx;
     const int pitch = local_nx + 2;
-    const std::size_t batch_size = static_cast<std::size_t>(local_nz) * static_cast<std::size_t>(local_nx);
 
-    view.batch.resize(batch_size);
-    view.channels.resize(batch_size);
-    view.rows.resize(batch_size * 3);
-    view.base_data = field.data();
+    batch.resize(chunk_count);
+    channels.resize(chunk_count);
+    rows.resize(chunk_count * 3);
 
-    for (int i = 0; i < local_nz; ++i) {
-        for (int j = 0; j < local_nx; ++j) {
-            const int ii = i + 1;
-            const int jj = j + 1;
-            const std::size_t b = static_cast<std::size_t>(i * local_nx + j);
+    for (std::size_t k = 0; k < chunk_count; ++k) {
+        const std::size_t b = chunk_begin + k;
+        const int i = static_cast<int>(b / static_cast<std::size_t>(local_nx));
+        const int j = static_cast<int>(b % static_cast<std::size_t>(local_nx));
+        const int ii = i + 1;
+        const int jj = j + 1;
 
-            view.batch[b] = &view.channels[b];
-            view.channels[b] = &view.rows[b * 3];
+        batch[k] = &channels[k];
+        channels[k] = &rows[k * 3];
 
-            for (int di = -1; di <= 1; ++di) {
-                const int n_i = ii + di;
-                const int n_j_start = jj - 1;
-                view.rows[b * 3 + static_cast<std::size_t>(di + 1)] = const_cast<float*>(&field[local_index(n_i, n_j_start, pitch)]);
-            }
+        for (int di = -1; di <= 1; ++di) {
+            const int n_i = ii + di;
+            const int n_j_start = jj - 1;
+            rows[k * 3 + static_cast<std::size_t>(di + 1)] =
+                const_cast<float*>(&field[local_index(n_i, n_j_start, pitch)]);
         }
     }
+}
 
-    return view;
+static void build_nested_view_for_packed_tiles_chunk(
+    std::vector<float>& packed_tiles,
+    std::size_t chunk_begin,
+    std::size_t chunk_count,
+    std::vector<float***>& batch,
+    std::vector<float**>& channels,
+    std::vector<float*>& rows) {
+    batch.resize(chunk_count);
+    channels.resize(chunk_count);
+    rows.resize(chunk_count * 3);
+
+    for (std::size_t k = 0; k < chunk_count; ++k) {
+        const std::size_t b = chunk_begin + k;
+        float* tile_flat = &packed_tiles[b * 9];
+
+        batch[k] = &channels[k];
+        channels[k] = &rows[k * 3];
+        rows[k * 3 + 0] = tile_flat + 0;
+        rows[k * 3 + 1] = tile_flat + 3;
+        rows[k * 3 + 2] = tile_flat + 6;
+    }
 }
 
 static double compute_local_step_ml(SmartRedis::Client* client,
@@ -811,7 +988,6 @@ static double compute_local_step_ml(SmartRedis::Client* client,
     const Decomposition& decomp,
     float epsilon,
     const Config& cfg,
-    const MlNestedBatchView& batch_input_view,
     std::vector<float>& tile_output) {
         const int local_nz = decomp.local_nz;
         const int local_nx = decomp.local_nx;
@@ -826,117 +1002,160 @@ static double compute_local_step_ml(SmartRedis::Client* client,
         next = current;
 
         const std::size_t BATCH_SIZE = static_cast<std::size_t>(decomp.local_nz) * static_cast<std::size_t>(decomp.local_nx);
-        require(batch_input_view.batch.size() == BATCH_SIZE,
-                "ML nested batch view size mismatch.");
-        require(batch_input_view.base_data == current.data(),
-                "ML nested batch view does not match active current buffer.");
         require(tile_output.size() == BATCH_SIZE,
                 "ML output buffer size mismatch.");
 
         auto start = std::chrono::high_resolution_clock::now();
 
-        float**** batch_input = const_cast<float****>(batch_input_view.batch.data());
-
-        const std::string water_key = "water_tile_" + std::to_string(decomp.world_rank);
-        const std::string terrain_key = "terrain_tile_" + std::to_string(decomp.world_rank);
-        const std::string pred_key = "predicted_water_center_" + std::to_string(decomp.world_rank);
-
         double moved = 0.0;
-
-        auto data_prepared_time = std::chrono::high_resolution_clock::now();
-
-        client->put_tensor(
-            water_key,
-            batch_input,
-            std::vector<size_t>{BATCH_SIZE, 1, 3, 3},
-            SRTensorType::SRTensorTypeFloat,
-            SRMemoryLayout::SRMemLayoutNested);
-
-        auto put_time = std::chrono::high_resolution_clock::now();
-
 
         const bool use_gpu_model = (cfg.device == "GPU");
         const bool use_multigpu_api = use_gpu_model && (cfg.model_backend == "TORCH") &&
                                       (decomp.world_size > 1) && (cfg.gpus_per_node > 1);
+        const int selected_gpu = use_multigpu_api ? (decomp.world_rank % cfg.gpus_per_node) : -1;
         const int max_model_run_attempts = 3;
-        for (int attempt = 1; attempt <= max_model_run_attempts; ++attempt) {
-            try {
-                if (use_multigpu_api) {
-                    if (cfg.gpus_per_node == 0) {
-                        throw std::runtime_error("GPU device specified but --gpus-per-node is 0.");
+
+        std::vector<float***> chunk_batch;
+        std::vector<float**> chunk_channels;
+        std::vector<float*> chunk_rows;
+
+        const std::size_t chunk_cap = std::min<std::size_t>(
+            BATCH_SIZE,
+            static_cast<std::size_t>(cfg.ml_batch_size));
+
+        for (std::size_t chunk_begin = 0, chunk_id = 0; chunk_begin < BATCH_SIZE;
+             chunk_begin += chunk_cap, ++chunk_id) {
+            const std::size_t chunk_count = std::min<std::size_t>(chunk_cap, BATCH_SIZE - chunk_begin);
+
+            auto data_prepared_time = std::chrono::high_resolution_clock::now();
+
+            build_nested_view_for_field_chunk(
+                current,
+                decomp,
+                chunk_begin,
+                chunk_count,
+                chunk_batch,
+                chunk_channels,
+                chunk_rows);
+
+            const std::string key_suffix = "_" + std::to_string(decomp.world_rank) + "_" + std::to_string(chunk_id);
+            const std::string water_key = "water_tile" + key_suffix;
+            const std::string terrain_key = "terrain_tile" + key_suffix;
+            const std::string pred_key = "predicted_water_center" + key_suffix;
+
+            client->put_tensor(
+                water_key,
+                const_cast<float****>(chunk_batch.data()),
+                std::vector<size_t>{chunk_count, 1, 3, 3},
+                SRTensorType::SRTensorTypeFloat,
+                SRMemoryLayout::SRMemLayoutNested);
+
+            log_tensor_shard_location(client, decomp, water_key, "put_tensor");
+
+            auto put_time = std::chrono::high_resolution_clock::now();
+
+            for (int attempt = 1; attempt <= max_model_run_attempts; ++attempt) {
+                try {
+                    if (use_multigpu_api) {
+                        if (cfg.gpus_per_node == 0) {
+                            throw std::runtime_error("GPU device specified but --gpus-per-node is 0.");
+                        }
+                        log_model_execution_route(client,
+                                                  decomp,
+                                                  "water_step_model_gpu",
+                                                  water_key,
+                                                  pred_key,
+                                                  true,
+                                                  selected_gpu);
+                        client->run_model_multigpu("water_step_model_gpu", {water_key, terrain_key}, {pred_key}, decomp.world_rank % cfg.gpus_per_node, 0, cfg.gpus_per_node);
+                    } else {
+                        const std::string model_name = use_gpu_model ? "water_step_model_gpu" : "water_step_model";
+                        log_model_execution_route(client,
+                                                  decomp,
+                                                  model_name,
+                                                  water_key,
+                                                  pred_key,
+                                                  false,
+                                                  -1);
+                        client->run_model(model_name, {water_key, terrain_key}, {pred_key});
                     }
-                    client->run_model_multigpu("water_step_model_gpu", {water_key, terrain_key}, {pred_key}, decomp.world_rank % cfg.gpus_per_node, 0, cfg.gpus_per_node);
-                } else {
-                    const std::string model_name = use_gpu_model ? "water_step_model_gpu" : "water_step_model";
-                    client->run_model(model_name, {water_key, terrain_key}, {pred_key});
+                    break;
+                } catch (const std::exception& ex) {
+                    const std::string msg = ex.what();
+                    const bool transient = msg.find("Resource temporarily unavailable") != std::string::npos;
+                    if (attempt >= max_model_run_attempts || !transient) {
+                        std::ostringstream oss;
+                        oss << "run_model failed (attempt " << attempt << "/" << max_model_run_attempts << ")"
+                            << " rank=" << decomp.world_rank
+                            << " world_size=" << decomp.world_size
+                            << " chunk_id=" << chunk_id
+                            << " chunk_begin=" << chunk_begin
+                            << " chunk_size=" << chunk_count
+                            << " total_batch_size=" << BATCH_SIZE
+                            << " device=" << cfg.device
+                            << " use_multigpu_api=" << (use_multigpu_api ? "true" : "false")
+                            << " water_key=" << water_key
+                            << " terrain_key=" << terrain_key
+                            << " pred_key=" << pred_key
+                            << " error=" << msg;
+                        throw std::runtime_error(oss.str());
+                    }
+                    if (decomp.world_rank == 0) {
+                        std::cerr << "WARN: transient run_model failure (attempt " << attempt
+                                  << "/" << max_model_run_attempts << "): " << msg << std::endl;
+                    }
+                    std::this_thread::sleep_for(std::chrono::seconds(2));
                 }
-                break;
-            } catch (const std::exception& ex) {
-                const std::string msg = ex.what();
-                const bool transient = msg.find("Resource temporarily unavailable") != std::string::npos;
-                if (attempt >= max_model_run_attempts || !transient) {
-                    std::ostringstream oss;
-                    oss << "run_model failed (attempt " << attempt << "/" << max_model_run_attempts << ")"
-                        << " rank=" << decomp.world_rank
-                        << " world_size=" << decomp.world_size
-                        << " batch_size=" << BATCH_SIZE
-                        << " device=" << cfg.device
-                        << " use_multigpu_api=" << (use_multigpu_api ? "true" : "false")
-                        << " water_key=" << water_key
-                        << " terrain_key=" << terrain_key
-                        << " pred_key=" << pred_key
-                        << " error=" << msg;
-                    throw std::runtime_error(oss.str());
-                }
-                if (decomp.world_rank == 0) {
-                    std::cerr << "WARN: transient run_model failure (attempt " << attempt
-                              << "/" << max_model_run_attempts << "): " << msg << std::endl;
-                }
-                std::this_thread::sleep_for(std::chrono::seconds(2));
             }
+
+            auto model_ran_time = std::chrono::high_resolution_clock::now();
+
+            if (decomp.world_rank == 0 && chunk_id == 0) {
+                std::cout << " and ran model for cell (" << 0 << ", " << 0 << ")" << std::flush;
+            }
+
+            std::vector<size_t> chunk_output_dims = {chunk_count};
+            SRTensorType chunk_output_type = SRTensorType::SRTensorTypeFloat;
+            SRMemoryLayout chunk_output_mem_layout = SRMemoryLayout::SRMemLayoutContiguous;
+
+            try {
+                client->unpack_tensor(
+                    pred_key,
+                    tile_output.data() + chunk_begin,
+                    chunk_output_dims,
+                    chunk_output_type,
+                    chunk_output_mem_layout);
+            } catch (const std::exception& ex) {
+                std::ostringstream oss;
+                oss << "unpack_tensor failed"
+                    << " rank=" << decomp.world_rank
+                    << " chunk_id=" << chunk_id
+                    << " chunk_begin=" << chunk_begin
+                    << " chunk_size=" << chunk_count
+                    << " pred_key=" << pred_key
+                    << " dims=[" << chunk_count << "]"
+                    << " error=" << ex.what();
+                throw std::runtime_error(oss.str());
+            }
+
+            auto unpacked_time = std::chrono::high_resolution_clock::now();
+
+            prepare_data_time += std::chrono::duration_cast<std::chrono::microseconds>(data_prepared_time - start).count();
+            put_tensor_time += std::chrono::duration_cast<std::chrono::microseconds>(put_time - data_prepared_time).count();
+            run_model_time += std::chrono::duration_cast<std::chrono::microseconds>(model_ran_time - put_time).count();
+            unpack_time += std::chrono::duration_cast<std::chrono::microseconds>(unpacked_time - model_ran_time).count();
         }
 
-        auto model_ran_time = std::chrono::high_resolution_clock::now();
-
-        if (decomp.world_rank == 0) {
-            std::cout << " and ran model for cell (" << 0 << ", " << 0 << ")" << std::flush;
-        }
-
-
-        std::vector<size_t> large_output_dims = {BATCH_SIZE}; //Batch size of 1 for single cell prediction
-        SRTensorType large_output_type = SRTensorType::SRTensorTypeFloat;
-        SRMemoryLayout large_output_mem_layout = SRMemoryLayout::SRMemLayoutContiguous;
-        
-        try {
-            client->unpack_tensor(pred_key, tile_output.data(), large_output_dims, large_output_type, large_output_mem_layout);
-        } catch (const std::exception& ex) {
-            std::ostringstream oss;
-            oss << "unpack_tensor failed"
-                << " rank=" << decomp.world_rank
-                << " pred_key=" << pred_key
-                << " dims=[" << BATCH_SIZE << "]"
-                << " error=" << ex.what();
-            throw std::runtime_error(oss.str());
-        }
         for (int i = 0; i < decomp.local_nz; ++i) {
             for (int j = 0; j < decomp.local_nx; ++j) {
                 next[local_index(i + 1, j + 1, pitch)] = tile_output[static_cast<size_t>(i * local_nx + j)];
                 moved += std::max(static_cast<double>(tile_output[static_cast<size_t>(i * local_nx + j)]) - static_cast<double>(current[local_index(i + 1, j + 1, pitch)]), 0.0);
             }
         }
-        //next[local_index(ii, jj, pitch)] = tile_output[0];
-        //moved += std::max(static_cast<double>(tile_output[0]) - static_cast<double>(current[local_index(ii, jj, pitch)]), 0.0);
-
-        auto unpacked_time = std::chrono::high_resolution_clock::now();
 
         if (decomp.world_rank == 0) {
             std::cout << " and got prediction " << tile_output[0] << " for cell (" << 0 << ", " << 0 << ")" << std::endl;
         }
-
-        prepare_data_time += std::chrono::duration_cast<std::chrono::microseconds>(data_prepared_time - start).count();
-        put_tensor_time += std::chrono::duration_cast<std::chrono::microseconds>(put_time - data_prepared_time).count();
-        run_model_time += std::chrono::duration_cast<std::chrono::microseconds>(model_ran_time - put_time).count();
-        unpack_time += std::chrono::duration_cast<std::chrono::microseconds>(unpacked_time - model_ran_time).count();
         
 
         total_prepare_data_time += prepare_data_time;
@@ -1967,32 +2186,95 @@ int main(int argc, char** argv) {
                         throw std::runtime_error("GPU device specified but --gpus-per-node is 0.");
                     }
                     const bool use_multigpu_api = (cfg.model_backend == "TORCH") && (world_size > 1) && (cfg.gpus_per_node > 1);
+                    const int model_load_retries = std::max(1, get_env_int("SR_MODEL_LOAD_RETRIES", 6));
+                    const int model_load_backoff_ms = std::max(0, get_env_int("SR_MODEL_LOAD_BACKOFF_MS", 5000));
                     std::cout << "Model load start: path=" << cfg.model_path
                               << " backend=" << cfg.model_backend
                               << " device=" << cfg.device
                               << " world_size=" << world_size
                               << " gpus_per_node=" << cfg.gpus_per_node
                               << " use_multigpu_api=" << (use_multigpu_api ? "true" : "false")
+                              << " retries=" << model_load_retries
+                              << " backoff_ms=" << model_load_backoff_ms
                               << std::endl;
                     const auto model_load_start = std::chrono::steady_clock::now();
-                    try {
-                        if (use_multigpu_api) {
-                            client->set_model_from_file_multigpu("water_step_model_gpu", cfg.model_path, cfg.model_backend, 0, cfg.gpus_per_node);
-                        } else {
-                            client->set_model_from_file(
-                                "water_step_model_gpu",
-                                cfg.model_path,
-                                cfg.model_backend,
-                                "GPU",
-                                0,
-                                0,
-                                0,
-                                "",
-                                cfg.model_inputs,
-                                cfg.model_outputs
-                            );
+                    std::string model_load_last_error;
+                    bool model_loaded = false;
+                    for (int attempt = 1; attempt <= model_load_retries; ++attempt) {
+                        try {
+                            if (use_multigpu_api) {
+                                std::cout << "Using SmartRedis multi-GPU API for model loading." << std::endl;
+                                if (cfg.model_backend == "TF" || cfg.model_backend == "TFLITE") {
+                                    std::cout << "Using SmartRedis multi-GPU API with extended parameters for TF/TFLITE." << std::endl;
+                                    client->set_model_from_file_multigpu(
+                                        "water_step_model_gpu",
+                                        cfg.model_path,
+                                        cfg.model_backend,
+                                        0,
+                                        cfg.gpus_per_node,
+                                        0,
+                                        0,
+                                        0,
+                                        "",
+                                        cfg.model_inputs,
+                                        cfg.model_outputs
+                                    );
+                                } else {
+                                    std::cout << "Using SmartRedis multi-GPU API with basic parameters." << std::endl;
+                                    client->set_model_from_file_multigpu("water_step_model_gpu", cfg.model_path, cfg.model_backend, 0, cfg.gpus_per_node);
+                                }
+                            } else {
+                                std::cout << "Using standard SmartRedis API for model loading." << std::endl;
+                                if (cfg.model_backend == "TF" || cfg.model_backend == "TFLITE") {
+                                    std::cout << "Using standard SmartRedis API with extended parameters for TF/TFLITE." << std::endl;
+                                    client->set_model_from_file(
+                                        "water_step_model_gpu",
+                                        cfg.model_path,
+                                        cfg.model_backend,
+                                        "GPU",
+                                        0,
+                                        0,
+                                        0,
+                                        "",
+                                        cfg.model_inputs,
+                                        cfg.model_outputs
+                                    );
+                                } else {
+                                    std::cout << "Using standard SmartRedis API with basic parameters." << std::endl;
+                                    client->set_model_from_file(
+                                        "water_step_model_gpu",
+                                        cfg.model_path,
+                                        cfg.model_backend,
+                                        "GPU",
+                                        0,
+                                        0,
+                                        0,
+                                        ""
+                                    );
+                                }
+                            }
+                            model_loaded = true;
+                            break;
+                        } catch (const std::exception& ex) {
+                            model_load_last_error = ex.what();
+                            const bool retryable =
+                                (model_load_last_error.find("CLUSTERDOWN") != std::string::npos) ||
+                                (model_load_last_error.find("cluster is down") != std::string::npos) ||
+                                (model_load_last_error.find("TRYAGAIN") != std::string::npos);
+                            std::cerr << "MODEL_LOAD_ERROR"
+                                      << " attempt=" << attempt << "/" << model_load_retries
+                                      << " retryable=" << (retryable ? "true" : "false")
+                                      << " error=" << model_load_last_error
+                                      << std::endl;
+                            if (!retryable || attempt == model_load_retries) {
+                                break;
+                            }
+                            if (model_load_backoff_ms > 0) {
+                                std::this_thread::sleep_for(std::chrono::milliseconds(model_load_backoff_ms));
+                            }
                         }
-                    } catch (const std::exception& ex) {
+                    }
+                    if (!model_loaded) {
                         std::ostringstream oss;
                         oss << "set_model_from_file failed"
                             << " path=" << cfg.model_path
@@ -2001,7 +2283,8 @@ int main(int argc, char** argv) {
                             << " world_size=" << world_size
                             << " gpus_per_node=" << cfg.gpus_per_node
                             << " use_multigpu_api=" << (use_multigpu_api ? "true" : "false")
-                            << " error=" << ex.what();
+                            << " retries=" << model_load_retries
+                            << " error=" << model_load_last_error;
                         throw std::runtime_error(oss.str());
                     }
                     const auto model_load_end = std::chrono::steady_clock::now();
@@ -2009,18 +2292,31 @@ int main(int argc, char** argv) {
                               << std::chrono::duration_cast<std::chrono::milliseconds>(model_load_end - model_load_start).count()
                               << " ms" << std::endl;
                 } else {
-                    client->set_model_from_file(
-                        "water_step_model",
-                        cfg.model_path,
-                        cfg.model_backend,
-                        cfg.device,
-                        0,
-                        0,
-                        0,
-                        "",
-                        cfg.model_inputs,
-                        cfg.model_outputs
-                    );
+                    if (cfg.model_backend == "TF" || cfg.model_backend == "TFLITE") {
+                        client->set_model_from_file(
+                            "water_step_model",
+                            cfg.model_path,
+                            cfg.model_backend,
+                            cfg.device,
+                            0,                          // batch_size
+                            0,                          // min_batch_size
+                            0,                          // min_batch_timeout
+                            "",
+                            cfg.model_inputs,
+                            cfg.model_outputs
+                        );
+                    } else {
+                        client->set_model_from_file(
+                            "water_step_model",
+                            cfg.model_path,
+                            cfg.model_backend,
+                            cfg.device,
+                            0,
+                            0,
+                            0,
+                            ""
+                        );
+                    }
                 }
             }
 
@@ -2040,6 +2336,10 @@ int main(int argc, char** argv) {
 
         Decomposition decomp = build_decomposition(cfg, MPI_COMM_WORLD, world_rank, world_size, nx, nz);
 
+        if (USE_SMARTSIM) {
+            log_cluster_shard_map(client, decomp);
+        }
+
         if (world_rank == 0) {
             std::cout << "Loaded grid metadata: nx=" << nx
                       << ", nz=" << nz
@@ -2052,6 +2352,7 @@ int main(int argc, char** argv) {
                       << ", io_mode=" << (cfg.io_mode == IoMode::ParallelHdf5 ? "parallel_hdf5" : "rank0_gather")
                       << ", save_mode=" << (cfg.save_mode == SaveMode::Periodic ? "periodic" : "triangular")
                       << ", triangular_scale=" << cfg.triangular_scale
+                      << ", ml_batch_size=" << cfg.ml_batch_size
                       << ", hdf5_xfer_mode=" << (cfg.hdf5_xfer_mode == Hdf5XferMode::Collective ? "collective" : "independent")
                       << ", sync_mode="
                       << (cfg.mpi_sync_mode == SyncMode::None ? "none" : (cfg.mpi_sync_mode == SyncMode::Step ? "step" : "report"))
@@ -2083,12 +2384,9 @@ int main(int argc, char** argv) {
 
             std::cout << "Preparing terrain tiles for ML model" << std::endl;
 
-            const int BATCH_SIZE = decomp.local_nz * decomp.local_nx;
+            const std::size_t BATCH_SIZE = static_cast<std::size_t>(decomp.local_nz) * static_cast<std::size_t>(decomp.local_nx);
 
-            std::vector<float***> tiles_batch(static_cast<std::size_t>(BATCH_SIZE));
-            std::vector<float**> tile_channels(static_cast<std::size_t>(BATCH_SIZE));
-            std::vector<float*> tile_rows(static_cast<std::size_t>(BATCH_SIZE) * 3);
-            std::vector<float> terrain_tiles(static_cast<std::size_t>(BATCH_SIZE) * 9, 0.0F);
+            std::vector<float> terrain_tiles(BATCH_SIZE * 9, 0.0F);
 
             for (int i = 0; i < decomp.local_nz; ++i) {
                 for (int j = 0; j < decomp.local_nx; ++j) {
@@ -2096,29 +2394,46 @@ int main(int argc, char** argv) {
                     const int jj = j + 1;
                     const std::size_t b = static_cast<std::size_t>(i * decomp.local_nx + j);
                     float* tile_flat = &terrain_tiles[b * 9];
-                    tiles_batch[b] = &tile_channels[b];
-                    tile_channels[b] = &tile_rows[b * 3];
                     for (int di = -1; di <= 1; ++di) {
-                        tile_rows[b * 3 + static_cast<std::size_t>(di + 1)] = tile_flat + static_cast<std::size_t>((di + 1) * 3);
                         for (int dj = -1; dj <= 1; ++dj) {
                             const int n_i = ii + di;
                             const int n_j = jj + dj;
                             const std::size_t tile_idx = static_cast<std::size_t>((di + 1) * 3 + (dj + 1));
-                            //tile_flat[tile_idx] = terrain[local_index(n_i, n_j, pitch)];
-                            //tiles[di + 1][dj + 1] = terrain[local_index(n_i, n_j, pitch)];
                             tile_flat[tile_idx] = terrain[local_index(n_i, n_j, pitch)];
                         }
                     }
                 }
             }
 
+            std::vector<float***> chunk_batch;
+            std::vector<float**> chunk_channels;
+            std::vector<float*> chunk_rows;
+            const std::size_t chunk_cap = std::min<std::size_t>(BATCH_SIZE, static_cast<std::size_t>(cfg.ml_batch_size));
 
-            client->put_tensor(
-                "terrain_tile_" + std::to_string(decomp.world_rank),
-                const_cast<float****>(tiles_batch.data()),
-                std::vector<size_t>{static_cast<size_t>(BATCH_SIZE), 1, 3, 3},
-                SRTensorType::SRTensorTypeFloat,
-                SRMemoryLayout::SRMemLayoutNested);
+            for (std::size_t chunk_begin = 0, chunk_id = 0; chunk_begin < BATCH_SIZE;
+                 chunk_begin += chunk_cap, ++chunk_id) {
+                const std::size_t chunk_count = std::min<std::size_t>(chunk_cap, BATCH_SIZE - chunk_begin);
+                build_nested_view_for_packed_tiles_chunk(
+                    terrain_tiles,
+                    chunk_begin,
+                    chunk_count,
+                    chunk_batch,
+                    chunk_channels,
+                    chunk_rows);
+
+                const std::string terrain_key = "terrain_tile_" + std::to_string(decomp.world_rank) + "_" + std::to_string(chunk_id);
+                client->put_tensor(
+                    terrain_key,
+                    const_cast<float****>(chunk_batch.data()),
+                    std::vector<size_t>{chunk_count, 1, 3, 3},
+                    SRTensorType::SRTensorTypeFloat,
+                    SRMemoryLayout::SRMemLayoutNested);
+
+                log_tensor_shard_location(client,
+                                          decomp,
+                                          terrain_key,
+                                          "put_tensor");
+            }
 
             std::cout << "Finished preparing terrain tiles for ML model" << std::endl;
 
@@ -2126,12 +2441,8 @@ int main(int argc, char** argv) {
 
         StepScratch step_scratch(decomp.local_nz, decomp.local_nx);
 
-        MlNestedBatchView ml_batch_view_water;
-        MlNestedBatchView ml_batch_view_next;
         std::vector<float> ml_tile_output;
         if (USE_SMARTSIM) {
-            ml_batch_view_water = create_ml_nested_batch_view(water, decomp);
-            ml_batch_view_next = create_ml_nested_batch_view(next, decomp);
             ml_tile_output.resize(static_cast<std::size_t>(decomp.local_nz) * static_cast<std::size_t>(decomp.local_nx), 0.0F);
         }
 
@@ -2182,10 +2493,6 @@ int main(int argc, char** argv) {
                 const bool use_ml_step = ((step % 2) == 0) && USE_SMARTSIM;
                 
                 if (use_ml_step) {
-
-                    const MlNestedBatchView& active_ml_view =
-                        (water.data() == ml_batch_view_water.base_data) ? ml_batch_view_water : ml_batch_view_next;
-
                     moved_this_step_local = compute_local_step_ml(
                         client,
                         terrain,
@@ -2194,7 +2501,6 @@ int main(int argc, char** argv) {
                         decomp,
                         cfg.clamp_epsilon,
                         cfg,
-                        active_ml_view,
                         ml_tile_output);
 
                 } else {
