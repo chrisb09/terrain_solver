@@ -11,3 +11,10 @@ __pycache__/
 _cmake_deps/
 
 compression_test/
+
+
+smartsim_experiments/
+
+*benchmark_giant_mlp*.pt
+*benchmark_giant_mlp*.pb
+*benchmark_giant_mlp*.onnx
