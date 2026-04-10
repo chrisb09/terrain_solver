@@ -4,6 +4,7 @@
 import argparse
 import shutil
 import os
+import sys
 from os import environ as env
 import time
 import subprocess
@@ -27,10 +28,9 @@ print(f"  Hostname file: {args.hostname_file}")
 use_gpu = args.use_gpu
 
 device = "GPU" if use_gpu else "CPU"
-python_env = "/hpcwork/ro092286/smartsim/python/smartsim_cpu" if not use_gpu else "/hpcwork/ro092286/smartsim/python/smartsim_cuda-12"
 queue = "c23g" if use_gpu else "c23ms"
 
-print(f"Using device: {'GPU' if use_gpu else 'CPU'} (device={device}, python_env={python_env}, queue={queue})")
+print(f"Using device: {'GPU' if use_gpu else 'CPU'} (device={device}, python_exe={sys.executable}, queue={queue})")
 
 if use_gpu:
     env.setdefault("CUDA_LAUNCH_BLOCKING", "1")
@@ -103,7 +103,7 @@ print(f"DB address: {address}")
 
 if args.hostname_file is not None:
     with open(args.hostname_file, "w") as f:
-        f.write(address[0])
+        f.write(",".join(address))
 
 print(f"Wrote database hostname to file: {args.hostname_file}", flush=True)
 
