@@ -3,29 +3,19 @@
     {
       "backend": "TORCH",
       "input_dtypes": [
-        "float32",
         "float32"
       ],
-      "io_layout": "split_3x3",
       "input_shapes": [
         [
           null,
-          1,
-          3,
-          3
-        ],
-        [
-          null,
-          1,
-          3,
-          3
+          18
         ]
       ],
       "inputs": [
-        "x_water",
-        "x_terrain"
+        "x_packed"
       ],
-      "model_name": "watercnn",
+      "io_layout": "flat_contiguous",
+      "model_name": "benchmark_giant_mlp",
       "output_dtypes": [
         "float32"
       ],
@@ -37,34 +27,24 @@
       "outputs": [
         "y"
       ],
-      "path": "/rwthfs/rz/cluster/hpcwork/ro092286/smartsim/mini_app/train_models/model_a/best_model_jit_watercnn.pt"
+      "path": "/rwthfs/rz/cluster/hpcwork/ro092286/smartsim/mini_app/train_models/model_a/best_model_jit_benchmark_giant_mlp_flat.pt"
     },
     {
       "backend": "ONNX",
       "input_dtypes": [
-        "float32",
         "float32"
       ],
-      "io_layout": "split_3x3",
       "input_shapes": [
         [
           null,
-          1,
-          3,
-          3
-        ],
-        [
-          null,
-          1,
-          3,
-          3
+          18
         ]
       ],
       "inputs": [
-        "x_water",
-        "x_terrain"
+        "x_packed"
       ],
-      "model_name": "watercnn",
+      "io_layout": "flat_contiguous",
+      "model_name": "benchmark_giant_mlp",
       "output_dtypes": [
         "float32"
       ],
@@ -76,34 +56,24 @@
       "outputs": [
         "y"
       ],
-      "path": "/rwthfs/rz/cluster/hpcwork/ro092286/smartsim/mini_app/train_models/model_a/best_model_watercnn.onnx"
+      "path": "/rwthfs/rz/cluster/hpcwork/ro092286/smartsim/mini_app/train_models/model_a/best_model_benchmark_giant_mlp_flat.onnx"
     },
     {
       "backend": "TF",
       "input_dtypes": [
-        "float32",
         "float32"
       ],
-      "io_layout": "split_3x3",
       "input_shapes": [
         [
           null,
-          1,
-          3,
-          3
-        ],
-        [
-          null,
-          1,
-          3,
-          3
+          18
         ]
       ],
       "inputs": [
-        "x_water",
-        "x_terrain"
+        "x_packed"
       ],
-      "model_name": "watercnn",
+      "io_layout": "flat_contiguous",
+      "model_name": "benchmark_giant_mlp",
       "output_dtypes": [
         "float32"
       ],
@@ -115,9 +85,9 @@
       "outputs": [
         "Identity"
       ],
-      "path": "/rwthfs/rz/cluster/hpcwork/ro092286/smartsim/mini_app/train_models/model_a/best_model_tf_watercnn.pb"
+      "path": "/rwthfs/rz/cluster/hpcwork/ro092286/smartsim/mini_app/train_models/model_a/best_model_tf_benchmark_giant_mlp_flat.pb"
     }
   ],
-  "model_name": "watercnn",
+  "model_name": "benchmark_giant_mlp",
   "version": 1
 }

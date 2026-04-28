@@ -53,6 +53,10 @@ MODEL_INPUT_NAMES = ["x_water", "x_terrain"]
 MODEL_OUTPUT_NAMES = ["y"]
 MODEL_INPUT_SHAPE = [None, 1, 3, 3]
 MODEL_OUTPUT_SHAPE = [None]
+MODEL_IO_LAYOUT_SPLIT = "split_3x3"
+MODEL_IO_LAYOUT_FLAT = "flat_contiguous"
+MODEL_INPUT_NAMES_FLAT = ["x_packed"]
+MODEL_INPUT_SHAPE_FLAT = [None, 18]
 
 def parse_args():
     p = argparse.ArgumentParser(description="Train WaterCNN")
@@ -123,6 +127,12 @@ def parse_args():
     p.add_argument("--artifact-manifest", default="artifact_manifest.json",
                    help="Path to save a JSON manifest describing exported primary-inference artifacts. "
                         "Use '{model}' placeholder or keep default for automatic model suffix.")
+    p.add_argument("--export-io-layout", choices=[MODEL_IO_LAYOUT_SPLIT, MODEL_IO_LAYOUT_FLAT],
+                   default=MODEL_IO_LAYOUT_SPLIT,
+                   help="Primary inference artifact input layout. "
+                        "'split_3x3' exports two inputs (water, terrain); "
+                        "'flat_contiguous' exports a single flattened input of length 18 per sample "
+                        "(water 3x3 followed by terrain 3x3).")
     p.add_argument("--export-field-inference", action="store_true",
                    help="Export a TorchScript field-inference model (water/terrain tiles with halo -> NxN output)")
     p.add_argument("--field-inference-output", default="best_model_field_jit.pt",
@@ -192,16 +202,27 @@ def normalize_export_backends(backends) -> list[str]:
 
 def build_artifact_record(model_name: str, backend: str, path: str, *,
                           inputs=None, outputs=None, input_shapes=None,
-                          output_shapes=None, input_dtypes=None, output_dtypes=None) -> dict:
+                          output_shapes=None, input_dtypes=None, output_dtypes=None,
+                          io_layout: str = MODEL_IO_LAYOUT_SPLIT) -> dict:
+    if io_layout == MODEL_IO_LAYOUT_FLAT:
+        default_inputs = MODEL_INPUT_NAMES_FLAT
+        default_input_shapes = [MODEL_INPUT_SHAPE_FLAT]
+        default_input_dtypes = ["float32"]
+    else:
+        default_inputs = MODEL_INPUT_NAMES
+        default_input_shapes = [MODEL_INPUT_SHAPE, MODEL_INPUT_SHAPE]
+        default_input_dtypes = ["float32", "float32"]
+
     return {
         "model_name": model_name,
         "backend": backend.upper(),
         "path": os.path.abspath(path),
-        "inputs": list(inputs if inputs is not None else MODEL_INPUT_NAMES),
+        "io_layout": io_layout,
+        "inputs": list(inputs if inputs is not None else default_inputs),
         "outputs": list(outputs if outputs is not None else MODEL_OUTPUT_NAMES),
-        "input_shapes": list(input_shapes if input_shapes is not None else [MODEL_INPUT_SHAPE, MODEL_INPUT_SHAPE]),
+        "input_shapes": list(input_shapes if input_shapes is not None else default_input_shapes),
         "output_shapes": list(output_shapes if output_shapes is not None else [MODEL_OUTPUT_SHAPE]),
-        "input_dtypes": list(input_dtypes if input_dtypes is not None else ["float32", "float32"]),
+        "input_dtypes": list(input_dtypes if input_dtypes is not None else default_input_dtypes),
         "output_dtypes": list(output_dtypes if output_dtypes is not None else ["float32"]),
     }
 
@@ -293,7 +314,20 @@ def load_checkpoint(checkpoint_path, model, optimizer=None, scheduler=None, devi
     }
 
 
-def export_inference_model(model: nn.Module, output_path, device):
+class PackedDualInputWrapper(nn.Module):
+    def __init__(self, model: nn.Module):
+        super().__init__()
+        self.model = model
+
+    def forward(self, x_packed: torch.Tensor) -> torch.Tensor:
+        if x_packed.dim() != 2 or x_packed.shape[1] != 18:
+            raise RuntimeError("Expected packed input shape [N, 18].")
+        x_water = x_packed[:, :9].reshape(-1, 1, 3, 3)
+        x_terrain = x_packed[:, 9:].reshape(-1, 1, 3, 3)
+        return self.model(x_water, x_terrain)
+
+
+def export_inference_model(model: nn.Module, output_path, device, io_layout: str = MODEL_IO_LAYOUT_SPLIT):
     """Export a TorchScript artifact for inference."""
     was_training = model.training
     model.eval()
@@ -352,17 +386,30 @@ def export_inference_model(model: nn.Module, output_path, device):
             if hasattr(layer, "self_attn") and hasattr(layer.self_attn, "dropout"):
                 layer.self_attn.dropout = 0.0
 
+    export_model = model
+    if io_layout == MODEL_IO_LAYOUT_FLAT:
+        export_model = PackedDualInputWrapper(model)
+    export_model = export_model.to(device).eval()
+
     example_water = torch.zeros(1, 1, 3, 3, device=device)
     example_terrain = torch.zeros(1, 1, 3, 3, device=device)
+    example_packed = torch.zeros(1, 18, device=device)
     try:
         try:
-            scripted_model = torch.jit.script(model)
+            scripted_model = torch.jit.script(export_model)
         except Exception:
-            scripted_model = torch.jit.trace(
-                model,
-                (example_water, example_terrain),
-                check_trace=False,
-            )
+            if io_layout == MODEL_IO_LAYOUT_FLAT:
+                scripted_model = torch.jit.trace(
+                    export_model,
+                    example_packed,
+                    check_trace=False,
+                )
+            else:
+                scripted_model = torch.jit.trace(
+                    export_model,
+                    (example_water, example_terrain),
+                    check_trace=False,
+                )
         scripted_model.save(output_path)
     finally:
         if restore_encoder_layer_states is not None:
@@ -439,7 +486,7 @@ def export_field_iter_model(model: nn.Module, output_path, device, steps, exampl
         model.train()
 
 
-def export_onnx_model(model: nn.Module, output_path: str) -> dict:
+def export_onnx_model(model: nn.Module, output_path: str, io_layout: str = MODEL_IO_LAYOUT_SPLIT) -> dict:
     """Export an ONNX artifact for primary inference."""
     ensure_parent_dir(output_path)
     try:
@@ -449,27 +496,53 @@ def export_onnx_model(model: nn.Module, output_path: str) -> dict:
             "ONNX export requested but the 'onnx' package is not installed in this Python environment."
         ) from exc
 
-    export_model = copy.deepcopy(model).cpu().eval()
-    if isinstance(export_model, WaterTransformerMLP):
-        export_model = ONNXWaterTransformerMLP(export_model).eval()
-    example_water = torch.zeros(1, 1, 3, 3, dtype=torch.float32)
-    example_terrain = torch.zeros(1, 1, 3, 3, dtype=torch.float32)
+    base_model = copy.deepcopy(model).cpu().eval()
+    if isinstance(base_model, WaterTransformerMLP):
+        base_model = ONNXWaterTransformerMLP(base_model).eval()
+
+    if io_layout == MODEL_IO_LAYOUT_FLAT:
+        export_model = PackedDualInputWrapper(base_model).eval()
+        example_packed = torch.zeros(1, 18, dtype=torch.float32)
+        input_names = MODEL_INPUT_NAMES_FLAT
+        dynamic_axes = {
+            MODEL_INPUT_NAMES_FLAT[0]: {0: "batch"},
+            "y": {0: "batch"},
+        }
+    else:
+        export_model = base_model
+        example_water = torch.zeros(1, 1, 3, 3, dtype=torch.float32)
+        example_terrain = torch.zeros(1, 1, 3, 3, dtype=torch.float32)
+        input_names = MODEL_INPUT_NAMES
+        dynamic_axes = {
+            "x_water": {0: "batch"},
+            "x_terrain": {0: "batch"},
+            "y": {0: "batch"},
+        }
+
     with torch.no_grad():
-        torch.onnx.export(
-            export_model,
-            (example_water, example_terrain),
-            output_path,
-            input_names=MODEL_INPUT_NAMES,
-            output_names=MODEL_OUTPUT_NAMES,
-            dynamic_axes={
-                "x_water": {0: "batch"},
-                "x_terrain": {0: "batch"},
-                "y": {0: "batch"},
-            },
-            opset_version=17,
-            do_constant_folding=True,
-        )
-    return build_artifact_record(model_name="", backend="ONNX", path=output_path)
+        if io_layout == MODEL_IO_LAYOUT_FLAT:
+            torch.onnx.export(
+                export_model,
+                example_packed,
+                output_path,
+                input_names=input_names,
+                output_names=MODEL_OUTPUT_NAMES,
+                dynamic_axes=dynamic_axes,
+                opset_version=17,
+                do_constant_folding=True,
+            )
+        else:
+            torch.onnx.export(
+                export_model,
+                (example_water, example_terrain),
+                output_path,
+                input_names=input_names,
+                output_names=MODEL_OUTPUT_NAMES,
+                dynamic_axes=dynamic_axes,
+                opset_version=17,
+                do_constant_folding=True,
+            )
+    return build_artifact_record(model_name="", backend="ONNX", path=output_path, io_layout=io_layout)
 
 
 class ONNXWaterTransformerMLP(nn.Module):
@@ -868,7 +941,7 @@ def build_tensorflow_export_model(model: nn.Module):
     raise TypeError(f"TensorFlow export is not implemented for model type: {type(model).__name__}")
 
 
-def export_tensorflow_frozen_model(model: nn.Module, output_path: str) -> dict:
+def export_tensorflow_frozen_model(model: nn.Module, output_path: str, io_layout: str = MODEL_IO_LAYOUT_SPLIT) -> dict:
     """Export a TensorFlow frozen graph for primary inference."""
     ensure_parent_dir(output_path)
     try:
@@ -881,17 +954,31 @@ def export_tensorflow_frozen_model(model: nn.Module, output_path: str) -> dict:
 
     tf_model = build_tensorflow_export_model(copy.deepcopy(model).cpu().eval())
 
-    @tf.function(
-        input_signature=[
-            tf.TensorSpec(shape=[None, 1, 3, 3], dtype=tf.float32, name="x_water"),
-            tf.TensorSpec(shape=[None, 1, 3, 3], dtype=tf.float32, name="x_terrain"),
-        ]
-    )
-    def model_fn(x_water, x_terrain):
-        x_water_nhwc = tf.transpose(x_water, perm=[0, 2, 3, 1])
-        x_terrain_nhwc = tf.transpose(x_terrain, perm=[0, 2, 3, 1])
-        y = tf_model(x_water_nhwc, x_terrain_nhwc)
-        return tf.identity(y, name="y")
+    if io_layout == MODEL_IO_LAYOUT_FLAT:
+        @tf.function(
+            input_signature=[
+                tf.TensorSpec(shape=[None, 18], dtype=tf.float32, name="x_packed"),
+            ]
+        )
+        def model_fn(x_packed):
+            x_water = tf.reshape(x_packed[:, :9], [-1, 1, 3, 3])
+            x_terrain = tf.reshape(x_packed[:, 9:], [-1, 1, 3, 3])
+            x_water_nhwc = tf.transpose(x_water, perm=[0, 2, 3, 1])
+            x_terrain_nhwc = tf.transpose(x_terrain, perm=[0, 2, 3, 1])
+            y = tf_model(x_water_nhwc, x_terrain_nhwc)
+            return tf.identity(y, name="y")
+    else:
+        @tf.function(
+            input_signature=[
+                tf.TensorSpec(shape=[None, 1, 3, 3], dtype=tf.float32, name="x_water"),
+                tf.TensorSpec(shape=[None, 1, 3, 3], dtype=tf.float32, name="x_terrain"),
+            ]
+        )
+        def model_fn(x_water, x_terrain):
+            x_water_nhwc = tf.transpose(x_water, perm=[0, 2, 3, 1])
+            x_terrain_nhwc = tf.transpose(x_terrain, perm=[0, 2, 3, 1])
+            y = tf_model(x_water_nhwc, x_terrain_nhwc)
+            return tf.identity(y, name="y")
 
     concrete_func = model_fn.get_concrete_function()
     frozen_func = convert_variables_to_constants_v2(concrete_func)
@@ -906,6 +993,7 @@ def export_tensorflow_frozen_model(model: nn.Module, output_path: str) -> dict:
         path=output_path,
         inputs=input_names,
         outputs=output_names,
+        io_layout=io_layout,
     )
 
 
@@ -922,20 +1010,32 @@ def export_primary_inference_artifacts(model: nn.Module, model_name: str, device
 
     for backend in selected_backends:
         if backend == "torch":
-            export_inference_model(model, args.inference_output, device)
+            export_inference_model(model, args.inference_output, device, io_layout=args.export_io_layout)
+            if args.export_io_layout == MODEL_IO_LAYOUT_FLAT:
+                artifact_inputs = MODEL_INPUT_NAMES_FLAT
+                artifact_input_shapes = [MODEL_INPUT_SHAPE_FLAT]
+                artifact_input_dtypes = ["float32"]
+            else:
+                artifact_inputs = MODEL_INPUT_NAMES
+                artifact_input_shapes = [MODEL_INPUT_SHAPE, MODEL_INPUT_SHAPE]
+                artifact_input_dtypes = ["float32", "float32"]
             artifacts.append(
                 build_artifact_record(
                     model_name=model_name,
                     backend="TORCH",
                     path=args.inference_output,
+                    inputs=artifact_inputs,
+                    input_shapes=artifact_input_shapes,
+                    input_dtypes=artifact_input_dtypes,
+                    io_layout=args.export_io_layout,
                 )
             )
         elif backend == "onnx":
-            artifact = export_onnx_model(model, args.onnx_output)
+            artifact = export_onnx_model(model, args.onnx_output, io_layout=args.export_io_layout)
             artifact["model_name"] = model_name
             artifacts.append(artifact)
         elif backend == "tf":
-            artifact = export_tensorflow_frozen_model(model, args.tf_output)
+            artifact = export_tensorflow_frozen_model(model, args.tf_output, io_layout=args.export_io_layout)
             artifact["model_name"] = model_name
             artifacts.append(artifact)
 
@@ -1851,6 +1951,7 @@ def main():
         print(f"Distributed: {distributed}  world_size: {world_size}  device: {device}", flush=True)
         print(f"Model architecture: {args.model}", flush=True)
         print(f"Primary export backends: {', '.join(args.export_backends)}", flush=True)
+        print(f"Primary export I/O layout: {args.export_io_layout}", flush=True)
         print(f"Train/Val split: {100.0 * (1.0 - effective_val_ratio):.1f}% / {100.0 * effective_val_ratio:.1f}%", flush=True)
         print(f"CPU threads: {num_threads}  DataLoader workers: {num_workers}", flush=True)
         print(f"Cache mode: {args.cache_mode}"
