@@ -1,0 +1,56 @@
+=== CONTROLLER_ATTEMPT 1/2 ===
+Experiment configuration:
+  Database nodes: 3
+  Use GPU: True
+  CPU cores per node for database: 24
+  Heterogeneous group: 1
+  Hostname file: db_hostname_66832177.txt
+Using device: GPU (device=GPU, python_exe=/tmp/ro092286/smartsim_runtime/smartsim_cuda-12/bin/python3, queue=c23g)
+GPU debug environment:
+  CUDA_LAUNCH_BLOCKING=1
+  CUDA_VISIBLE_DEVICES=<unset>
+  SLURM_JOB_GPUS=<unset>
+  SLURM_STEP_GPUS=<unset>
+  SLURM_GPUS_ON_NODE=<unset>
+  SLURM_GPUS_PER_NODE=<unset>
+  SLURM_GPUS_PER_TASK=<unset>
+Torch CUDA diagnostics:
+  torch.__version__=2.4.0+cu124
+  torch.cuda.is_available()=False
+  torch.cuda.device_count()=0
+nvidia-smi diagnostics failed: [Errno 2] No such file or directory: 'nvidia-smi'
+21:58:27 n23m0082.hpc.itc.rwth-aachen.de SmartSim[30563:MainThread] ERROR Failed to parse the launched DB shard information from file(s) /rwthfs/rz/cluster/hpcwork/ro092286/smartsim/mini_app/smartsim_experiments/66832177/orchestrator/orchestrator_0.out. Found the information for 0 out of 1 DB shards.
+Traceback (most recent call last):
+  File "/rwthfs/rz/cluster/hpcwork/ro092286/smartsim/mini_app/smartsim_controller.py", line 94, in <module>
+    db.set_db_conf("cluster-node-timeout", env.get("SMARTSIM_CLUSTER_NODE_TIMEOUT_MS", "120000"))
+  File "/tmp/ro092286/smartsim_runtime/smartsim_cuda-12/lib64/python3.9/site-packages/smartsim/database/orchestrator.py", line 662, in set_db_conf
+    raise SmartSimError(
+smartsim.error.errors.SmartSimError: The SmartSim Orchestrator must be active in order to set the database's configurations.
+=== CONTROLLER_ATTEMPT 2/2 ===
+Experiment configuration:
+  Database nodes: 3
+  Use GPU: True
+  CPU cores per node for database: 24
+  Heterogeneous group: 1
+  Hostname file: db_hostname_66832177.txt
+Using device: GPU (device=GPU, python_exe=/tmp/ro092286/smartsim_runtime/smartsim_cuda-12/bin/python3, queue=c23g)
+GPU debug environment:
+  CUDA_LAUNCH_BLOCKING=1
+  CUDA_VISIBLE_DEVICES=<unset>
+  SLURM_JOB_GPUS=<unset>
+  SLURM_STEP_GPUS=<unset>
+  SLURM_GPUS_ON_NODE=<unset>
+  SLURM_GPUS_PER_NODE=<unset>
+  SLURM_GPUS_PER_TASK=<unset>
+Torch CUDA diagnostics:
+  torch.__version__=2.4.0+cu124
+  torch.cuda.is_available()=False
+  torch.cuda.device_count()=0
+nvidia-smi diagnostics failed: [Errno 2] No such file or directory: 'nvidia-smi'
+21:58:51 n23m0082.hpc.itc.rwth-aachen.de SmartSim[30672:MainThread] ERROR Failed to parse the launched DB shard information from file(s) /rwthfs/rz/cluster/hpcwork/ro092286/smartsim/mini_app/smartsim_experiments/66832177/orchestrator/orchestrator_0.out. Found the information for 0 out of 1 DB shards.
+Traceback (most recent call last):
+  File "/rwthfs/rz/cluster/hpcwork/ro092286/smartsim/mini_app/smartsim_controller.py", line 94, in <module>
+    db.set_db_conf("cluster-node-timeout", env.get("SMARTSIM_CLUSTER_NODE_TIMEOUT_MS", "120000"))
+  File "/tmp/ro092286/smartsim_runtime/smartsim_cuda-12/lib64/python3.9/site-packages/smartsim/database/orchestrator.py", line 662, in set_db_conf
+    raise SmartSimError(
+smartsim.error.errors.SmartSimError: The SmartSim Orchestrator must be active in order to set the database's configurations.
