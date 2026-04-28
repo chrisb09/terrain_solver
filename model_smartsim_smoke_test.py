@@ -59,6 +59,15 @@ def parse_args():
         help="Model backend for SmartRedis. Options: TF, TFLITE, TORCH, ONNX",
     )
     p.add_argument(
+        "--model-io-layout",
+        choices=["auto", "split_3x3", "flat_contiguous"],
+        default="auto",
+        help=(
+            "Model input layout used for test tensors and run_model inputs. "
+            "'auto' resolves from manifest io_layout (or falls back to split_3x3)."
+        ),
+    )
+    p.add_argument(
         "--tf-inputs",
         nargs="*",
         default=None,
@@ -164,6 +173,17 @@ def _artifact_manifest_was_explicitly_set(argv: list[str]) -> bool:
 
 def resolve_manifest_path(args) -> Path:
     manifest_path = args.artifact_manifest
+
+    if args.model_io_layout == "flat_contiguous":
+        flat_candidate = manifest_path.with_name(f"artifact_manifest_{args.model_id}_flat.json")
+        if flat_candidate.exists():
+            if flat_candidate != manifest_path:
+                print(
+                    f"Using flat artifact manifest for model_id='{args.model_id}': {flat_candidate}",
+                    flush=True,
+                )
+            return flat_candidate.resolve()
+
     if _artifact_manifest_was_explicitly_set(sys.argv[1:]):
         return manifest_path.resolve()
 
@@ -194,21 +214,6 @@ def resolve_artifact_from_manifest(manifest: dict, model_id: str, backend: str) 
     for artifact in manifest.get("artifacts", []):
         if artifact.get("model_name") == model_id and str(artifact.get("backend", "")).upper() == backend:
             return artifact
-        if artifact.get("model_name") == model_id:
-            print(
-                f"Warning: Found artifact for model_id='{model_id}' but backend='{artifact.get('backend')}' does not match requested backend='{backend}'. Skipping this artifact.",
-                flush=True,
-            )
-        elif str(artifact.get("backend", "")).upper() == backend:
-            print(
-                f"Warning: Found artifact for backend='{backend}' but model_id='{artifact.get('model_name')}' does not match requested model_id='{model_id}'. Skipping this artifact.",
-                flush=True,
-            )
-        else:
-            print(
-                f"Warning: Found artifact with model_id='{artifact.get('model_name')}' and backend='{artifact.get('backend')}' that does not match requested model_id='{model_id}' and backend='{backend}'. Skipping this artifact.",
-                flush=True,
-            )
     raise KeyError(
         f"No artifact for model_id='{model_id}' and backend='{backend}' in manifest."
     )
@@ -378,6 +383,56 @@ def check_onnx_gpu_backend_dependencies() -> None:
     raise RuntimeError(" ".join(suggestions))
 
 
+def resolve_tf_cuda_root() -> Optional[Path]:
+    env_roots = [
+        os.environ.get("EBROOTCUDA"),
+        os.environ.get("CUDA_HOME"),
+        os.environ.get("CUDA_ROOT"),
+    ]
+
+    candidate_roots = [Path(root) for root in env_roots if root]
+    candidate_roots.extend(
+        [
+            Path("/usr/local/cuda"),
+            Path("/usr/local/cuda-12.4"),
+        ]
+    )
+
+    seen = set()
+    for root in candidate_roots:
+        key = str(root)
+        if key in seen:
+            continue
+        seen.add(key)
+        libdevice = root / "nvvm" / "libdevice" / "libdevice.10.bc"
+        if libdevice.exists():
+            return root
+    return None
+
+
+def configure_tf_xla_cuda_data_dir(backend: str, device: str) -> None:
+    if backend != "TF" or device != "GPU":
+        return
+
+    cuda_root = resolve_tf_cuda_root()
+    if cuda_root is None:
+        print(
+            "[smoke] Warning: Could not locate CUDA libdevice. TF GPU XLA may fail with JIT errors (e.g. Rsqrt).",
+            flush=True,
+        )
+        return
+
+    existing = os.environ.get("XLA_FLAGS", "")
+    if "xla_gpu_cuda_data_dir" not in existing:
+        addon = f"--xla_gpu_cuda_data_dir={cuda_root}"
+        os.environ["XLA_FLAGS"] = f"{existing} {addon}".strip()
+
+    print(
+        f"[smoke] TF XLA CUDA data dir: {cuda_root}",
+        flush=True,
+    )
+
+
 def main():
     args = parse_args()
 
@@ -394,6 +449,9 @@ def main():
         manifest = load_manifest(manifest_path)
         artifact = resolve_artifact_from_manifest(manifest, args.model_id, backend)
         model_path = Path(artifact["path"]).resolve()
+        manifest_io_layout = str(artifact.get("io_layout", "")).strip().lower()
+        if args.model_io_layout == "auto" and manifest_io_layout in {"split_3x3", "flat_contiguous"}:
+            args.model_io_layout = manifest_io_layout
     else:
         model_path = args.model.resolve()
 
@@ -419,6 +477,25 @@ def main():
 
     tf_inputs = normalize_name_list(args.tf_inputs)
     tf_outputs = normalize_name_list(args.tf_outputs)
+    if args.model_io_layout == "auto":
+        artifact_io_layout = "split_3x3"
+        if artifact is not None:
+            manifest_layout = str(artifact.get("io_layout", "")).strip().lower()
+            if manifest_layout in {"split_3x3", "flat_contiguous"}:
+                artifact_io_layout = manifest_layout
+            else:
+                manifest_inputs = artifact.get("inputs") or []
+                artifact_io_layout = "flat_contiguous" if len(manifest_inputs) == 1 else "split_3x3"
+    else:
+        artifact_io_layout = args.model_io_layout
+        if artifact is not None:
+            manifest_layout = str(artifact.get("io_layout", "")).strip().lower()
+            if manifest_layout in {"split_3x3", "flat_contiguous"} and manifest_layout != artifact_io_layout:
+                print(
+                    f"[smoke] Warning: --model-io-layout={artifact_io_layout} overrides manifest io_layout={manifest_layout}",
+                    flush=True,
+                )
+
     if artifact is not None and backend == "TF":
         if tf_inputs is None:
             tf_inputs = artifact.get("inputs")
@@ -434,6 +511,8 @@ def main():
 
     if device == "GPU":
         print(f"Using device: {device} with num_devices={num_devices}")
+
+    configure_tf_xla_cuda_data_dir(backend, device)
 
     from smartsim.experiment import Experiment
     from smartredis import Client
@@ -489,6 +568,7 @@ def main():
             f"[smoke] Loading model '{args.model_name}' from {model_path} with backend={backend} on device={device} ...",
             flush=True,
         )
+        print(f"[smoke] Artifact model io_layout={artifact_io_layout}", flush=True)
         load_kwargs = {}
         if backend == "TF":
             load_kwargs["inputs"] = tf_inputs
@@ -519,6 +599,7 @@ def main():
         input_dim = args.input_dim
         x_water = np.zeros((input_dim, 1, 3, 3), dtype=np.float32)
         x_terrain = np.zeros((input_dim, 1, 3, 3), dtype=np.float32)
+        x_packed = np.zeros((input_dim, 18), dtype=np.float32)
 
         client_bs = int(math.ceil(input_dim / len(clients)))
         num_batches = int(math.ceil(input_dim / client_bs))
@@ -530,9 +611,14 @@ def main():
         for i in range(input_dim):
             x_water[i:i + client_bs, :, :, :] = i % 100
             x_terrain[i:i + client_bs, :, :, :] = (i * 10) % 255
+            x_packed[i, :9] = x_water[i, 0, :, :].reshape(-1)
+            x_packed[i, 9:] = x_terrain[i, 0, :, :].reshape(-1)
         for i in range(num_batches):
-            client.put_tensor(f"smoke_x_water_{i}", x_water[i:i + client_bs, :, :, :])
-            client.put_tensor(f"smoke_x_terrain_{i}", x_terrain[i:i + client_bs, :, :, :])
+            if artifact_io_layout == "flat_contiguous":
+                client.put_tensor(f"smoke_x_packed_{i}", x_packed[i:i + client_bs, :])
+            else:
+                client.put_tensor(f"smoke_x_water_{i}", x_water[i:i + client_bs, :, :, :])
+                client.put_tensor(f"smoke_x_terrain_{i}", x_terrain[i:i + client_bs, :, :, :])
 
         worker_count = len(clients)
         total_model_calls = num_batches * args.repeats
@@ -543,26 +629,31 @@ def main():
 
         worker_batches = [list(range(worker_id, num_batches, worker_count)) for worker_id in range(worker_count)]
         worker_errors = []
+        worker_errors_lock = threading.Lock()
 
         def _worker_run(worker_id, worker_client):
             batches = worker_batches[worker_id]
-            for _ in range(args.repeats):
-                for batch_id in batches:
-                    if device == "GPU" and num_devices > 1 and backend != "TF":
-                        worker_client.run_model_multigpu(
-                            name=args.model_name,
-                            offset=batch_id % num_devices,
-                            first_gpu=0,
-                            num_gpus=num_devices,
-                            inputs=[f"smoke_x_water_{batch_id}", f"smoke_x_terrain_{batch_id}"],
-                            outputs=[f"smoke_y_{batch_id}"],
-                        )
-                    else:
-                        worker_client.run_model(
-                            name=args.model_name,
-                            inputs=[f"smoke_x_water_{batch_id}", f"smoke_x_terrain_{batch_id}"],
-                            outputs=[f"smoke_y_{batch_id}"],
-                        )
+            try:
+                for _ in range(args.repeats):
+                    for batch_id in batches:
+                        if device == "GPU" and num_devices > 1 and backend != "TF":
+                            worker_client.run_model_multigpu(
+                                name=args.model_name,
+                                offset=batch_id % num_devices,
+                                first_gpu=0,
+                                num_gpus=num_devices,
+                                inputs=[f"smoke_x_packed_{batch_id}"] if artifact_io_layout == "flat_contiguous" else [f"smoke_x_water_{batch_id}", f"smoke_x_terrain_{batch_id}"],
+                                outputs=[f"smoke_y_{batch_id}"],
+                            )
+                        else:
+                            worker_client.run_model(
+                                name=args.model_name,
+                                inputs=[f"smoke_x_packed_{batch_id}"] if artifact_io_layout == "flat_contiguous" else [f"smoke_x_water_{batch_id}", f"smoke_x_terrain_{batch_id}"],
+                                outputs=[f"smoke_y_{batch_id}"],
+                            )
+            except Exception as exc:
+                with worker_errors_lock:
+                    worker_errors.append((worker_id, exc))
 
         threads = []
         start_time = time.time()
@@ -578,13 +669,13 @@ def main():
             flush=True,
         )
         for thread in threads:
-            try:
-                thread.join()
-            except Exception as exc:
-                worker_errors.append(exc)
+            thread.join()
 
         if worker_errors:
-            raise RuntimeError(f"One or more worker threads failed: {worker_errors}")
+            details = "; ".join(
+                [f"worker={worker_id} error={exc}" for worker_id, exc in worker_errors]
+            )
+            raise RuntimeError(f"One or more worker threads failed: {details}")
 
         end_time = time.time()
         print(f"[smoke] Model run completed in {end_time - start_time:.2f} seconds", flush=True)
