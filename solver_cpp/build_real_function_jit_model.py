@@ -10,6 +10,8 @@ TRAIN_MODEL_DIR = Path(__file__).resolve().parents[1] / "train_models" / "model_
 sys.path.insert(0, str(TRAIN_MODEL_DIR))
 
 from train import (  # noqa: E402
+    MODEL_IO_LAYOUT_FLAT,
+    MODEL_IO_LAYOUT_SPLIT,
     RealFunctionModel,
     build_artifact_record,
     ensure_parent_dir,
@@ -61,6 +63,12 @@ def parse_args() -> argparse.Namespace:
         default="cpu",
         help="Device used during TorchScript export and self-check",
     )
+    parser.add_argument(
+        "--export-io-layout",
+        choices=[MODEL_IO_LAYOUT_SPLIT, MODEL_IO_LAYOUT_FLAT],
+        default=MODEL_IO_LAYOUT_SPLIT,
+        help="Primary inference artifact input layout",
+    )
     return parser.parse_args()
 
 
@@ -76,16 +84,23 @@ def main() -> None:
 
     if "torch" in args.export_backends:
         ensure_parent_dir(str(args.torch_output))
-        export_inference_model(model, str(args.torch_output), device)
-        artifacts.append(build_artifact_record("perfect_model", "TORCH", str(args.torch_output)))
+        export_inference_model(model, str(args.torch_output), device, io_layout=args.export_io_layout)
+        artifacts.append(
+            build_artifact_record(
+                "perfect_model",
+                "TORCH",
+                str(args.torch_output),
+                io_layout=args.export_io_layout,
+            )
+        )
 
     if "onnx" in args.export_backends:
-        artifact = export_onnx_model(model, str(args.onnx_output))
+        artifact = export_onnx_model(model, str(args.onnx_output), io_layout=args.export_io_layout)
         artifact["model_name"] = "perfect_model"
         artifacts.append(artifact)
 
     if "tf" in args.export_backends:
-        artifact = export_tensorflow_frozen_model(model, str(args.tf_output))
+        artifact = export_tensorflow_frozen_model(model, str(args.tf_output), io_layout=args.export_io_layout)
         artifact["model_name"] = "perfect_model"
         artifacts.append(artifact)
 

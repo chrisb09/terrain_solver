@@ -49,6 +49,7 @@ enum class SaveMode {
 struct Config {
     std::string model_path;
     std::string model_backend = "TORCH";
+    std::string model_io_layout = "split_3x3";
     std::vector<std::string> model_inputs;
     std::vector<std::string> model_outputs;
     std::string input_hdf5;
@@ -116,6 +117,8 @@ static void usage() {
         << "Options:\n"
         << "  --model-backend <torch|onnx|tf|tflite>\n"
         << "                                   Model backend for SmartRedis loading (default: torch)\n"
+        << "  --model-io-layout <split_3x3|flat_contiguous>\n"
+        << "                                   Model input layout for run_model (default: split_3x3)\n"
         << "  --model-inputs <csv>            Optional model input names (required for TF graph models)\n"
         << "  --model-outputs <csv>           Optional model output names (required for TF graph models)\n"
         << "  --device <cpu|gpu>               Device to run the solver on (default: cpu)\n"
@@ -366,6 +369,16 @@ static std::string parse_model_backend(const std::string& value) {
     throw std::runtime_error("Unsupported --model-backend: " + value);
 }
 
+static std::string parse_model_io_layout(const std::string& value) {
+    if (equals_ignore_case(value, "split_3x3")) {
+        return "split_3x3";
+    }
+    if (equals_ignore_case(value, "flat_contiguous")) {
+        return "flat_contiguous";
+    }
+    throw std::runtime_error("Unsupported --model-io-layout: " + value);
+}
+
 static std::vector<std::string> split_csv(const std::string& value) {
     std::vector<std::string> tokens;
     std::stringstream ss(value);
@@ -468,7 +481,7 @@ static Config parse_args(int argc, char** argv, int rank, int total_ranks) {
             cfg.write_surface = true;
         } else if (arg == "--overwrite-output") {
             cfg.overwrite_output = true;
-        } else if (arg == "--model-path" || arg == "--model-backend" || arg == "--model-inputs" || arg == "--model-outputs" ||
+        } else if (arg == "--model-path" || arg == "--model-backend" || arg == "--model-io-layout" || arg == "--model-inputs" || arg == "--model-outputs" ||
                    arg == "--input-hdf5" || arg == "--output-hdf5" ||
                    arg == "--steps" || arg == "--device" ||
                    arg == "--gpus-per-node" || arg == "--ml-batch-size" ||
@@ -480,6 +493,8 @@ static Config parse_args(int argc, char** argv, int rank, int total_ranks) {
                 cfg.device = parse_device(value); // validate value
             } else if (arg == "--model-backend") {
                 cfg.model_backend = parse_model_backend(value);
+            } else if (arg == "--model-io-layout") {
+                cfg.model_io_layout = parse_model_io_layout(value);
             } else if (arg == "--model-inputs") {
                 cfg.model_inputs = split_csv(value);
             } else if (arg == "--model-outputs") {
@@ -534,8 +549,15 @@ static Config parse_args(int argc, char** argv, int rank, int total_ranks) {
         require(!cfg.input_hdf5.empty(), "--input-hdf5 is required.");
         require(!cfg.output_hdf5.empty(), "--output-hdf5 is required.");
         require(!cfg.model_backend.empty(), "--model-backend must not be empty.");
+        require(!cfg.model_io_layout.empty(), "--model-io-layout must not be empty.");
         if (cfg.model_backend == "TF") {
-            require(!cfg.model_inputs.empty(), "--model-inputs is required for TF models.");
+            if (cfg.model_io_layout == "flat_contiguous") {
+                require(cfg.model_inputs.size() == 1,
+                        "TF + flat_contiguous requires exactly one --model-inputs entry.");
+            } else {
+                require(cfg.model_inputs.size() >= 2,
+                        "TF + split_3x3 requires at least two --model-inputs entries.");
+            }
             require(!cfg.model_outputs.empty(), "--model-outputs is required for TF models.");
         }
         require(cfg.steps >= 0, "--steps must be >= 0.");
@@ -981,6 +1003,44 @@ static void build_nested_view_for_packed_tiles_chunk(
     }
 }
 
+static void build_flat_input_chunk(
+    const std::vector<float>& current,
+    const std::vector<float>& terrain,
+    const Decomposition& decomp,
+    std::size_t chunk_begin,
+    std::size_t chunk_count,
+    std::vector<float>& flat_input_chunk) {
+    const int local_nx = decomp.local_nx;
+    const int pitch = local_nx + 2;
+
+    flat_input_chunk.assign(chunk_count * 18, 0.0F);
+
+    for (std::size_t k = 0; k < chunk_count; ++k) {
+        const std::size_t b = chunk_begin + k;
+        const int i = static_cast<int>(b / static_cast<std::size_t>(local_nx));
+        const int j = static_cast<int>(b % static_cast<std::size_t>(local_nx));
+        const int ii = i + 1;
+        const int jj = j + 1;
+        float* packed = flat_input_chunk.data() + (k * 18);
+
+        std::size_t idx = 0;
+        for (int di = -1; di <= 1; ++di) {
+            for (int dj = -1; dj <= 1; ++dj) {
+                const int n_i = ii + di;
+                const int n_j = jj + dj;
+                packed[idx++] = current[local_index(n_i, n_j, pitch)];
+            }
+        }
+        for (int di = -1; di <= 1; ++di) {
+            for (int dj = -1; dj <= 1; ++dj) {
+                const int n_i = ii + di;
+                const int n_j = jj + dj;
+                packed[idx++] = terrain[local_index(n_i, n_j, pitch)];
+            }
+        }
+    }
+}
+
 static double compute_local_step_ml(SmartRedis::Client* client,
     const std::vector<float>& terrain,
     const std::vector<float>& current,
@@ -1010,14 +1070,16 @@ static double compute_local_step_ml(SmartRedis::Client* client,
         double moved = 0.0;
 
         const bool use_gpu_model = (cfg.device == "GPU");
-        const bool use_multigpu_api = use_gpu_model && (cfg.model_backend == "TORCH") &&
-                                      (decomp.world_size > 1) && (cfg.gpus_per_node > 1);
+        const bool use_flat_model_io = (cfg.model_io_layout == "flat_contiguous");
+        const bool use_multigpu_api = use_gpu_model &&
+                          (decomp.world_size > 1) && (cfg.gpus_per_node > 1);
         const int selected_gpu = use_multigpu_api ? (decomp.world_rank % cfg.gpus_per_node) : -1;
         const int max_model_run_attempts = 3;
 
         std::vector<float***> chunk_batch;
         std::vector<float**> chunk_channels;
         std::vector<float*> chunk_rows;
+        std::vector<float> flat_input_chunk;
 
         const std::size_t chunk_cap = std::min<std::size_t>(
             BATCH_SIZE,
@@ -1027,7 +1089,7 @@ static double compute_local_step_ml(SmartRedis::Client* client,
              chunk_begin += chunk_cap, ++chunk_id) {
             const std::size_t chunk_count = std::min<std::size_t>(chunk_cap, BATCH_SIZE - chunk_begin);
 
-            auto data_prepared_time = std::chrono::high_resolution_clock::now();
+            const auto chunk_start = std::chrono::high_resolution_clock::now();
 
             build_nested_view_for_field_chunk(
                 current,
@@ -1038,19 +1100,33 @@ static double compute_local_step_ml(SmartRedis::Client* client,
                 chunk_channels,
                 chunk_rows);
 
+            const auto data_prepared_time = std::chrono::high_resolution_clock::now();
+
             const std::string key_suffix = "_" + std::to_string(decomp.world_rank) + "_" + std::to_string(chunk_id);
             const std::string water_key = "water_tile" + key_suffix;
             const std::string terrain_key = "terrain_tile" + key_suffix;
+            const std::string packed_key = "packed_tile" + key_suffix;
             const std::string pred_key = "predicted_water_center" + key_suffix;
 
-            client->put_tensor(
-                water_key,
-                const_cast<float****>(chunk_batch.data()),
-                std::vector<size_t>{chunk_count, 1, 3, 3},
-                SRTensorType::SRTensorTypeFloat,
-                SRMemoryLayout::SRMemLayoutNested);
+            if (use_flat_model_io) {
+                build_flat_input_chunk(current, terrain, decomp, chunk_begin, chunk_count, flat_input_chunk);
+                client->put_tensor(
+                    packed_key,
+                    flat_input_chunk.data(),
+                    std::vector<size_t>{chunk_count, 18},
+                    SRTensorType::SRTensorTypeFloat,
+                    SRMemoryLayout::SRMemLayoutContiguous);
+                log_tensor_shard_location(client, decomp, packed_key, "put_tensor");
+            } else {
+                client->put_tensor(
+                    water_key,
+                    const_cast<float****>(chunk_batch.data()),
+                    std::vector<size_t>{chunk_count, 1, 3, 3},
+                    SRTensorType::SRTensorTypeFloat,
+                    SRMemoryLayout::SRMemLayoutNested);
 
-            log_tensor_shard_location(client, decomp, water_key, "put_tensor");
+                log_tensor_shard_location(client, decomp, water_key, "put_tensor");
+            }
 
             auto put_time = std::chrono::high_resolution_clock::now();
 
@@ -1063,21 +1139,29 @@ static double compute_local_step_ml(SmartRedis::Client* client,
                         log_model_execution_route(client,
                                                   decomp,
                                                   "water_step_model_gpu",
-                                                  water_key,
+                                                  use_flat_model_io ? packed_key : water_key,
                                                   pred_key,
                                                   true,
                                                   selected_gpu);
-                        client->run_model_multigpu("water_step_model_gpu", {water_key, terrain_key}, {pred_key}, decomp.world_rank % cfg.gpus_per_node, 0, cfg.gpus_per_node);
+                        if (use_flat_model_io) {
+                            client->run_model_multigpu("water_step_model_gpu", {packed_key}, {pred_key}, decomp.world_rank, 0, cfg.gpus_per_node);
+                        } else {
+                            client->run_model_multigpu("water_step_model_gpu", {water_key, terrain_key}, {pred_key}, decomp.world_rank, 0, cfg.gpus_per_node);
+                        }
                     } else {
                         const std::string model_name = use_gpu_model ? "water_step_model_gpu" : "water_step_model";
                         log_model_execution_route(client,
                                                   decomp,
                                                   model_name,
-                                                  water_key,
+                                                  use_flat_model_io ? packed_key : water_key,
                                                   pred_key,
                                                   false,
                                                   -1);
-                        client->run_model(model_name, {water_key, terrain_key}, {pred_key});
+                        if (use_flat_model_io) {
+                            client->run_model(model_name, {packed_key}, {pred_key});
+                        } else {
+                            client->run_model(model_name, {water_key, terrain_key}, {pred_key});
+                        }
                     }
                     break;
                 } catch (const std::exception& ex) {
@@ -1093,9 +1177,10 @@ static double compute_local_step_ml(SmartRedis::Client* client,
                             << " chunk_size=" << chunk_count
                             << " total_batch_size=" << BATCH_SIZE
                             << " device=" << cfg.device
+                            << " model_io_layout=" << cfg.model_io_layout
                             << " use_multigpu_api=" << (use_multigpu_api ? "true" : "false")
-                            << " water_key=" << water_key
-                            << " terrain_key=" << terrain_key
+                            << " input_key=" << (use_flat_model_io ? packed_key : water_key)
+                            << " aux_input_key=" << (use_flat_model_io ? "<none>" : terrain_key)
                             << " pred_key=" << pred_key
                             << " error=" << msg;
                         throw std::runtime_error(oss.str());
@@ -1140,7 +1225,7 @@ static double compute_local_step_ml(SmartRedis::Client* client,
 
             auto unpacked_time = std::chrono::high_resolution_clock::now();
 
-            prepare_data_time += std::chrono::duration_cast<std::chrono::microseconds>(data_prepared_time - start).count();
+            prepare_data_time += std::chrono::duration_cast<std::chrono::microseconds>(data_prepared_time - chunk_start).count();
             put_tensor_time += std::chrono::duration_cast<std::chrono::microseconds>(put_time - data_prepared_time).count();
             run_model_time += std::chrono::duration_cast<std::chrono::microseconds>(model_ran_time - put_time).count();
             unpack_time += std::chrono::duration_cast<std::chrono::microseconds>(unpacked_time - model_ran_time).count();
@@ -2185,7 +2270,7 @@ int main(int argc, char** argv) {
                     if (cfg.gpus_per_node == 0) {
                         throw std::runtime_error("GPU device specified but --gpus-per-node is 0.");
                     }
-                    const bool use_multigpu_api = (cfg.model_backend == "TORCH") && (world_size > 1) && (cfg.gpus_per_node > 1);
+                    const bool use_multigpu_api = (world_size > 1) && (cfg.gpus_per_node > 1);
                     const int model_load_retries = std::max(1, get_env_int("SR_MODEL_LOAD_RETRIES", 6));
                     const int model_load_backoff_ms = std::max(0, get_env_int("SR_MODEL_LOAD_BACKOFF_MS", 5000));
                     std::cout << "Model load start: path=" << cfg.model_path
@@ -2382,6 +2467,7 @@ int main(int argc, char** argv) {
 
         if (USE_SMARTSIM) {
 
+            const bool use_flat_model_io = (cfg.model_io_layout == "flat_contiguous");
             std::cout << "Preparing terrain tiles for ML model" << std::endl;
 
             const std::size_t BATCH_SIZE = static_cast<std::size_t>(decomp.local_nz) * static_cast<std::size_t>(decomp.local_nx);
@@ -2410,29 +2496,33 @@ int main(int argc, char** argv) {
             std::vector<float*> chunk_rows;
             const std::size_t chunk_cap = std::min<std::size_t>(BATCH_SIZE, static_cast<std::size_t>(cfg.ml_batch_size));
 
-            for (std::size_t chunk_begin = 0, chunk_id = 0; chunk_begin < BATCH_SIZE;
-                 chunk_begin += chunk_cap, ++chunk_id) {
-                const std::size_t chunk_count = std::min<std::size_t>(chunk_cap, BATCH_SIZE - chunk_begin);
-                build_nested_view_for_packed_tiles_chunk(
-                    terrain_tiles,
-                    chunk_begin,
-                    chunk_count,
-                    chunk_batch,
-                    chunk_channels,
-                    chunk_rows);
+            if (!use_flat_model_io) {
+                for (std::size_t chunk_begin = 0, chunk_id = 0; chunk_begin < BATCH_SIZE;
+                     chunk_begin += chunk_cap, ++chunk_id) {
+                    const std::size_t chunk_count = std::min<std::size_t>(chunk_cap, BATCH_SIZE - chunk_begin);
+                    build_nested_view_for_packed_tiles_chunk(
+                        terrain_tiles,
+                        chunk_begin,
+                        chunk_count,
+                        chunk_batch,
+                        chunk_channels,
+                        chunk_rows);
 
-                const std::string terrain_key = "terrain_tile_" + std::to_string(decomp.world_rank) + "_" + std::to_string(chunk_id);
-                client->put_tensor(
-                    terrain_key,
-                    const_cast<float****>(chunk_batch.data()),
-                    std::vector<size_t>{chunk_count, 1, 3, 3},
-                    SRTensorType::SRTensorTypeFloat,
-                    SRMemoryLayout::SRMemLayoutNested);
+                    const std::string terrain_key = "terrain_tile_" + std::to_string(decomp.world_rank) + "_" + std::to_string(chunk_id);
+                    client->put_tensor(
+                        terrain_key,
+                        const_cast<float****>(chunk_batch.data()),
+                        std::vector<size_t>{chunk_count, 1, 3, 3},
+                        SRTensorType::SRTensorTypeFloat,
+                        SRMemoryLayout::SRMemLayoutNested);
 
-                log_tensor_shard_location(client,
-                                          decomp,
-                                          terrain_key,
-                                          "put_tensor");
+                    log_tensor_shard_location(client,
+                                              decomp,
+                                              terrain_key,
+                                              "put_tensor");
+                }
+            } else {
+                std::cout << "Model I/O layout is flat_contiguous; skipping pre-upload of terrain tiles." << std::endl;
             }
 
             std::cout << "Finished preparing terrain tiles for ML model" << std::endl;

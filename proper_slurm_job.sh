@@ -6,7 +6,7 @@
 ############################
 #SBATCH --job-name=terrain_solver_coupled
 #SBATCH --account=thes2181
-#SBATCH --time=01:30:00
+#SBATCH --time=02:00:00
 #SBATCH --exclusive
 #SBATCH --output=logs/mini_app_output_%j.txt
 
@@ -25,10 +25,10 @@
 # Component 1a: GPU (c23g)
 ############################
 #SBATCH --partition=c23g
-#SBATCH --nodes=4
+#SBATCH --nodes=3
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=24
-#SBATCH --gres=gpu:4
+#SBATCH --gres=gpu:1
 #SBATCH --mem-per-cpu=5G
 
 #############################
@@ -61,11 +61,32 @@ USE_SMARTSIM=1
 SOLVER_HET_GROUP=0
 DB_HET_GROUP=1
 
+
+#MODEL_NAME="perfect_model"
+#MODEL_NAME="transformer_mlp"
+#MODEL_NAME="watercnn_a"
+MODEL_NAME="benchmark_giant_mlp"
+
+if [[ "${MODEL_NAME}" == "perfect_model" ]]; then
+  MODEL_ARTIFACT_MANIFEST="train_models/model_a/artifact_manifest_perfect_model.json"
+elif [[ "${MODEL_NAME}" == "transformer_mlp" ]]; then
+  MODEL_ARTIFACT_MANIFEST="train_models/model_a/artifact_manifest_transformer_mlp.json"
+elif [[ "${MODEL_NAME}" == "watercnn_a" ]]; then
+  MODEL_ARTIFACT_MANIFEST="train_models/model_a/artifact_manifest_watercnn.json"
+elif [[ "${MODEL_NAME}" == "benchmark_giant_mlp" ]]; then
+  MODEL_ARTIFACT_MANIFEST="train_models/model_a/artifact_manifest_benchmark_giant_mlp.json"
+else
+  echo "Error: Unknown MODEL_NAME '${MODEL_NAME}'" >&2
+  exit 1
+fi
+
 #MODEL_PATH="train_models/model_a/real_function_jit.pt"
 #MODEL_PATH="train_models/model_a/best_model_jit_transformer_mlp.pt"
 #MODEL_PATH="train_models/model_a/best_model_jit_watercnn.pt"
-MODEL_PATH="train_models/model_a/best_model_jit_benchmark_giant_mlp.pt"
-MODEL_BACKEND="TORCH"
+#MODEL_PATH="train_models/model_a/best_model_jit_benchmark_giant_mlp.pt"
+
+#MODEL_BACKEND="TORCH" #TORCH, TF, ONNX
+MODEL_BACKEND="TF"
 ML_BATCH_SIZE=50000
 MODEL_STAGE_MAX_RETRIES=2
 MODEL_STAGE_FALLBACK_TO_SHARED=1
@@ -73,6 +94,7 @@ MODEL_STAGE_DB_GROUP=1
 DB_NODE_PREFLIGHT=1
 MODEL_ARTIFACT_MANIFEST="train_models/model_a/artifact_manifest_benchmark_giant_mlp.json"
 #MODEL_ARTIFACT_MANIFEST="train_models/model_a/artifact_manifest_perfect_model.json"
+MODEL_IO_LAYOUT="split_3x3"
 MODEL_INPUTS=""
 MODEL_OUTPUTS=""
 MODEL_PATH_SOURCE=""
@@ -86,15 +108,11 @@ MODEL_STAGE_TOTAL_DURATION=0
 LOCAL_FAST_ROOT=""
 CONTROLLER_START_MAX_RETRIES=2
 SMARTSIM_RUNTIME_ROOT="/home/thes2181/python"
-USE_LOCAL_RUNTIME_STAGE=0
+USE_LOCAL_RUNTIME_STAGE=1
 RUNTIME_STAGE_MAX_RETRIES=2
 RUNTIME_STAGE_LOG=""
 RUNTIME_STAGE_DURATION=0
 
-#MODEL_NAME="perfect_model"
-#MODEL_NAME="transformer_mlp"
-#MODEL_NAME="watercnn_a"
-MODEL_NAME="benchmark_giant_mlp"
 
 # Derive DB/ML settings from Slurm het-group component selected by DB_HET_GROUP.
 _db_nodes_var="SLURM_JOB_NUM_NODES_HET_GROUP_${DB_HET_GROUP}"
@@ -207,7 +225,7 @@ export OVERWRITE_JOB_NAME_ENV=1
 
 CUSTOM_JOB_NAME_SUFFIX="" # optional suffix to add to the job name for easier identification in job queues and output files, e.g. "_test" or "_render_only"
 
-job_name_template='circle_r${RADIUS}_d${INIT_DEPTH}_s${TOTAL_STEPS}_${SAVE_MODE}_${TARGET_WIDTH}x${TARGET_HEIGHT}_${_partition}_${_nodes}n_${_ntasks_per_node}t_${_cpus_per_task}c-${DB_NODES}n_${DB}__${IO_MODE}_${MPI_SYNC_MODE}${CUSTOM_JOB_NAME_SUFFIX}'
+job_name_template='circle_r${RADIUS}_d${INIT_DEPTH}_s${TOTAL_STEPS}_${SAVE_MODE}_${TARGET_WIDTH}x${TARGET_HEIGHT}_${_partition}_${_nodes}n_${_ntasks_per_node}t_${_cpus_per_task}c-${DB_NODES}n_${MODEL_BACKEND}__${IO_MODE}_${MPI_SYNC_MODE}${CUSTOM_JOB_NAME_SUFFIX}'
 
 
 INIT_MODE="circle" # circle, square, uniform
@@ -272,6 +290,7 @@ RANK_GRID_X=0               # 0 = auto
 RANK_GRID_Z=0               # 0 = auto
 OVERWRITE_OUTPUT=1          # 1 = pass --overwrite-output
 
+COMPILE_OUTPUT_PATH="build"
 SKIP_COMPILE=0
 SKIP_RENDERING=0
 
@@ -306,6 +325,10 @@ fi
 if [[ -n "${MODEL_ARTIFACT_MANIFEST_ENV:-}" ]]; then
   MODEL_ARTIFACT_MANIFEST="${MODEL_ARTIFACT_MANIFEST_ENV}"
   echo "Using MODEL_ARTIFACT_MANIFEST from environment variable: ${MODEL_ARTIFACT_MANIFEST}"
+fi
+if [[ -n "${MODEL_IO_LAYOUT_ENV:-}" ]]; then
+  MODEL_IO_LAYOUT="${MODEL_IO_LAYOUT_ENV}"
+  echo "Using MODEL_IO_LAYOUT from environment variable: ${MODEL_IO_LAYOUT}"
 fi
 if [[ -n "${MODEL_INPUTS_ENV:-}" ]]; then
   MODEL_INPUTS="${MODEL_INPUTS_ENV}"
@@ -386,6 +409,10 @@ fi
 if [[ -n "${SKIP_COMPILE_ENV:-}" ]]; then
   SKIP_COMPILE="${SKIP_COMPILE_ENV}"
   echo "Using SKIP_COMPILE from environment variable: ${SKIP_COMPILE}"
+fi
+if [[ -n "${COMPILE_OUTPUT_PATH_ENV:-}" ]]; then
+  COMPILE_OUTPUT_PATH="${COMPILE_OUTPUT_PATH_ENV}"
+  echo "Using COMPILE_OUTPUT_PATH from environment variable: ${COMPILE_OUTPUT_PATH}"
 fi
 if [[ -n "${FFMPEG_THREADS_ENV:-}" ]]; then
   FFMPEG_THREADS="${FFMPEG_THREADS_ENV}"
@@ -506,6 +533,37 @@ export SR_LOG_FILE="stdout"
 export SR_LOG_LEVEL="debug"
 
 module -t list
+
+# TensorFlow GPU backend in RedisAI may require an explicit CUDA data dir for XLA JIT
+# (e.g. Rsqrt JIT failures when libdevice is not found).
+_backend_req_upper="${MODEL_BACKEND:u}"
+if (( USE_GPU == 1 )) && [[ "${_backend_req_upper}" == "TF" || "${_backend_req_upper}" == "TENSORFLOW" || "${_backend_req_upper}" == "TFLITE" ]]; then
+  _xla_cuda_root="${EBROOTCUDA:-}"
+
+  if [[ -z "${_xla_cuda_root}" ]]; then
+    _nvcc_path="$(command -v nvcc 2>/dev/null || true)"
+    if [[ -n "${_nvcc_path}" ]]; then
+      _xla_cuda_root="$(cd "$(dirname "${_nvcc_path}")/.." && pwd -P)"
+    fi
+  fi
+
+  _libdevice_path=""
+  if [[ -n "${_xla_cuda_root}" ]] && [[ -f "${_xla_cuda_root}/nvvm/libdevice/libdevice.10.bc" ]]; then
+    _libdevice_path="${_xla_cuda_root}/nvvm/libdevice/libdevice.10.bc"
+
+    if [[ " ${XLA_FLAGS:-} " != *" xla_gpu_cuda_data_dir="* ]]; then
+      export XLA_FLAGS="${XLA_FLAGS:-} --xla_gpu_cuda_data_dir=${_xla_cuda_root}"
+      XLA_FLAGS="${XLA_FLAGS## }"
+    fi
+
+    export CUDA_HOME="${_xla_cuda_root}"
+    export CUDA_ROOT="${_xla_cuda_root}"
+
+    echo "TF_XLA_PREFLIGHT backend=${MODEL_BACKEND} cuda_root=${_xla_cuda_root} libdevice=${_libdevice_path} xla_flags='${XLA_FLAGS}'"
+  else
+    echo "TF_XLA_PREFLIGHT_WARN backend=${MODEL_BACKEND} could not locate libdevice.10.bc (cuda_root='${_xla_cuda_root:-unset}')"
+  fi
+fi
 
 
 
@@ -700,6 +758,7 @@ for artifact in payload.get("artifacts", []):
         print(artifact["path"])
         print(",".join(artifact.get("inputs", [])))
         print(",".join(artifact.get("outputs", [])))
+  print(str(artifact.get("io_layout", "split_3x3")))
         sys.exit(0)
 raise SystemExit(f"Artifact for model={model_name} backend={backend} not found in {manifest_path}")
 PY
@@ -713,6 +772,9 @@ PY
   if [[ "${#MODEL_RESOLUTION[@]}" -ge 3 ]] && [[ -n "${MODEL_RESOLUTION[3]}" ]]; then
     MODEL_OUTPUTS="${MODEL_RESOLUTION[3]}"
   fi
+  if [[ "${#MODEL_RESOLUTION[@]}" -ge 4 ]] && [[ -n "${MODEL_RESOLUTION[4]}" ]]; then
+    MODEL_IO_LAYOUT="${MODEL_RESOLUTION[4]}"
+  fi
   echo "Resolved MODEL_PATH=${MODEL_PATH}"
   if [[ -n "${MODEL_INPUTS}" ]]; then
     echo "Resolved MODEL_INPUTS=${MODEL_INPUTS}"
@@ -720,6 +782,7 @@ PY
   if [[ -n "${MODEL_OUTPUTS}" ]]; then
     echo "Resolved MODEL_OUTPUTS=${MODEL_OUTPUTS}"
   fi
+  echo "Resolved MODEL_IO_LAYOUT=${MODEL_IO_LAYOUT}"
 fi
 
 if [[ "${MODEL_PATH}" = /* ]]; then
@@ -1031,19 +1094,7 @@ fi
 
 if [[ "${RUN_SOLVER}" -eq 1 ]]; then
 
-  # Safety check: if SKIP_COMPILE is true but the binary may be stale, rebuild anyway.
-  # This can happen if modules were loaded differently between job submissions.
-  FORCE_RECOMPILE=0
-  if [[ "${SKIP_COMPILE}" -eq 1 ]] && [[ -f "solver_cpp/build/terrain_solver" ]]; then
-    # Quick sanity check: run binary with -h to see if it crashes with HDF5 version mismatch.
-    # If it does, the error message will contain "version mismatch" or "HDF5 header files".
-    if ./solver_cpp/build/terrain_solver --help 2>&1 | grep -qi "hdf5.*version\|version.*mismatch"; then
-      echo "WARNING: Detected HDF5 version mismatch in binary; forcing recompile despite SKIP_COMPILE=1"
-      FORCE_RECOMPILE=1
-    fi
-  fi
-
-  if [[ "${SKIP_COMPILE}" -eq 1 ]] && [[ "${FORCE_RECOMPILE}" -eq 0 ]]; then
+  if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
     echo "Skipping compilation as requested."
     COMPILE_DURATION=0
   else
@@ -1051,13 +1102,14 @@ if [[ "${RUN_SOLVER}" -eq 1 ]]; then
 
     COMPILE_START_TIME=$(date +%s)
 
+    # by default, COMPILE_OUTPUT_PATH is "build", but if COMPILE_OUTPUT_SUBDIR is set it overrides it
     # check if the solver_cpp/build directory exists, if it does, remove it to ensure a clean build
-    if [[ -d "solver_cpp/build" ]]; then
-      rm -rf "solver_cpp/build"
+    if [[ -d "solver_cpp/${COMPILE_OUTPUT_PATH}" ]]; then
+      rm -rf "solver_cpp/${COMPILE_OUTPUT_PATH}"
     fi
-    mkdir -p "solver_cpp/build"
-    cmake -S solver_cpp -B solver_cpp/build
-    cmake --build solver_cpp/build -j
+    mkdir -p "solver_cpp/${COMPILE_OUTPUT_PATH}"
+    cmake -S solver_cpp -B solver_cpp/${COMPILE_OUTPUT_PATH}
+    cmake --build solver_cpp/${COMPILE_OUTPUT_PATH} -j
 
     COMPILE_END_TIME=$(date +%s)
     COMPILE_DURATION=$((COMPILE_END_TIME - COMPILE_START_TIME))
@@ -1174,7 +1226,7 @@ if [[ "${RUN_SOLVER}" -eq 1 ]]; then
     MODEL_IO_ARGS+=(--model-outputs "${MODEL_OUTPUTS}")
   fi
 
-  # For multi-node jobs, use --distribution=block to evenly spread tasks across nodes.
+  # For multi-node jobs, --distribution=block evenly spreads tasks across nodes.
   # This prevents task desynchronization at shutdown (especially in rank0_gather I/O mode).
   SRUN_DIST="--distribution=block"
   if [[ "${SLURM_JOB_NUM_NODES:-1}" -eq 1 ]]; then
@@ -1190,12 +1242,13 @@ if [[ "${RUN_SOLVER}" -eq 1 ]]; then
   SSDB="${DB_HOSTNAME}" srun --export=ALL --het-group="${SOLVER_HET_GROUP}" --ntasks-per-node "${_ntasks_per_node_num}" \
     --cpus-per-task 1 \
     ${SRUN_DIST} \
-    ./solver_cpp/build/terrain_solver \
+    ./solver_cpp/${COMPILE_OUTPUT_PATH}/terrain_solver \
     --device "${device}" \
     --gpus-per-node "${GPUS_PER_NODE}" \
     --ml-batch-size "${ML_BATCH_SIZE}" \
     --model-path "${MODEL_PATH_FOR_SOLVER}" \
     --model-backend "${MODEL_BACKEND}" \
+    --model-io-layout "${MODEL_IO_LAYOUT}" \
     "${MODEL_IO_ARGS[@]}" \
     --input-hdf5 "${PREP_H5}" \
     --output-hdf5 "${TRAJ_H5}" \
@@ -1490,6 +1543,7 @@ TIMING_FILE="${EXTERNAL_DIR}/${JOB_NAME}/timing_and_parameters.txt"
   echo "MODEL_STAGE_DURATION_TOTAL: ${MODEL_STAGE_TOTAL_DURATION}"
   echo "MODEL_PATH_SOURCE: ${MODEL_PATH_SOURCE}"
   echo "MODEL_PATH_FOR_SOLVER: ${MODEL_PATH_FOR_SOLVER}"
+  echo "MODEL_IO_LAYOUT: ${MODEL_IO_LAYOUT}"
   echo "SOLVER_STEP_LOG: ${SOLVER_STEP_LOG}"
   echo ""
   echo "Model staging per-node log:"

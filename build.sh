@@ -4,6 +4,25 @@
 
 current_dir=$(pwd)
 
+custom_build_dir="${1:-build}"
+if [ -n "$custom_build_dir" ]; then
+  echo "Using custom build directory: $custom_build_dir"
+else
+  echo "Using default build directory: build"
+fi
+
+# delete the old build directory if it exists to ensure a clean build
+if [ -d "solver_cpp/${custom_build_dir}" ]; then
+  echo "Removing old build directory: solver_cpp/${custom_build_dir}"
+  rm -rf "solver_cpp/${custom_build_dir}"
+fi
+
+# create build directory if it doesn't exist
+if [ ! -d "solver_cpp/${custom_build_dir}" ]; then
+  mkdir -p "solver_cpp/${custom_build_dir}"
+  echo "Created build directory: solver_cpp/${custom_build_dir}"
+fi
+
 script_dir=$(dirname "$0")
 # get absolute path to the script directory
 script_dir=$(cd "$script_dir" && pwd)
@@ -15,8 +34,9 @@ build_start_seconds=$(date +%s)
 build_start_date=$(date)
 echo "Build started at: $build_start_date"
 
-cd solver_cpp/build || { echo "Build failed"; cd "$current_dir"; exit 1; }
-rm ./* -r || { echo "Build failed"; cd "$current_dir"; exit 1; }
+cd "solver_cpp/${custom_build_dir}" || { echo "Failed to change directory to solver_cpp/${custom_build_dir}"; cd "$current_dir"; exit 1; }
+
+#rm ./* -r || { echo "Build failed"; cd "$current_dir"; exit 1; }
 cmake -S .. -DCMAKE_BUILD_TYPE=Release || { echo "Build failed"; cd "$current_dir"; exit 1; }
 cmake --build . || { echo "Build failed"; cd "$current_dir"; exit 1; }
 echo "Build completed successfully"

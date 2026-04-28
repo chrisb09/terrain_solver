@@ -96,6 +96,40 @@ if args.het_group is not None:
 
 exp.start(db, block=False, summary=True)
 
+if args.db_nodes > 1:
+    # Clustered Redis can temporarily mark peers as failed while TF backend/model
+    # initialization stalls event processing on a shard.
+    # Apply these settings only after the orchestrator is active.
+    timeout_ms = env.get("SMARTSIM_CLUSTER_NODE_TIMEOUT_MS", "120000")
+    require_full_coverage = env.get("SMARTSIM_CLUSTER_REQUIRE_FULL_COVERAGE", "no")
+    conf_retries = int(env.get("SMARTSIM_DB_CONF_RETRIES", "30"))
+    conf_retry_sleep_s = float(env.get("SMARTSIM_DB_CONF_RETRY_SLEEP_S", "1"))
+
+    config_applied = False
+    for attempt in range(1, conf_retries + 1):
+        try:
+            db.set_db_conf("cluster-node-timeout", timeout_ms)
+            db.set_db_conf("cluster-require-full-coverage", require_full_coverage)
+            print(
+                "Applied clustered Redis stability config: "
+                f"cluster-node-timeout={timeout_ms}, "
+                f"cluster-require-full-coverage={require_full_coverage}"
+            )
+            config_applied = True
+            break
+        except Exception as exc:
+            print(
+                f"Database not ready for set_db_conf yet (attempt {attempt}/{conf_retries}): {exc}",
+                flush=True,
+            )
+            time.sleep(conf_retry_sleep_s)
+
+    if not config_applied:
+        print(
+            "Warning: proceeding without clustered Redis stability config after retries.",
+            flush=True,
+        )
+
 time.sleep(5)  # Wait a bit
 
 address = db.get_address()
