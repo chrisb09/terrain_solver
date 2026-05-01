@@ -1,3 +1,0 @@
-/hpcwork/ro092286/smartsim/mini_app/solver_cpp/build/CMakeFiles/terrain_solver.dir
-/hpcwork/ro092286/smartsim/mini_app/solver_cpp/build/CMakeFiles/edit_cache.dir
-/hpcwork/ro092286/smartsim/mini_app/solver_cpp/build/CMakeFiles/rebuild_cache.dir
