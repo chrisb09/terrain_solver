@@ -22,3 +22,5 @@ smartsim_experiments/
 
 stdout
 close_driver*
+
+solver_cpp/build
