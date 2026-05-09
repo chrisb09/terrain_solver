@@ -3,9 +3,16 @@
 #include <mpi.h>
 
 // project-specific headers
+#ifdef USE_CPP_ML_INTERFACE
+#include "ml_coupling.hpp"
+#else
 #include "client.h"
+#endif
 
 // standard library headers
+#include <cctype>
+#include <fstream>
+#include <memory>
 #include <string_view>
 #include <algorithm>
 #include <array>
@@ -52,6 +59,7 @@ struct Config {
     std::string model_io_layout = "split_3x3";
     std::vector<std::string> model_inputs;
     std::vector<std::string> model_outputs;
+    std::string cpp_ml_config;
     std::string input_hdf5;
     std::string output_hdf5;
     std::string device = "CPU";
@@ -110,6 +118,25 @@ struct Decomposition {
     int local_nz = 0;
 };
 
+struct CppMlBuffers {
+    std::size_t chunk_cap = 0;
+    bool use_flat_layout = false;
+
+    std::vector<float> flat_input;
+    std::vector<float> output;
+
+    std::vector<float***> water_batch;
+    std::vector<float**> water_channels;
+    std::vector<float*> water_rows;
+
+    std::vector<float***> terrain_batch;
+    std::vector<float**> terrain_channels;
+    std::vector<float*> terrain_rows;
+
+    std::array<float, 9> pad_tile{};
+    std::array<float*, 3> pad_rows{};
+};
+
 static void usage() {
     std::cout
         << "Usage:\n"
@@ -121,6 +148,7 @@ static void usage() {
         << "                                   Model input layout for run_model (default: split_3x3)\n"
         << "  --model-inputs <csv>            Optional model input names (required for TF graph models)\n"
         << "  --model-outputs <csv>           Optional model output names (required for TF graph models)\n"
+        << "  --cpp-ml-config <path>           CPP-ML-Interface config file path\n"
         << "  --device <cpu|gpu>               Device to run the solver on (default: cpu)\n"
         << "  --gpus-per-node <int>            Number of GPUs per node (default: 1)\n"
         << "  --ml-batch-size <int>            Max per-rank ML batch size (default: 50000)\n"
@@ -188,6 +216,30 @@ static std::string escape_binary_for_log(const std::string& value) {
     return oss.str();
 }
 
+#ifdef USE_CPP_ML_INTERFACE
+static std::string read_text_file(const std::string& path) {
+    std::ifstream in(path);
+    if (!in) {
+        throw std::runtime_error("Failed to open file: " + path);
+    }
+    std::ostringstream oss;
+    oss << in.rdbuf();
+    return oss.str();
+}
+
+static std::string to_lower_copy(std::string value) {
+    for (char& c : value) {
+        c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    }
+    return value;
+}
+
+static bool config_mentions_aix_provider(const std::string& config_text) {
+    const std::string lower = to_lower_copy(config_text);
+    return lower.find("aixelerator") != std::string::npos || lower.find("aix") != std::string::npos;
+}
+#endif
+
 static std::string get_processor_name() {
     std::array<char, MPI_MAX_PROCESSOR_NAME> name{};
     int length = 0;
@@ -198,6 +250,7 @@ static std::string get_processor_name() {
     return std::string(name.data(), static_cast<std::size_t>(length));
 }
 
+#ifndef USE_CPP_ML_INTERFACE
 static void log_cluster_shard_map(SmartRedis::Client* client,
                                   const Decomposition& decomp) {
     if (client == nullptr || decomp.world_rank != 0) {
@@ -205,6 +258,7 @@ static void log_cluster_shard_map(SmartRedis::Client* client,
     }
 
     try {
+        #ifdef USE_CUSTOM_SMARTREDIS
         const std::vector<SmartRedis::ClusterShardInfo> shards = client->get_cluster_shards();
         if (shards.empty()) {
             std::cout << "SMARTREDIS_CLUSTER_MAP mode=standalone" << std::endl;
@@ -222,6 +276,7 @@ static void log_cluster_shard_map(SmartRedis::Client* client,
                       << "," << shard.shard_slot_last << "]"
                       << std::endl;
         }
+        #endif
     } catch (const std::exception& ex) {
         std::cerr << "WARN: failed to log SmartRedis cluster shard map: "
                   << ex.what() << std::endl;
@@ -237,26 +292,28 @@ static void log_tensor_shard_location(SmartRedis::Client* client,
     }
 
     try {
-        const SmartRedis::KeyLocation location = client->get_tensor_key_location(tensor_name);
-        std::ostringstream oss;
-        oss << "SMARTREDIS_SHARD_LOG"
-            << " phase=" << phase
-            << " rank=" << decomp.world_rank
-            << " tensor=" << tensor_name
-            << " redis_key=" << escape_binary_for_log(location.key)
-            << " hash_slot=" << location.hash_slot;
+        #ifdef USE_CUSTOM_SMARTREDIS
+            const SmartRedis::KeyLocation location = client->get_tensor_key_location(tensor_name);
+            std::ostringstream oss;
+            oss << "SMARTREDIS_SHARD_LOG"
+                << " phase=" << phase
+                << " rank=" << decomp.world_rank
+                << " tensor=" << tensor_name
+                << " redis_key=" << escape_binary_for_log(location.key)
+                << " hash_slot=" << location.hash_slot;
 
-        if (location.is_cluster) {
-            oss << " shard_address=" << location.shard_address
-                << " shard_name=" << location.shard_name
-                << " shard_prefix=" << escape_binary_for_log(location.shard_prefix)
-                << " shard_slot_range=[" << location.shard_slot_first
-                << "," << location.shard_slot_last << "]";
-        } else {
-            oss << " shard_address=standalone";
-        }
+            if (location.is_cluster) {
+                oss << " shard_address=" << location.shard_address
+                    << " shard_name=" << location.shard_name
+                    << " shard_prefix=" << escape_binary_for_log(location.shard_prefix)
+                    << " shard_slot_range=[" << location.shard_slot_first
+                    << "," << location.shard_slot_last << "]";
+            } else {
+                oss << " shard_address=standalone";
+            }
 
-        std::cout << oss.str() << std::endl;
+            std::cout << oss.str() << std::endl;
+        #endif
     } catch (const std::exception& ex) {
         std::cerr << "WARN: failed to resolve shard placement for tensor "
                   << tensor_name << " on rank " << decomp.world_rank
@@ -276,6 +333,7 @@ static void log_model_execution_route(SmartRedis::Client* client,
     }
 
     try {
+        #ifdef USE_CUSTOM_SMARTREDIS
         const SmartRedis::KeyLocation input_location =
             client->get_tensor_key_location(first_input_name, true);
         const SmartRedis::KeyLocation output_location =
@@ -318,12 +376,14 @@ static void log_model_execution_route(SmartRedis::Client* client,
         }
 
         std::cout << oss.str() << std::endl;
+        #endif
     } catch (const std::exception& ex) {
         std::cerr << "WARN: failed to log model execution route for model "
                   << model_name << " on rank " << decomp.world_rank
                   << ": " << ex.what() << std::endl;
     }
 }
+#endif
 
 static std::string sync_mode_to_string(SyncMode mode) {
     if (mode == SyncMode::None) {
@@ -482,6 +542,7 @@ static Config parse_args(int argc, char** argv, int rank, int total_ranks) {
         } else if (arg == "--overwrite-output") {
             cfg.overwrite_output = true;
         } else if (arg == "--model-path" || arg == "--model-backend" || arg == "--model-io-layout" || arg == "--model-inputs" || arg == "--model-outputs" ||
+               arg == "--cpp-ml-config" ||
                    arg == "--input-hdf5" || arg == "--output-hdf5" ||
                    arg == "--steps" || arg == "--device" ||
                    arg == "--gpus-per-node" || arg == "--ml-batch-size" ||
@@ -499,6 +560,8 @@ static Config parse_args(int argc, char** argv, int rank, int total_ranks) {
                 cfg.model_inputs = split_csv(value);
             } else if (arg == "--model-outputs") {
                 cfg.model_outputs = split_csv(value);
+            } else if (arg == "--cpp-ml-config") {
+                cfg.cpp_ml_config = value;
             } else if (arg == "--gpus-per-node") {
                 const int gpus = std::stoi(value);
                 require(gpus >= 0, "--gpus-per-node must be >= 0.");
@@ -1041,7 +1104,206 @@ static void build_flat_input_chunk(
     }
 }
 
-static double compute_local_step_ml(SmartRedis::Client* client,
+#ifdef USE_CPP_ML_INTERFACE
+static void fill_flat_input_chunk(
+    const std::vector<float>& current,
+    const std::vector<float>& terrain,
+    const Decomposition& decomp,
+    std::size_t chunk_begin,
+    std::size_t chunk_count,
+    std::size_t chunk_cap,
+    std::vector<float>& flat_input_chunk) {
+    const int local_nx = decomp.local_nx;
+    const int pitch = local_nx + 2;
+
+    require(flat_input_chunk.size() == (chunk_cap * 18), "Flat input buffer size mismatch.");
+    std::fill(flat_input_chunk.begin(), flat_input_chunk.end(), 0.0F);
+
+    for (std::size_t k = 0; k < chunk_count; ++k) {
+        const std::size_t b = chunk_begin + k;
+        const int i = static_cast<int>(b / static_cast<std::size_t>(local_nx));
+        const int j = static_cast<int>(b % static_cast<std::size_t>(local_nx));
+        const int ii = i + 1;
+        const int jj = j + 1;
+        float* packed = flat_input_chunk.data() + (k * 18);
+
+        std::size_t idx = 0;
+        for (int di = -1; di <= 1; ++di) {
+            for (int dj = -1; dj <= 1; ++dj) {
+                const int n_i = ii + di;
+                const int n_j = jj + dj;
+                packed[idx++] = current[local_index(n_i, n_j, pitch)];
+            }
+        }
+        for (int di = -1; di <= 1; ++di) {
+            for (int dj = -1; dj <= 1; ++dj) {
+                const int n_i = ii + di;
+                const int n_j = jj + dj;
+                packed[idx++] = terrain[local_index(n_i, n_j, pitch)];
+            }
+        }
+    }
+}
+
+static void build_nested_view_for_field_chunk_padded(
+    const std::vector<float>& field,
+    const Decomposition& decomp,
+    std::size_t chunk_begin,
+    std::size_t chunk_count,
+    std::size_t chunk_cap,
+    std::vector<float***>& batch,
+    std::vector<float**>& channels,
+    std::vector<float*>& rows,
+    float** pad_rows) {
+    const int local_nx = decomp.local_nx;
+    const int pitch = local_nx + 2;
+
+    batch.resize(chunk_cap);
+    channels.resize(chunk_cap);
+    rows.resize(chunk_cap * 3);
+
+    for (std::size_t k = 0; k < chunk_count; ++k) {
+        const std::size_t b = chunk_begin + k;
+        const int i = static_cast<int>(b / static_cast<std::size_t>(local_nx));
+        const int j = static_cast<int>(b % static_cast<std::size_t>(local_nx));
+        const int ii = i + 1;
+        const int jj = j + 1;
+
+        batch[k] = &channels[k];
+        channels[k] = &rows[k * 3];
+
+        for (int di = -1; di <= 1; ++di) {
+            const int n_i = ii + di;
+            const int n_j_start = jj - 1;
+            rows[k * 3 + static_cast<std::size_t>(di + 1)] =
+                const_cast<float*>(&field[local_index(n_i, n_j_start, pitch)]);
+        }
+    }
+
+    for (std::size_t k = chunk_count; k < chunk_cap; ++k) {
+        batch[k] = &channels[k];
+        channels[k] = pad_rows;
+    }
+}
+#endif
+
+#ifdef USE_CPP_ML_INTERFACE
+static double compute_local_step_ml_cpp(MLCoupling<float, float>& ml_coupling,
+    const std::vector<float>& terrain,
+    const std::vector<float>& current,
+    std::vector<float>& next,
+    const Decomposition& decomp,
+    float epsilon,
+    const Config& cfg,
+    std::vector<float>& tile_output,
+    CppMlBuffers& ml_buffers,
+    bool provider_is_aix) {
+    const int local_nz = decomp.local_nz;
+    const int local_nx = decomp.local_nx;
+    const int pitch = local_nx + 2;
+
+    long long prepare_data_time = 0;
+    long long run_model_time = 0;
+    long long unpack_time = 0;
+    long long cleanup_time = 0;
+
+    next = current;
+
+    const std::size_t batch_size = static_cast<std::size_t>(local_nz) * static_cast<std::size_t>(local_nx);
+    require(tile_output.size() == batch_size, "ML output buffer size mismatch.");
+
+    const std::size_t chunk_cap = ml_buffers.chunk_cap;
+    require(chunk_cap > 0, "ML chunk size must be > 0.");
+    require(chunk_cap >= 1, "ML chunk size must be >= 1.");
+
+    if (provider_is_aix && !ml_buffers.use_flat_layout) {
+        throw std::runtime_error("AIx provider requires flat_contiguous model I/O layout.");
+    }
+
+    auto start = std::chrono::high_resolution_clock::now();
+    double moved = 0.0;
+
+    const std::size_t chunk_cap_eff = std::min<std::size_t>(batch_size, chunk_cap);
+
+    for (std::size_t chunk_begin = 0, chunk_id = 0; chunk_begin < batch_size;
+         chunk_begin += chunk_cap_eff, ++chunk_id) {
+        const std::size_t chunk_count = std::min<std::size_t>(chunk_cap_eff, batch_size - chunk_begin);
+
+        const auto chunk_start = std::chrono::high_resolution_clock::now();
+
+        if (ml_buffers.use_flat_layout) {
+            fill_flat_input_chunk(current, terrain, decomp, chunk_begin, chunk_count, chunk_cap_eff, ml_buffers.flat_input);
+        } else {
+            build_nested_view_for_field_chunk_padded(current,
+                                                     decomp,
+                                                     chunk_begin,
+                                                     chunk_count,
+                                                     chunk_cap_eff,
+                                                     ml_buffers.water_batch,
+                                                     ml_buffers.water_channels,
+                                                     ml_buffers.water_rows,
+                                                     ml_buffers.pad_rows.data());
+            build_nested_view_for_field_chunk_padded(terrain,
+                                                     decomp,
+                                                     chunk_begin,
+                                                     chunk_count,
+                                                     chunk_cap_eff,
+                                                     ml_buffers.terrain_batch,
+                                                     ml_buffers.terrain_channels,
+                                                     ml_buffers.terrain_rows,
+                                                     ml_buffers.pad_rows.data());
+        }
+
+        const auto data_prepared_time = std::chrono::high_resolution_clock::now();
+
+        std::fill(ml_buffers.output.begin(), ml_buffers.output.end(), 0.0F);
+        ml_coupling.ml_step();
+
+        const auto model_ran_time = std::chrono::high_resolution_clock::now();
+
+        std::copy(ml_buffers.output.begin(),
+                  ml_buffers.output.begin() + static_cast<std::ptrdiff_t>(chunk_count),
+                  tile_output.begin() + static_cast<std::ptrdiff_t>(chunk_begin));
+
+        const auto unpacked_time = std::chrono::high_resolution_clock::now();
+
+        prepare_data_time += std::chrono::duration_cast<std::chrono::microseconds>(data_prepared_time - chunk_start).count();
+        run_model_time += std::chrono::duration_cast<std::chrono::microseconds>(model_ran_time - data_prepared_time).count();
+        unpack_time += std::chrono::duration_cast<std::chrono::microseconds>(unpacked_time - model_ran_time).count();
+    }
+
+    for (int i = 0; i < local_nz; ++i) {
+        for (int j = 0; j < local_nx; ++j) {
+            const std::size_t idx = static_cast<std::size_t>(i * local_nx + j);
+            next[local_index(i + 1, j + 1, pitch)] = tile_output[idx];
+            moved += std::max(static_cast<double>(tile_output[idx]) -
+                              static_cast<double>(current[local_index(i + 1, j + 1, pitch)]), 0.0);
+        }
+    }
+
+    total_prepare_data_time += prepare_data_time;
+    total_run_model_time += run_model_time;
+    total_unpack_time += unpack_time;
+
+    const auto end = std::chrono::high_resolution_clock::now();
+    const long long ml_step_wall_time = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+    total_cleanup_time += cleanup_time;
+    total_ml_step_wall_time += ml_step_wall_time;
+
+    if (decomp.world_rank == 0) {
+        const long long accounted_us = prepare_data_time + run_model_time + unpack_time + cleanup_time;
+        std::cout << "Finished CPP-ML step. Timings (seconds): prepare=" << (prepare_data_time / 1000000.0)
+                  << " run=" << (run_model_time / 1000000.0)
+                  << " unpack=" << (unpack_time / 1000000.0)
+                  << " total=" << (ml_step_wall_time / 1000000.0)
+                  << " accounted=" << (accounted_us / 1000000.0)
+                  << std::endl;
+    }
+
+    return moved;
+}
+#else
+static double compute_local_step_ml_smartsim(SmartRedis::Client* client,
     const std::vector<float>& terrain,
     const std::vector<float>& current,
     std::vector<float>& next,
@@ -1279,6 +1541,7 @@ static double compute_local_step_ml(SmartRedis::Client* client,
 
         return moved;
     }
+#endif
 
 static float compute_directional_outflow(
     const std::vector<float>& terrain,
@@ -2222,7 +2485,13 @@ int main(int argc, char** argv) {
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 
-    bool USE_SMARTSIM;
+    bool use_smartsim = false;
+    bool use_ml_interface = false;
+#ifdef USE_CPP_ML_INTERFACE
+    bool cpp_ml_provider_is_aix = false;
+    std::unique_ptr<MLCoupling<float, float>> ml_coupling;
+    CppMlBuffers cpp_ml_buffers;
+#endif
 
     try {
         const Config cfg = parse_args(argc, argv, world_rank, world_size);
@@ -2248,15 +2517,20 @@ int main(int argc, char** argv) {
         if (getenv("SSDB") == nullptr) {
             //setenv("SSDB", "127.0.0.1:6379", 0);
             std::cout << "SSDB not set. Disabling Smartsim" << std::endl;
-            USE_SMARTSIM = false;
+            use_smartsim = false;
         } else {
             std::cout << "Expecting smartsim database/orchestrator at " << getenv("SSDB") << std::endl;
-            USE_SMARTSIM = true;
+            use_smartsim = true;
         }
 
+#ifdef USE_CPP_ML_INTERFACE
+        use_ml_interface = true;
+    (void)use_smartsim;
+#else
+        use_ml_interface = use_smartsim;
         SmartRedis::Client* client = nullptr;
-        
-        if (USE_SMARTSIM) {
+    #ifndef USE_CPP_ML_INTERFACE
+        if (use_smartsim) {
             client = new SmartRedis::Client("terrain_solver_" + std::to_string(world_rank));
 
             std::cout << "Successfully connected to SmartRedis database as terrain_solver_" << std::to_string(world_rank) << std::endl;
@@ -2407,6 +2681,8 @@ int main(int argc, char** argv) {
 
 
         }
+    #endif
+    #endif
 
         std::size_t nz_u = 0;
         std::size_t nx_u = 0;
@@ -2421,9 +2697,93 @@ int main(int argc, char** argv) {
 
         Decomposition decomp = build_decomposition(cfg, MPI_COMM_WORLD, world_rank, world_size, nx, nz);
 
-        if (USE_SMARTSIM) {
+        #ifndef USE_CPP_ML_INTERFACE
+            if (use_smartsim) {
             log_cluster_shard_map(client, decomp);
         }
+        #endif
+
+        #ifdef USE_CPP_ML_INTERFACE
+                if (cfg.cpp_ml_config.empty()) {
+                    throw std::runtime_error("--cpp-ml-config is required when USE_CPP_ML_INTERFACE is enabled.");
+                }
+                if (!std::filesystem::exists(cfg.cpp_ml_config)) {
+                    throw std::runtime_error("CPP-ML config file not found: " + cfg.cpp_ml_config);
+                }
+
+                const std::string cpp_ml_config_text = read_text_file(cfg.cpp_ml_config);
+                cpp_ml_provider_is_aix = config_mentions_aix_provider(cpp_ml_config_text);
+
+                const bool use_flat_model_io = (cfg.model_io_layout == "flat_contiguous");
+                if (cpp_ml_provider_is_aix && !use_flat_model_io) {
+                    throw std::runtime_error("AIx provider requires --model-io-layout flat_contiguous.");
+                }
+
+                const std::size_t batch_size = static_cast<std::size_t>(decomp.local_nz) * static_cast<std::size_t>(decomp.local_nx);
+                const std::size_t chunk_cap = std::min<std::size_t>(batch_size, static_cast<std::size_t>(cfg.ml_batch_size));
+                require(chunk_cap > 0, "ML batch size must be > 0.");
+                require(chunk_cap <= static_cast<std::size_t>(std::numeric_limits<int>::max()), "ML batch size exceeds int range.");
+
+                cpp_ml_buffers.chunk_cap = chunk_cap;
+                cpp_ml_buffers.use_flat_layout = use_flat_model_io;
+                cpp_ml_buffers.pad_rows[0] = cpp_ml_buffers.pad_tile.data();
+                cpp_ml_buffers.pad_rows[1] = cpp_ml_buffers.pad_tile.data() + 3;
+                cpp_ml_buffers.pad_rows[2] = cpp_ml_buffers.pad_tile.data() + 6;
+
+                if (use_flat_model_io) {
+                    cpp_ml_buffers.flat_input.resize(chunk_cap * 18, 0.0F);
+                } else {
+                    cpp_ml_buffers.water_batch.resize(chunk_cap);
+                    cpp_ml_buffers.water_channels.resize(chunk_cap);
+                    cpp_ml_buffers.terrain_batch.resize(chunk_cap);
+                    cpp_ml_buffers.terrain_channels.resize(chunk_cap);
+
+                    for (std::size_t k = 0; k < chunk_cap; ++k) {
+                        cpp_ml_buffers.water_batch[k] = &cpp_ml_buffers.water_channels[k];
+                        cpp_ml_buffers.water_channels[k] = cpp_ml_buffers.pad_rows.data();
+                        cpp_ml_buffers.terrain_batch[k] = &cpp_ml_buffers.terrain_channels[k];
+                        cpp_ml_buffers.terrain_channels[k] = cpp_ml_buffers.pad_rows.data();
+                    }
+                }
+
+                cpp_ml_buffers.output.resize(chunk_cap, 0.0F);
+
+                MLCouplingData<float> input_data;
+                if (use_flat_model_io) {
+                    input_data.add_tensor(MLCouplingTensor<float>::wrap_flat(
+                        cpp_ml_buffers.flat_input.data(),
+                        std::vector<int>{static_cast<int>(chunk_cap), 18},
+                        MLCouplingMemLayoutContiguous,
+                        MLCouplingOwnershipExternal));
+                } else {
+                    input_data.add_tensor(MLCouplingTensor<float>::wrap_nested(
+                        static_cast<void*>(cpp_ml_buffers.water_batch.data()),
+                        std::vector<int>{static_cast<int>(chunk_cap), 1, 3, 3},
+                        MLCouplingMemLayoutNested,
+                        MLCouplingOwnershipExternal));
+                    input_data.add_tensor(MLCouplingTensor<float>::wrap_nested(
+                        static_cast<void*>(cpp_ml_buffers.terrain_batch.data()),
+                        std::vector<int>{static_cast<int>(chunk_cap), 1, 3, 3},
+                        MLCouplingMemLayoutNested,
+                        MLCouplingOwnershipExternal));
+                }
+
+                MLCouplingData<float> output_data;
+                output_data.add_tensor(MLCouplingTensor<float>::wrap_flat(
+                    cpp_ml_buffers.output.data(),
+                    std::vector<int>{static_cast<int>(chunk_cap)},
+                    MLCouplingMemLayoutContiguous,
+                    MLCouplingOwnershipExternal));
+
+                ml_coupling.reset(MLCoupling<float, float>::create_from_config(
+                    cfg.cpp_ml_config,
+                    std::move(input_data),
+                    std::move(output_data)));
+
+                if (!ml_coupling) {
+                    throw std::runtime_error("Failed to create MLCoupling from config: " + cfg.cpp_ml_config);
+                }
+        #endif
 
         if (world_rank == 0) {
             std::cout << "Loaded grid metadata: nx=" << nx
@@ -2465,7 +2825,8 @@ int main(int argc, char** argv) {
 
         // Split the terrain data into width x height many 3x3 tiles (one tile per cell), and pack each tile into a contiguous 9-float array. This is the format expected by the ML model. 
 
-        if (USE_SMARTSIM) {
+    #ifndef USE_CPP_ML_INTERFACE
+        if (use_smartsim) {
 
             const bool use_flat_model_io = (cfg.model_io_layout == "flat_contiguous");
             std::cout << "Preparing terrain tiles for ML model" << std::endl;
@@ -2528,11 +2889,12 @@ int main(int argc, char** argv) {
             std::cout << "Finished preparing terrain tiles for ML model" << std::endl;
 
         }
+    #endif
 
         StepScratch step_scratch(decomp.local_nz, decomp.local_nx);
 
         std::vector<float> ml_tile_output;
-        if (USE_SMARTSIM) {
+        if (use_ml_interface) {
             ml_tile_output.resize(static_cast<std::size_t>(decomp.local_nz) * static_cast<std::size_t>(decomp.local_nx), 0.0F);
         }
 
@@ -2580,18 +2942,32 @@ int main(int argc, char** argv) {
                 double moved_this_step_local = 0.0;
 
                 auto start_this_step = std::chrono::steady_clock::now();
-                const bool use_ml_step = ((step % 2) == 0) && USE_SMARTSIM;
+                const bool use_ml_step = ((step % 2) == 0) && use_ml_interface;
                 
                 if (use_ml_step) {
-                    moved_this_step_local = compute_local_step_ml(
-                        client,
-                        terrain,
-                        water,
-                        next,
-                        decomp,
-                        cfg.clamp_epsilon,
-                        cfg,
-                        ml_tile_output);
+                    #ifdef USE_CPP_ML_INTERFACE
+                        moved_this_step_local = compute_local_step_ml_cpp(
+                            *ml_coupling,
+                            terrain,
+                            water,
+                            next,
+                            decomp,
+                            cfg.clamp_epsilon,
+                            cfg,
+                            ml_tile_output,
+                            cpp_ml_buffers,
+                            cpp_ml_provider_is_aix);
+                    #else
+                        moved_this_step_local = compute_local_step_ml_smartsim(
+                            client,
+                            terrain,
+                            water,
+                            next,
+                            decomp,
+                            cfg.clamp_epsilon,
+                            cfg,
+                            ml_tile_output);
+                        #endif
 
                 } else {
 

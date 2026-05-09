@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# pass this to cmake to enable the C++ ML interface in the mini-app
+USE_CPP_ML_INTERFACE=ON
+
 # Build the terrain solver
 
 current_dir=$(pwd)
@@ -36,8 +39,9 @@ echo "Build started at: $build_start_date"
 
 cd "solver_cpp/${custom_build_dir}" || { echo "Failed to change directory to solver_cpp/${custom_build_dir}"; cd "$current_dir"; exit 1; }
 
+
 #rm ./* -r || { echo "Build failed"; cd "$current_dir"; exit 1; }
-cmake -S .. -DCMAKE_BUILD_TYPE=Release || { echo "Build failed"; cd "$current_dir"; exit 1; }
+cmake -S .. -DCMAKE_BUILD_TYPE=Release -DUSE_CPP_ML_INTERFACE=${USE_CPP_ML_INTERFACE} || { echo "Build failed"; cd "$current_dir"; exit 1; }
 cmake --build . || { echo "Build failed"; cd "$current_dir"; exit 1; }
 echo "Build completed successfully"
 

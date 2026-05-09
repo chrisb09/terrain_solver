@@ -7,7 +7,7 @@
 #SBATCH --job-name=terrain_solver_coupled
 #SBATCH --account=thes2181
 #SBATCH --time=02:00:00
-#SBATCH --exclusive
+##SBATCH --exclusive
 #SBATCH --output=logs/mini_app_output_%j.txt
 
 ############################
@@ -25,7 +25,7 @@
 # Component 1a: GPU (c23g)
 ############################
 #SBATCH --partition=c23g
-#SBATCH --nodes=3
+#SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=24
 #SBATCH --gres=gpu:1
@@ -57,7 +57,9 @@ export SR_SOCKET_TIMEOUT=300000
 
 ########## SmartSim/ML Parameters ##########
 
-USE_SMARTSIM=1
+USE_SMARTSIM=0 # directly use SmartSim for model management and inference
+USE_CPP_ML_INTERFACE=1
+CPP_ML_INTERFACE_PROVIDER="SMARTSIM" # SMARTSIM, AIX, PHYDLL
 SOLVER_HET_GROUP=0
 DB_HET_GROUP=1
 
@@ -86,7 +88,7 @@ fi
 #MODEL_PATH="train_models/model_a/best_model_jit_benchmark_giant_mlp.pt"
 
 #MODEL_BACKEND="TORCH" #TORCH, TF, ONNX
-MODEL_BACKEND="TF"
+MODEL_BACKEND="TORCH"
 ML_BATCH_SIZE=50000
 MODEL_STAGE_MAX_RETRIES=2
 MODEL_STAGE_FALLBACK_TO_SHARED=1
@@ -109,6 +111,7 @@ LOCAL_FAST_ROOT=""
 CONTROLLER_START_MAX_RETRIES=2
 SMARTSIM_RUNTIME_ROOT="/home/thes2181/python"
 USE_LOCAL_RUNTIME_STAGE=1
+CPP_ML_CONFIG="config.toml"
 RUNTIME_STAGE_MAX_RETRIES=2
 RUNTIME_STAGE_LOG=""
 RUNTIME_STAGE_DURATION=0
@@ -205,13 +208,25 @@ echo "DB_HET_GROUP=${DB_HET_GROUP} Slurm raw vars: ${_db_gpus_per_node_var}='${(
 
 USE_GPU=$(( GPUS_PER_NODE > 0 ? 1 : 0 ))
 
-if (( USE_SMARTSIM == 1 )); then
-  if (( USE_GPU == 1 )); then
-    echo "Configuring for GPU-based ML inference with ${GPUS_PER_NODE} GPUs per node."
-    export CUSTOM_JOB_NAME_SUFFIX_ENV="_${GPUS_PER_NODE}gpu_${MODEL_NAME}_revamped_prepare"
-  else
-    echo "Configuring for CPU-based ML inference with ${ML_INFERENCE_CPU_CORES} CPU cores per task."
-    export CUSTOM_JOB_NAME_SUFFIX_ENV="_${ML_INFERENCE_CPU_CORES}cpu_${MODEL_NAME}_revamped_prepare"
+if (( USE_SMARTSIM == 1 || USE_CPP_ML_INTERFACE == 1 )); then
+  if (( USE_SMARTSIM == 1 )); then
+    echo "Use SmartSim for ML model management and inference"
+    if (( USE_GPU == 1 )); then
+      echo "Configuring for GPU-based ML inference with ${GPUS_PER_NODE} GPUs per node."
+      export CUSTOM_JOB_NAME_SUFFIX_ENV="_SMARTSIM_${GPUS_PER_NODE}gpu_${MODEL_NAME}_revamped_prepare"
+    else
+      echo "Configuring for CPU-based ML inference with ${ML_INFERENCE_CPU_CORES} CPU cores per task."
+      export CUSTOM_JOB_NAME_SUFFIX_ENV="_SMARTSIM_${ML_INFERENCE_CPU_CORES}cpu_${MODEL_NAME}_revamped_prepare"
+    fi
+  elif (( USE_CPP_ML_INTERFACE == 1 )); then
+    echo "Using C++ ML interface for model management and inference"
+    if (( USE_GPU == 1 )); then
+      echo "Configuring for GPU-based ML inference with ${GPUS_PER_NODE} GPUs per node."
+      export CUSTOM_JOB_NAME_SUFFIX_ENV="_cpp_interface_${GPUS_PER_NODE}gpu_${MODEL_NAME}_revamped_prepare"
+    else
+      echo "Configuring for CPU-based ML inference with ${ML_INFERENCE_CPU_CORES} CPU cores per task."
+      export CUSTOM_JOB_NAME_SUFFIX_ENV="_cpp_interface_${ML_INFERENCE_CPU_CORES}cpu_${MODEL_NAME}_revamped_prepare"
+    fi
   fi
 fi
 
@@ -225,7 +240,7 @@ export OVERWRITE_JOB_NAME_ENV=1
 
 CUSTOM_JOB_NAME_SUFFIX="" # optional suffix to add to the job name for easier identification in job queues and output files, e.g. "_test" or "_render_only"
 
-job_name_template='circle_r${RADIUS}_d${INIT_DEPTH}_s${TOTAL_STEPS}_${SAVE_MODE}_${TARGET_WIDTH}x${TARGET_HEIGHT}_${_partition}_${_nodes}n_${_ntasks_per_node}t_${_cpus_per_task}c-${DB_NODES}n_${MODEL_BACKEND}__${IO_MODE}_${MPI_SYNC_MODE}${CUSTOM_JOB_NAME_SUFFIX}'
+job_name_template='circle_r${RADIUS}_d${INIT_DEPTH}_s${TOTAL_STEPS}_${SAVE_MODE}_${TARGET_WIDTH}x${TARGET_HEIGHT}_${_partition}_${_nodes}n_${_ntasks_per_node}t_${_cpus_per_task}c-${DB_NODES}n_${MODEL_BACKEND}__${IO_MODE}_${MPI_SYNC_MODE}_${MODEL_IO_LAYOUT}${CUSTOM_JOB_NAME_SUFFIX}'
 
 
 INIT_MODE="circle" # circle, square, uniform
@@ -450,6 +465,10 @@ if [[ -n "${USE_LOCAL_RUNTIME_STAGE_ENV:-}" ]]; then
   USE_LOCAL_RUNTIME_STAGE="${USE_LOCAL_RUNTIME_STAGE_ENV}"
   echo "Using USE_LOCAL_RUNTIME_STAGE from environment variable: ${USE_LOCAL_RUNTIME_STAGE}"
 fi
+if [[ -n "${CPP_ML_CONFIG_ENV:-}" ]]; then
+  CPP_ML_CONFIG="${CPP_ML_CONFIG_ENV}"
+  echo "Using CPP_ML_CONFIG from environment variable: ${CPP_ML_CONFIG}"
+fi
 
 if [[ -n "${OVERWRITE_JOB_NAME_ENV:-}" ]]; then
   if [[ "${OVERWRITE_JOB_NAME_ENV}" -eq 1 ]]; then
@@ -606,7 +625,7 @@ else
 fi
 
 
-if [[ "${USE_SMARTSIM}" -eq 1 ]] && [[ "${USE_LOCAL_RUNTIME_STAGE}" -eq 1 ]]; then
+if [[ ( "${USE_SMARTSIM}" -eq 1 || ( "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER}" == "SMARTSIM" ) ) && "${USE_LOCAL_RUNTIME_STAGE}" -eq 1 ]]; then
   RUNTIME_TAR_PATH="${SMARTSIM_RUNTIME_ROOT}/${RUNTIME_DEVICE}.tar"
   LOCAL_RUNTIME_BASE="/tmp/${USER}/smartsim_runtime"
   LOCAL_RUNTIME_TAR="/tmp/${USER}_${SLURM_JOB_ID}_${RUNTIME_DEVICE}.tar"
@@ -719,7 +738,7 @@ else
   echo "Warning: runtime extra lib directory not found: ${RUNTIME_EXTRA_LIB_DIR}"
 fi
 
-if [[ "${USE_SMARTSIM}" -eq 1 ]]; then
+if [[ "${USE_SMARTSIM}" -eq 1 || ( "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER}" == "SMARTSIM" ) ]]; then
   _backend_req="${MODEL_BACKEND:u}"
   _smart_info_out="$(smart info 2>/dev/null || true)"
   if [[ "${_backend_req}" == "TORCH" ]]; then
@@ -758,7 +777,7 @@ for artifact in payload.get("artifacts", []):
         print(artifact["path"])
         print(",".join(artifact.get("inputs", [])))
         print(",".join(artifact.get("outputs", [])))
-  print(str(artifact.get("io_layout", "split_3x3")))
+        print(str(artifact.get("io_layout", "split_3x3")))
         sys.exit(0)
 raise SystemExit(f"Artifact for model={model_name} backend={backend} not found in {manifest_path}")
 PY
@@ -1102,13 +1121,20 @@ if [[ "${RUN_SOLVER}" -eq 1 ]]; then
 
     COMPILE_START_TIME=$(date +%s)
 
+    COMPILE_ARG=""
+
+    if [[ "${USE_CPP_ML_INTERFACE}" -eq 1 ]]; then
+      # enable the USE_CPP_ML_INTERFACE option defined in the CMakeLists.txt to compile the C++ ML inference interface
+      COMPILE_ARG="-DUSE_CPP_ML_INTERFACE=ON"
+    fi
+
     # by default, COMPILE_OUTPUT_PATH is "build", but if COMPILE_OUTPUT_SUBDIR is set it overrides it
     # check if the solver_cpp/build directory exists, if it does, remove it to ensure a clean build
     if [[ -d "solver_cpp/${COMPILE_OUTPUT_PATH}" ]]; then
       rm -rf "solver_cpp/${COMPILE_OUTPUT_PATH}"
     fi
     mkdir -p "solver_cpp/${COMPILE_OUTPUT_PATH}"
-    cmake -S solver_cpp -B solver_cpp/${COMPILE_OUTPUT_PATH}
+    cmake -S solver_cpp -B solver_cpp/${COMPILE_OUTPUT_PATH} ${COMPILE_ARG}
     cmake --build solver_cpp/${COMPILE_OUTPUT_PATH} -j
 
     COMPILE_END_TIME=$(date +%s)
@@ -1122,7 +1148,7 @@ if [[ "${RUN_SOLVER}" -eq 1 ]]; then
 
   DB_HOSTNAME="127.0.0.1:6379"
 
-  if [[ "${USE_SMARTSIM}" -eq 1 ]]; then
+  if [[ "${USE_SMARTSIM}" -eq 1 || ( "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER}" == "SMARTSIM" ) ]]; then
     if [[ "${DB_NODE_PREFLIGHT}" -eq 1 ]]; then
       echo "Running DB node preflight checks (ib0, port 6780, local write)..."
       DB_PREFLIGHT_LOG="logs/db_preflight_${SLURM_JOB_ID}.log"
@@ -1225,6 +1251,9 @@ if [[ "${RUN_SOLVER}" -eq 1 ]]; then
   if [[ -n "${MODEL_OUTPUTS}" ]]; then
     MODEL_IO_ARGS+=(--model-outputs "${MODEL_OUTPUTS}")
   fi
+  if [[ -n "${CPP_ML_CONFIG}" ]]; then
+    MODEL_IO_ARGS+=(--cpp-ml-config "${CPP_ML_CONFIG}")
+  fi
 
   # For multi-node jobs, --distribution=block evenly spreads tasks across nodes.
   # This prevents task desynchronization at shutdown (especially in rank0_gather I/O mode).
@@ -1280,7 +1309,7 @@ else
   SOLVE_DURATION=0
 fi
 
-if [[ "${USE_SMARTSIM}" -eq 1 ]]; then
+if [[ "${USE_SMARTSIM}" -eq 1 || ( "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER}" == "SMARTSIM" ) ]]; then
   rm -f "${DB_HOSTNAME_FILE}"
   echo "Creating 'close_driver_${SLURM_JOB_ID}.txt' file to signal SmartSim controller to shut down..."
   echo "Done" > "close_driver_${SLURM_JOB_ID}.txt"

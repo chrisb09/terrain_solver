@@ -1,0 +1,27 @@
+[provider]
+class = "Smartsim"
+device = "GPU"
+model_backend = "TORCH"
+model_path = ""
+model_name = "benchmark_giant_mlp"
+nodes = 1
+host = "localhost"
+port = 6780
+num_gpus = 1
+first_gpu = 0
+batch_size = 0
+min_batch_size = 0
+min_batch_timeout = 0
+
+[normalization]
+class = "MinMax" # or another normalization class if necessary
+input_min = 0.0
+input_max = 1.0
+output_min = 0.0
+output_max = 1.0
+
+[behavior]
+class = "Default"
+
+[application]
+class = "MLCouplingApplicationTerrainSolver"
