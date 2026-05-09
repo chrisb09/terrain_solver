@@ -1,6 +1,0 @@
-MODEL_STAGE_PER_NODE label=solver het_group=0 host=n23m0220.hpc.itc.rwth-aachen.de duration_s=1 path=/hpcwork/ro092286/smartsim/tmp/mini_app_model_cache_66485322/best_model_jit_benchmark_giant_mlp.pt
-Warning: Could not resolve explicit node list for het-group 1; falling back to single srun staging.
-MODEL_STAGE_PER_NODE label=db het_group=1 host=n23g0016.hpc.itc.rwth-aachen.de duration_s=5 path=/hpcwork/ro092286/smartsim/tmp/mini_app_model_cache_66485322/best_model_jit_benchmark_giant_mlp.pt
-MODEL_STAGE_PER_NODE label=db het_group=1 host=n23g0015.hpc.itc.rwth-aachen.de duration_s=5 path=/hpcwork/ro092286/smartsim/tmp/mini_app_model_cache_66485322/best_model_jit_benchmark_giant_mlp.pt
-MODEL_STAGE_PER_NODE label=db het_group=1 host=n23g0014.hpc.itc.rwth-aachen.de duration_s=8 path=/hpcwork/ro092286/smartsim/tmp/mini_app_model_cache_66485322/best_model_jit_benchmark_giant_mlp.pt
-MODEL_STAGE_PER_NODE label=db het_group=1 host=n23g0017.hpc.itc.rwth-aachen.de duration_s=8 path=/hpcwork/ro092286/smartsim/tmp/mini_app_model_cache_66485322/best_model_jit_benchmark_giant_mlp.pt

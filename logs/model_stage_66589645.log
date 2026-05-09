@@ -1,6 +1,0 @@
-MODEL_STAGE_PER_NODE label=solver het_group=0 host=n23m0009.hpc.itc.rwth-aachen.de duration_s=1 path=/tmp/ro092286/model/best_model_jit_benchmark_giant_mlp_cpu.pt
-Warning: Could not resolve explicit node list for het-group 1; falling back to single srun staging.
-cp: cannot stat '/tmp/ro092286/model_cpu_converted_66589645/best_model_jit_benchmark_giant_mlp_cpu.pt': No such file or directory
-srun: error: n23m0010: task 0: Exited with exit code 1
-Error: model staging failed for het-group 1 (db) with exit code 1
-Warning: local model staging failed on at least one node. Falling back to shared model path: /tmp/ro092286/model_cpu_converted_66589645/best_model_jit_benchmark_giant_mlp_cpu.pt

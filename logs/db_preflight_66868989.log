@@ -1,9 +1,0 @@
-DB_PREFLIGHT host=n23g0008.hpc.itc.rwth-aachen.de ib0=134.61.46.196/22
-DB_PREFLIGHT host=n23g0021.hpc.itc.rwth-aachen.de ib0=134.61.46.217/22
-DB_PREFLIGHT port_bind_6780=ok
-DB_PREFLIGHT port_bind_6780=ok
-DB_PREFLIGHT fs_write=ok root=/tmp
-DB_PREFLIGHT fs_write=ok root=/tmp
-DB_PREFLIGHT host=n23g0011.hpc.itc.rwth-aachen.de ib0=134.61.46.199/22
-DB_PREFLIGHT port_bind_6780=ok
-DB_PREFLIGHT fs_write=ok root=/tmp

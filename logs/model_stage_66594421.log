@@ -1,9 +1,0 @@
-MODEL_STAGE_PER_NODE label=solver het_group=0 host=n23m0148.hpc.itc.rwth-aachen.de duration_s=1 path=/tmp/ro092286/model/best_model_jit_benchmark_giant_mlp.pt
-Warning: Could not resolve explicit node list for het-group 1; falling back to single srun staging.
-MODEL_STAGE_PER_NODE label=db het_group=1 host=n23g0004.hpc.itc.rwth-aachen.de duration_s=1 path=/tmp/ro092286/model/best_model_jit_benchmark_giant_mlp.pt
-MODEL_STAGE_PER_NODE label=db het_group=1 host=n23g0007.hpc.itc.rwth-aachen.de duration_s=1 path=/tmp/ro092286/model/best_model_jit_benchmark_giant_mlp.pt
-MODEL_STAGE_PER_NODE label=db het_group=1 host=n23g0006.hpc.itc.rwth-aachen.de duration_s=1 path=/tmp/ro092286/model/best_model_jit_benchmark_giant_mlp.pt
-MODEL_STAGE_PER_NODE label=db het_group=1 host=n23g0002.hpc.itc.rwth-aachen.de duration_s=1 path=/tmp/ro092286/model/best_model_jit_benchmark_giant_mlp.pt
-MODEL_STAGE_PER_NODE label=db het_group=1 host=n23g0003.hpc.itc.rwth-aachen.de duration_s=1 path=/tmp/ro092286/model/best_model_jit_benchmark_giant_mlp.pt
-MODEL_STAGE_PER_NODE label=db het_group=1 host=n23g0005.hpc.itc.rwth-aachen.de duration_s=1 path=/tmp/ro092286/model/best_model_jit_benchmark_giant_mlp.pt
-MODEL_STAGE_PER_NODE label=db het_group=1 host=n23g0008.hpc.itc.rwth-aachen.de duration_s=1 path=/tmp/ro092286/model/best_model_jit_benchmark_giant_mlp.pt

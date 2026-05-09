@@ -1,2 +1,0 @@
-MODEL_STAGE_PER_NODE label=solver het_group=0 host=r23m0116.hpc.itc.rwth-aachen.de duration_s=1 path=/hpcwork/ro092286/smartsim/tmp/mini_app_model_cache_66443804/best_model_jit_benchmark_giant_mlp.pt
-MODEL_STAGE_PER_NODE label=db het_group=1 host=r23g0003.hpc.itc.rwth-aachen.de duration_s=42 path=/hpcwork/ro092286/smartsim/tmp/mini_app_model_cache_66443804/best_model_jit_benchmark_giant_mlp.pt

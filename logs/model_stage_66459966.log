@@ -1,9 +1,0 @@
-MODEL_STAGE_PER_NODE label=solver het_group=0 host=n23m0410.hpc.itc.rwth-aachen.de duration_s=1 path=/hpcwork/ro092286/smartsim/tmp/mini_app_model_cache_66459966/best_model_jit_benchmark_giant_mlp.pt
-srun: error: Unable to create step for job 66459967: Requested node configuration is not available
-MODEL_STAGE_ERROR label=db het_group=1 host=n23m0410 attempt=1/2 rc=1
-srun: error: Unable to create step for job 66459967: Requested node configuration is not available
-srun: error: Unable to create step for job 66459967: Requested node configuration is not available
-MODEL_STAGE_ERROR label=db het_group=1 host=n23m0410 attempt=2/2 rc=1
-srun: error: Unable to create step for job 66459967: Requested node configuration is not available
-Error: model staging failed for het-group 1 (db); failed_nodes=1
-Warning: local model staging failed on at least one node. Falling back to shared model path: /rwthfs/rz/cluster/hpcwork/ro092286/smartsim/mini_app/train_models/model_a/best_model_jit_benchmark_giant_mlp.pt
