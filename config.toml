@@ -1,13 +1,19 @@
+
+
+[logging]
+level = "debug"
+error_separate = false
+
 [provider]
 class = "Smartsim"
 device = "GPU"
 model_backend = "TORCH"
-model_path = ""
+model_path = "./train_models/model_a/best_model_benchmark_giant_mlp.pt"
 model_name = "benchmark_giant_mlp"
-nodes = 1
-host = "localhost"
-port = 6780
-num_gpus = 1
+nodes = -1
+host = ""
+port = -1
+num_gpus = -1
 first_gpu = 0
 batch_size = 0
 min_batch_size = 0

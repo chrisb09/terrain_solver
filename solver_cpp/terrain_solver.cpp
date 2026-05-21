@@ -21,6 +21,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <sys/resource.h>
 #include <filesystem>
 #include <iomanip>
 #include <iostream>
@@ -78,6 +79,7 @@ struct Config {
     bool overwrite_output = false;
     bool print_build_timestamp = false;
     int gpus_per_node = 1;
+    int ml_nodes = -1;
     int ml_batch_size = 50000;
 };
 
@@ -151,6 +153,7 @@ static void usage() {
         << "  --cpp-ml-config <path>           CPP-ML-Interface config file path\n"
         << "  --device <cpu|gpu>               Device to run the solver on (default: cpu)\n"
         << "  --gpus-per-node <int>            Number of GPUs per node (default: 1)\n"
+        << "  --ml-nodes <int>                 Number of ML/DB nodes for CPP-ML provider\n"
         << "  --ml-batch-size <int>            Max per-rank ML batch size (default: 50000)\n"
         << "  --steps <int>                    Number of simulation steps (default: 100)\n"
         << "  --save-every <int>               Save every N steps (default: 1)\n"
@@ -197,6 +200,265 @@ static std::string get_env_string(const char* key, const std::string& default_va
         return default_value;
     }
     return std::string(raw);
+}
+
+struct ProcessMemoryUsage {
+    long vm_rss_kb = -1;
+    long vm_hwm_kb = -1;
+    long vm_size_kb = -1;
+};
+
+struct MemoryTracker {
+    long max_rss_kb = -1;
+    long max_hwm_kb = -1;
+    long max_vm_kb = -1;
+
+    void update(const ProcessMemoryUsage& usage) {
+        if (usage.vm_rss_kb > max_rss_kb) {
+            max_rss_kb = usage.vm_rss_kb;
+        }
+        if (usage.vm_hwm_kb > max_hwm_kb) {
+            max_hwm_kb = usage.vm_hwm_kb;
+        }
+        if (usage.vm_size_kb > max_vm_kb) {
+            max_vm_kb = usage.vm_size_kb;
+        }
+    }
+};
+
+struct MlTrafficStats {
+    long long input_bytes = 0;
+    long long output_bytes = 0;
+    long long preload_bytes = 0;
+};
+
+struct InterfaceCounters {
+    long long rx_bytes = -1;
+    long long tx_bytes = -1;
+};
+
+static MemoryTracker g_mem_tracker;
+static MlTrafficStats g_ml_traffic;
+static InterfaceCounters g_start_lo;
+static InterfaceCounters g_start_ib0;
+static bool g_start_counters_ready = false;
+
+static ProcessMemoryUsage read_process_memory_usage() {
+    ProcessMemoryUsage usage;
+    std::ifstream status("/proc/self/status");
+    std::string key;
+    long value = 0;
+    std::string unit;
+
+    while (status >> key >> value >> unit) {
+        if (key == "VmRSS:") {
+            usage.vm_rss_kb = value;
+        } else if (key == "VmHWM:") {
+            usage.vm_hwm_kb = value;
+        } else if (key == "VmSize:") {
+            usage.vm_size_kb = value;
+        }
+    }
+
+    if (usage.vm_rss_kb < 0 || usage.vm_hwm_kb < 0) {
+        struct rusage ru {};
+        if (getrusage(RUSAGE_SELF, &ru) == 0) {
+            if (usage.vm_rss_kb < 0) {
+                usage.vm_rss_kb = ru.ru_maxrss;
+            }
+            if (usage.vm_hwm_kb < 0) {
+                usage.vm_hwm_kb = ru.ru_maxrss;
+            }
+        }
+    }
+
+    return usage;
+}
+
+static double kb_to_mb(long kb) {
+    return kb < 0 ? -1.0 : static_cast<double>(kb) / 1024.0;
+}
+
+static double bytes_to_mb(long long bytes) {
+    return bytes < 0 ? -1.0 : static_cast<double>(bytes) / (1024.0 * 1024.0);
+}
+
+static bool mem_verbose_enabled() {
+    const char* raw = std::getenv("MLCOUPLING_MEM_LOG_VERBOSE");
+    return raw != nullptr && raw[0] == '1';
+}
+
+static void log_memory_usage(int rank,
+                             const std::string& label,
+                             int step = -1,
+                             long long chunk = -1) {
+    const ProcessMemoryUsage usage = read_process_memory_usage();
+    g_mem_tracker.update(usage);
+    if (!mem_verbose_enabled()) {
+        return;
+    }
+    std::ostringstream oss;
+    oss << "MEM_USAGE"
+        << " rank=" << rank
+        << " label=" << label;
+    if (step >= 0) {
+        oss << " step=" << step;
+    }
+    if (chunk >= 0) {
+        oss << " chunk=" << chunk;
+    }
+    oss << std::fixed << std::setprecision(2)
+        << " rss_mb=" << kb_to_mb(usage.vm_rss_kb)
+        << " hwm_mb=" << kb_to_mb(usage.vm_hwm_kb)
+        << " vm_mb=" << kb_to_mb(usage.vm_size_kb);
+    std::cout << oss.str() << std::endl;
+}
+
+static void report_memory_summary(MPI_Comm world, int world_rank) {
+    long long local_rss = g_mem_tracker.max_rss_kb;
+    long long local_hwm = g_mem_tracker.max_hwm_kb;
+    long long local_vm = g_mem_tracker.max_vm_kb;
+
+    long long max_rss = -1;
+    long long max_hwm = -1;
+    long long max_vm = -1;
+
+    MPI_Reduce(&local_rss, &max_rss, 1, MPI_LONG_LONG, MPI_MAX, 0, world);
+    MPI_Reduce(&local_hwm, &max_hwm, 1, MPI_LONG_LONG, MPI_MAX, 0, world);
+    MPI_Reduce(&local_vm, &max_vm, 1, MPI_LONG_LONG, MPI_MAX, 0, world);
+
+    if (world_rank == 0) {
+        if (max_rss >= 0) {
+            std::cout << "MEM_USAGE_MAX rss_mb=" << kb_to_mb(max_rss)
+                      << " hwm_mb=" << kb_to_mb(max_hwm)
+                      << " vm_mb=" << kb_to_mb(max_vm)
+                      << " units=MiB scope=max_over_ranks" << std::endl;
+        } else {
+            std::cout << "MEM_USAGE_MAX unavailable=true reason=proc_and_rusage_missing" << std::endl;
+        }
+    }
+}
+
+static void report_ml_traffic(MPI_Comm world, int world_rank) {
+    long long input_sum = 0;
+    long long output_sum = 0;
+    long long preload_sum = 0;
+    MPI_Reduce(&g_ml_traffic.input_bytes, &input_sum, 1, MPI_LONG_LONG, MPI_SUM, 0, world);
+    MPI_Reduce(&g_ml_traffic.output_bytes, &output_sum, 1, MPI_LONG_LONG, MPI_SUM, 0, world);
+    MPI_Reduce(&g_ml_traffic.preload_bytes, &preload_sum, 1, MPI_LONG_LONG, MPI_SUM, 0, world);
+
+    if (world_rank == 0) {
+        std::cout << "ML_TRAFFIC input_mb=" << bytes_to_mb(input_sum)
+                  << " output_mb=" << bytes_to_mb(output_sum)
+                  << " preload_mb=" << bytes_to_mb(preload_sum)
+                  << " units=MiB scope=sum_over_ranks" << std::endl;
+        std::cout << "ML_TRAFFIC_DESC input=per_step_tensor_bytes output=per_step_output_bytes"
+                  << " preload=one_time_terrain_upload_direct_smartsim" << std::endl;
+    }
+}
+
+static InterfaceCounters read_interface_counters(const std::string& ifname) {
+    InterfaceCounters counters;
+    std::ifstream dev("/proc/net/dev");
+    if (!dev) {
+        return counters;
+    }
+
+    std::string line;
+    while (std::getline(dev, line)) {
+        const auto colon = line.find(':');
+        if (colon == std::string::npos) {
+            continue;
+        }
+        std::string name = line.substr(0, colon);
+        name.erase(0, name.find_first_not_of(" \t"));
+        name.erase(name.find_last_not_of(" \t") + 1);
+        if (name != ifname) {
+            continue;
+        }
+
+        std::istringstream iss(line.substr(colon + 1));
+        long long rx_bytes = -1;
+        long long tx_bytes = -1;
+        iss >> rx_bytes;
+        for (int i = 0; i < 7; ++i) {
+            long long tmp = 0;
+            iss >> tmp;
+        }
+        iss >> tx_bytes;
+
+        counters.rx_bytes = rx_bytes;
+        counters.tx_bytes = tx_bytes;
+        return counters;
+    }
+
+    return counters;
+}
+
+static void record_interface_counters_start(MPI_Comm world) {
+    MPI_Comm shared = MPI_COMM_NULL;
+    MPI_Comm_split_type(world, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, &shared);
+    int local_rank = 0;
+    MPI_Comm_rank(shared, &local_rank);
+    if (local_rank == 0) {
+        g_start_lo = read_interface_counters("lo");
+        g_start_ib0 = read_interface_counters("ib0");
+        g_start_counters_ready = true;
+    }
+    MPI_Comm_free(&shared);
+}
+
+static void report_interface_deltas(MPI_Comm world, int world_rank) {
+    long long lo_rx = 0;
+    long long lo_tx = 0;
+    long long ib_rx = 0;
+    long long ib_tx = 0;
+
+    MPI_Comm shared = MPI_COMM_NULL;
+    MPI_Comm_split_type(world, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, &shared);
+    int local_rank = 0;
+    MPI_Comm_rank(shared, &local_rank);
+    if (local_rank == 0 && g_start_counters_ready) {
+        const InterfaceCounters end_lo = read_interface_counters("lo");
+        const InterfaceCounters end_ib0 = read_interface_counters("ib0");
+        if (end_lo.rx_bytes >= 0 && g_start_lo.rx_bytes >= 0) {
+            lo_rx = end_lo.rx_bytes - g_start_lo.rx_bytes;
+            lo_tx = end_lo.tx_bytes - g_start_lo.tx_bytes;
+        }
+        if (end_ib0.rx_bytes >= 0 && g_start_ib0.rx_bytes >= 0) {
+            ib_rx = end_ib0.rx_bytes - g_start_ib0.rx_bytes;
+            ib_tx = end_ib0.tx_bytes - g_start_ib0.tx_bytes;
+        }
+    }
+    MPI_Comm_free(&shared);
+
+    long long lo_rx_sum = 0;
+    long long lo_tx_sum = 0;
+    long long ib_rx_sum = 0;
+    long long ib_tx_sum = 0;
+    MPI_Reduce(&lo_rx, &lo_rx_sum, 1, MPI_LONG_LONG, MPI_SUM, 0, world);
+    MPI_Reduce(&lo_tx, &lo_tx_sum, 1, MPI_LONG_LONG, MPI_SUM, 0, world);
+    MPI_Reduce(&ib_rx, &ib_rx_sum, 1, MPI_LONG_LONG, MPI_SUM, 0, world);
+    MPI_Reduce(&ib_tx, &ib_tx_sum, 1, MPI_LONG_LONG, MPI_SUM, 0, world);
+
+    if (world_rank == 0) {
+        if (lo_rx_sum > 0 || lo_tx_sum > 0) {
+            std::cout << "NET_USAGE if=lo rx_mb=" << bytes_to_mb(lo_rx_sum)
+                      << " tx_mb=" << bytes_to_mb(lo_tx_sum)
+                      << " units=MiB scope=sum_node_leaders" << std::endl;
+        }
+        if (ib_rx_sum > 0 || ib_tx_sum > 0) {
+            std::cout << "NET_USAGE if=ib0 rx_mb=" << bytes_to_mb(ib_rx_sum)
+                      << " tx_mb=" << bytes_to_mb(ib_tx_sum)
+                      << " units=MiB scope=sum_node_leaders" << std::endl;
+        }
+    }
+}
+
+static void add_ml_traffic(bool flat_layout, bool include_terrain, std::size_t count) {
+    const std::size_t input_floats = flat_layout ? 18 : (include_terrain ? 18 : 9);
+    g_ml_traffic.input_bytes += static_cast<long long>(count * input_floats * sizeof(float));
+    g_ml_traffic.output_bytes += static_cast<long long>(count * sizeof(float));
 }
 
 static std::string escape_binary_for_log(const std::string& value) {
@@ -542,10 +804,10 @@ static Config parse_args(int argc, char** argv, int rank, int total_ranks) {
         } else if (arg == "--overwrite-output") {
             cfg.overwrite_output = true;
         } else if (arg == "--model-path" || arg == "--model-backend" || arg == "--model-io-layout" || arg == "--model-inputs" || arg == "--model-outputs" ||
-               arg == "--cpp-ml-config" ||
+                   arg == "--cpp-ml-config" ||
                    arg == "--input-hdf5" || arg == "--output-hdf5" ||
                    arg == "--steps" || arg == "--device" ||
-                   arg == "--gpus-per-node" || arg == "--ml-batch-size" ||
+                   arg == "--gpus-per-node" || arg == "--ml-nodes" || arg == "--ml-batch-size" ||
                    arg == "--save-every" || arg == "--save-mode" || arg == "--triangular-scale" || arg == "--chunk-size" || arg == "--io-mode" ||
                    arg == "--mpi-sync-mode" || arg == "--hdf5-xfer-mode" || arg == "--rank-grid-x" || arg == "--rank-grid-z" || arg == "--clamp-epsilon") {
             require(i + 1 < argc, "Missing value for argument: " + arg);
@@ -573,6 +835,9 @@ static Config parse_args(int argc, char** argv, int rank, int total_ranks) {
                 if (cfg.gpus_per_node > 0) {
                     std::cout << "Rank " << rank << " of " << total_ranks << " uses GPU index " << (rank % cfg.gpus_per_node) << std::endl;
                 }
+            } else if (arg == "--ml-nodes") {
+                cfg.ml_nodes = std::stoi(value);
+                require(cfg.ml_nodes > 0, "--ml-nodes must be > 0.");
             } else if (arg == "--ml-batch-size") {
                 cfg.ml_batch_size = std::stoi(value);
             } else if (arg == "--input-hdf5") {
@@ -630,6 +895,10 @@ static Config parse_args(int argc, char** argv, int rank, int total_ranks) {
         require(cfg.ml_batch_size > 0, "--ml-batch-size must be > 0.");
         require(cfg.rank_grid_x >= 0, "--rank-grid-x must be >= 0.");
         require(cfg.rank_grid_z >= 0, "--rank-grid-z must be >= 0.");
+    }
+
+    if (cfg.ml_nodes < 0) {
+        cfg.ml_nodes = get_env_int("MLCOUPLING_SMARTSIM_NODES", cfg.ml_nodes);
     }
     return cfg;
 }
@@ -1197,7 +1466,8 @@ static double compute_local_step_ml_cpp(MLCoupling<float, float>& ml_coupling,
     const Config& cfg,
     std::vector<float>& tile_output,
     CppMlBuffers& ml_buffers,
-    bool provider_is_aix) {
+    bool provider_is_aix,
+    int step) {
     const int local_nz = decomp.local_nz;
     const int local_nx = decomp.local_nx;
     const int pitch = local_nx + 2;
@@ -1228,6 +1498,8 @@ static double compute_local_step_ml_cpp(MLCoupling<float, float>& ml_coupling,
     for (std::size_t chunk_begin = 0, chunk_id = 0; chunk_begin < batch_size;
          chunk_begin += chunk_cap_eff, ++chunk_id) {
         const std::size_t chunk_count = std::min<std::size_t>(chunk_cap_eff, batch_size - chunk_begin);
+        log_memory_usage(decomp.world_rank, "cpp_ml_chunk_begin", step, static_cast<long long>(chunk_id));
+        add_ml_traffic(ml_buffers.use_flat_layout, true, chunk_count);
 
         const auto chunk_start = std::chrono::high_resolution_clock::now();
 
@@ -1255,9 +1527,12 @@ static double compute_local_step_ml_cpp(MLCoupling<float, float>& ml_coupling,
         }
 
         const auto data_prepared_time = std::chrono::high_resolution_clock::now();
+        log_memory_usage(decomp.world_rank, "cpp_ml_after_prepare_data", step, static_cast<long long>(chunk_id));
 
         std::fill(ml_buffers.output.begin(), ml_buffers.output.end(), 0.0F);
+        log_memory_usage(decomp.world_rank, "cpp_ml_before_ml_step", step, static_cast<long long>(chunk_id));
         ml_coupling.ml_step();
+        log_memory_usage(decomp.world_rank, "cpp_ml_after_ml_step", step, static_cast<long long>(chunk_id));
 
         const auto model_ran_time = std::chrono::high_resolution_clock::now();
 
@@ -1266,6 +1541,7 @@ static double compute_local_step_ml_cpp(MLCoupling<float, float>& ml_coupling,
                   tile_output.begin() + static_cast<std::ptrdiff_t>(chunk_begin));
 
         const auto unpacked_time = std::chrono::high_resolution_clock::now();
+        log_memory_usage(decomp.world_rank, "cpp_ml_after_copy_output", step, static_cast<long long>(chunk_id));
 
         prepare_data_time += std::chrono::duration_cast<std::chrono::microseconds>(data_prepared_time - chunk_start).count();
         run_model_time += std::chrono::duration_cast<std::chrono::microseconds>(model_ran_time - data_prepared_time).count();
@@ -1350,6 +1626,7 @@ static double compute_local_step_ml_smartsim(SmartRedis::Client* client,
         for (std::size_t chunk_begin = 0, chunk_id = 0; chunk_begin < BATCH_SIZE;
              chunk_begin += chunk_cap, ++chunk_id) {
             const std::size_t chunk_count = std::min<std::size_t>(chunk_cap, BATCH_SIZE - chunk_begin);
+            add_ml_traffic(use_flat_model_io, use_flat_model_io, chunk_count);
 
             const auto chunk_start = std::chrono::high_resolution_clock::now();
 
@@ -2484,6 +2761,8 @@ int main(int argc, char** argv) {
     int world_size = 1;
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+    record_interface_counters_start(MPI_COMM_WORLD);
+    log_memory_usage(world_rank, "after_mpi_init");
 
     bool use_smartsim = false;
     bool use_ml_interface = false;
@@ -2495,6 +2774,7 @@ int main(int argc, char** argv) {
 
     try {
         const Config cfg = parse_args(argc, argv, world_rank, world_size);
+        log_memory_usage(world_rank, "after_parse_args");
 
         if (cfg.print_build_timestamp) {
             if (world_rank == 0) {
@@ -2522,6 +2802,7 @@ int main(int argc, char** argv) {
             std::cout << "Expecting smartsim database/orchestrator at " << getenv("SSDB") << std::endl;
             use_smartsim = true;
         }
+        log_memory_usage(world_rank, "after_smartsim_env_check");
 
 #ifdef USE_CPP_ML_INTERFACE
         use_ml_interface = true;
@@ -2531,11 +2812,14 @@ int main(int argc, char** argv) {
         SmartRedis::Client* client = nullptr;
     #ifndef USE_CPP_ML_INTERFACE
         if (use_smartsim) {
+            log_memory_usage(world_rank, "before_direct_smartsim_client");
             client = new SmartRedis::Client("terrain_solver_" + std::to_string(world_rank));
 
             std::cout << "Successfully connected to SmartRedis database as terrain_solver_" << std::to_string(world_rank) << std::endl;
+            log_memory_usage(world_rank, "after_direct_smartsim_client");
 
             if (world_rank == 0) {
+                log_memory_usage(world_rank, "before_direct_model_load");
                 if (!std::filesystem::exists(cfg.model_path)) {
                     throw std::runtime_error("SmartRedis model file not found: " + cfg.model_path + " (cwd=" + std::filesystem::current_path().string() + ")");
                 }
@@ -2650,6 +2934,7 @@ int main(int argc, char** argv) {
                     std::cout << "Model load done in "
                               << std::chrono::duration_cast<std::chrono::milliseconds>(model_load_end - model_load_start).count()
                               << " ms" << std::endl;
+                    log_memory_usage(world_rank, "after_direct_model_load");
                 } else {
                     if (cfg.model_backend == "TF" || cfg.model_backend == "TFLITE") {
                         client->set_model_from_file(
@@ -2676,6 +2961,7 @@ int main(int argc, char** argv) {
                             ""
                         );
                     }
+                    log_memory_usage(world_rank, "after_direct_model_load");
                 }
             }
 
@@ -2691,11 +2977,13 @@ int main(int argc, char** argv) {
         } else {
             read_global_dims_parallel(cfg.input_hdf5, nz_u, nx_u, MPI_COMM_WORLD);
         }
+        log_memory_usage(world_rank, "after_read_global_dims");
 
         const int nz = static_cast<int>(nz_u);
         const int nx = static_cast<int>(nx_u);
 
         Decomposition decomp = build_decomposition(cfg, MPI_COMM_WORLD, world_rank, world_size, nx, nz);
+        log_memory_usage(world_rank, "after_build_decomposition");
 
         #ifndef USE_CPP_ML_INTERFACE
             if (use_smartsim) {
@@ -2729,6 +3017,7 @@ int main(int argc, char** argv) {
                 cpp_ml_buffers.pad_rows[0] = cpp_ml_buffers.pad_tile.data();
                 cpp_ml_buffers.pad_rows[1] = cpp_ml_buffers.pad_tile.data() + 3;
                 cpp_ml_buffers.pad_rows[2] = cpp_ml_buffers.pad_tile.data() + 6;
+                log_memory_usage(world_rank, "before_cpp_ml_buffer_alloc");
 
                 if (use_flat_model_io) {
                     cpp_ml_buffers.flat_input.resize(chunk_cap * 18, 0.0F);
@@ -2747,6 +3036,7 @@ int main(int argc, char** argv) {
                 }
 
                 cpp_ml_buffers.output.resize(chunk_cap, 0.0F);
+                log_memory_usage(world_rank, "after_cpp_ml_buffer_alloc");
 
                 MLCouplingData<float> input_data;
                 if (use_flat_model_io) {
@@ -2775,10 +3065,28 @@ int main(int argc, char** argv) {
                     MLCouplingMemLayoutContiguous,
                     MLCouplingOwnershipExternal));
 
+                const std::string provider_model_name =
+                    (cfg.device == "GPU") ? "water_step_model_gpu" : "water_step_model";
+
+                ConfigDottedOverrides cpp_ml_overrides{
+                    {"provider.device", cfg.device},
+                    {"provider.model_backend", cfg.model_backend},
+                    {"provider.model_path", cfg.model_path},
+                    {"provider.model_name", provider_model_name},
+                    {"provider.num_gpus", static_cast<int64_t>(cfg.gpus_per_node)},
+                    {"provider.batch_size", static_cast<int64_t>(cfg.ml_batch_size)}
+                };
+                if (cfg.ml_nodes > 0) {
+                    cpp_ml_overrides.emplace("provider.nodes", static_cast<int64_t>(cfg.ml_nodes));
+                }
+
+                log_memory_usage(world_rank, "before_cpp_ml_create_from_config");
                 ml_coupling.reset(MLCoupling<float, float>::create_from_config(
                     cfg.cpp_ml_config,
                     std::move(input_data),
-                    std::move(output_data)));
+                    std::move(output_data),
+                    ConfigOverrides(std::move(cpp_ml_overrides))));
+                log_memory_usage(world_rank, "after_cpp_ml_create_from_config");
 
                 if (!ml_coupling) {
                     throw std::runtime_error("Failed to create MLCoupling from config: " + cfg.cpp_ml_config);
@@ -2834,6 +3142,8 @@ int main(int argc, char** argv) {
             const std::size_t BATCH_SIZE = static_cast<std::size_t>(decomp.local_nz) * static_cast<std::size_t>(decomp.local_nx);
 
             std::vector<float> terrain_tiles(BATCH_SIZE * 9, 0.0F);
+
+            g_ml_traffic.preload_bytes += static_cast<long long>(BATCH_SIZE * 9 * sizeof(float));
 
             for (int i = 0; i < decomp.local_nz; ++i) {
                 for (int j = 0; j < decomp.local_nx; ++j) {
@@ -2937,7 +3247,9 @@ int main(int argc, char** argv) {
             int triangular_k = 2;
 
             for (int step = 1; step <= cfg.steps; ++step) {
+                log_memory_usage(world_rank, "step_begin", step);
                 exchange_halo_1cell(water, decomp, 2000);
+                log_memory_usage(world_rank, "after_exchange_halo", step);
 
                 double moved_this_step_local = 0.0;
 
@@ -2956,7 +3268,8 @@ int main(int argc, char** argv) {
                             cfg,
                             ml_tile_output,
                             cpp_ml_buffers,
-                            cpp_ml_provider_is_aix);
+                            cpp_ml_provider_is_aix,
+                            step);
                     #else
                         moved_this_step_local = compute_local_step_ml_smartsim(
                             client,
@@ -2981,6 +3294,7 @@ int main(int argc, char** argv) {
                         step_scratch);
 
                 }
+                log_memory_usage(world_rank, use_ml_step ? "after_ml_solver_step" : "after_regular_solver_step", step);
 
                 if (world_rank == 0) {
                     const auto end_this_step = std::chrono::steady_clock::now();
@@ -3115,6 +3429,10 @@ int main(int argc, char** argv) {
                       << " to " << cfg.output_hdf5 << std::endl;
             std::cout << "[shutdown] entering MPI_Comm_free / MPI_Finalize" << std::endl;
         }
+
+        report_memory_summary(MPI_COMM_WORLD, world_rank);
+        report_ml_traffic(MPI_COMM_WORLD, world_rank);
+        report_interface_deltas(MPI_COMM_WORLD, world_rank);
 
         if (decomp.cart_comm != MPI_COMM_NULL) {
             MPI_Comm_free(&decomp.cart_comm);

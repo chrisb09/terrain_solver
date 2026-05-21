@@ -41,6 +41,13 @@
 ##SBATCH --mem-per-cpu=5G
 
 
+############################
+# Email notifications (optional, adjust as needed)
+############################
+#SBATCH --mail-user=christian.brinkmann@rwth-aachen.de
+#SBATCH --mail-type=END,FAIL
+
+
 
 DB_HOSTNAME_FILE="db_hostname_${SLURM_JOB_ID}.txt"
 #SOLVER_STEP_LOG="logs/mini_app_solver_steps_${SLURM_JOB_ID}.log"
@@ -57,11 +64,16 @@ export SR_SOCKET_TIMEOUT=300000
 
 ########## SmartSim/ML Parameters ##########
 
-USE_SMARTSIM=0 # directly use SmartSim for model management and inference
-USE_CPP_ML_INTERFACE=1
+USE_SMARTSIM=${USE_SMARTSIM:-0} # directly use SmartSim for model management and inference
+# inverse ${USE_SMARTSIM} so that if USE_SMARTSIM is 0, we use the C++ ML interface instead of SmartSim
+USE_CPP_ML_INTERFACE=$(( ! USE_SMARTSIM ))
 CPP_ML_INTERFACE_PROVIDER="SMARTSIM" # SMARTSIM, AIX, PHYDLL
+CPP_ML_INTERFACE_LOG_LEVEL="info" # debug, info, warning, error
 SOLVER_HET_GROUP=0
 DB_HET_GROUP=1
+export MLCOUPLING_SOLVER_HET_GROUP="${SOLVER_HET_GROUP}"
+export MLCOUPLING_SMARTSIM_HET_GROUP="${DB_HET_GROUP}"
+export SMARTSIM_DB_HET_GROUP="${DB_HET_GROUP}"
 
 
 #MODEL_NAME="perfect_model"
@@ -222,10 +234,10 @@ if (( USE_SMARTSIM == 1 || USE_CPP_ML_INTERFACE == 1 )); then
     echo "Using C++ ML interface for model management and inference"
     if (( USE_GPU == 1 )); then
       echo "Configuring for GPU-based ML inference with ${GPUS_PER_NODE} GPUs per node."
-      export CUSTOM_JOB_NAME_SUFFIX_ENV="_cpp_interface_${GPUS_PER_NODE}gpu_${MODEL_NAME}_revamped_prepare"
+      export CUSTOM_JOB_NAME_SUFFIX_ENV="_cpp_interface_${CPP_ML_INTERFACE_PROVIDER}_${GPUS_PER_NODE}gpu_${MODEL_NAME}_revamped_prepare"
     else
       echo "Configuring for CPU-based ML inference with ${ML_INFERENCE_CPU_CORES} CPU cores per task."
-      export CUSTOM_JOB_NAME_SUFFIX_ENV="_cpp_interface_${ML_INFERENCE_CPU_CORES}cpu_${MODEL_NAME}_revamped_prepare"
+      export CUSTOM_JOB_NAME_SUFFIX_ENV="_cpp_interface_${CPP_ML_INTERFACE_PROVIDER}_${ML_INFERENCE_CPU_CORES}cpu_${MODEL_NAME}_revamped_prepare"
     fi
   fi
 fi
@@ -1274,6 +1286,7 @@ if [[ "${RUN_SOLVER}" -eq 1 ]]; then
     ./solver_cpp/${COMPILE_OUTPUT_PATH}/terrain_solver \
     --device "${device}" \
     --gpus-per-node "${GPUS_PER_NODE}" \
+    --ml-nodes "${DB_NODES}" \
     --ml-batch-size "${ML_BATCH_SIZE}" \
     --model-path "${MODEL_PATH_FOR_SOLVER}" \
     --model-backend "${MODEL_BACKEND}" \
@@ -1677,6 +1690,96 @@ PY
     echo "  Solver log not found: ${SOLVER_STEP_LOG}"
   fi
   echo ""
+  echo "Resource metrics (parsed from solver log):"
+  if [[ -f "${SOLVER_STEP_LOG}" ]]; then
+    python3 - "${SOLVER_STEP_LOG}" <<'PY'
+import re
+import sys
+
+path = sys.argv[1]
+mem_re = re.compile(r"^MEM_USAGE_MAX\s+.*rss_mb=([0-9.]+)\s+hwm_mb=([0-9.]+)\s+vm_mb=([0-9.]+)\s+units=([A-Za-z]+)\s+scope=([A-Za-z0-9_]+)")
+ml_re = re.compile(r"^ML_TRAFFIC\s+.*input_mb=([0-9.]+)\s+output_mb=([0-9.]+)\s+preload_mb=([0-9.]+)\s+units=([A-Za-z]+)\s+scope=([A-Za-z0-9_]+)")
+net_re = re.compile(r"^NET_USAGE\s+if=([^\s]+)\s+rx_mb=([0-9.]+)\s+tx_mb=([0-9.]+)\s+units=([A-Za-z]+)\s+scope=([A-Za-z0-9_]+)")
+
+mem = None
+ml = None
+net = {}
+
+with open(path, "r", encoding="utf-8", errors="replace") as f:
+  for raw in f:
+    line = raw.strip()
+    m = mem_re.match(line)
+    if m:
+      mem = {
+        "rss": float(m.group(1)),
+        "hwm": float(m.group(2)),
+        "vm": float(m.group(3)),
+        "units": m.group(4),
+        "scope": m.group(5),
+      }
+      continue
+    m = ml_re.match(line)
+    if m:
+      ml = {
+        "input": float(m.group(1)),
+        "output": float(m.group(2)),
+        "preload": float(m.group(3)),
+        "units": m.group(4),
+        "scope": m.group(5),
+      }
+      continue
+    m = net_re.match(line)
+    if m:
+      iface = m.group(1)
+      net[iface] = {
+        "rx": float(m.group(2)),
+        "tx": float(m.group(3)),
+        "units": m.group(4),
+        "scope": m.group(5),
+      }
+
+def mib_to_gib(value_mib: float) -> float:
+  return value_mib / 1024.0
+
+if mem:
+  rss_gib = mib_to_gib(mem["rss"]) if mem["rss"] >= 0 else mem["rss"]
+  hwm_gib = mib_to_gib(mem["hwm"]) if mem["hwm"] >= 0 else mem["hwm"]
+  vm_gib = mib_to_gib(mem["vm"]) if mem["vm"] >= 0 else mem["vm"]
+  print("  Memory:")
+  print(f"    max_rss: {rss_gib:.2f} GiB ({mem['rss']:.2f} MiB) scope={mem['scope']}")
+  print(f"    max_hwm: {hwm_gib:.2f} GiB ({mem['hwm']:.2f} MiB) scope={mem['scope']}")
+  if mem["vm"] >= 0:
+    print(f"    max_vm:  {vm_gib:.2f} GiB ({mem['vm']:.2f} MiB) scope={mem['scope']}")
+  else:
+    print(f"    max_vm:  {mem['vm']} {mem['units']} scope={mem['scope']}")
+else:
+  print("  Memory: not found")
+
+if ml:
+  in_gib = mib_to_gib(ml["input"]) if ml["input"] >= 0 else ml["input"]
+  out_gib = mib_to_gib(ml["output"]) if ml["output"] >= 0 else ml["output"]
+  pre_gib = mib_to_gib(ml["preload"]) if ml["preload"] >= 0 else ml["preload"]
+  print("  ML traffic:")
+  print(f"    input:  {in_gib:.2f} GiB ({ml['input']:.2f} MiB) scope={ml['scope']}")
+  print(f"    output: {out_gib:.2f} GiB ({ml['output']:.2f} MiB) scope={ml['scope']}")
+  print(f"    preload:{pre_gib:.2f} GiB ({ml['preload']:.2f} MiB) scope={ml['scope']}")
+else:
+  print("  ML traffic: not found")
+
+if net:
+  print("  Network:")
+  for iface in sorted(net.keys()):
+    entry = net[iface]
+    rx_gib = mib_to_gib(entry["rx"]) if entry["rx"] >= 0 else entry["rx"]
+    tx_gib = mib_to_gib(entry["tx"]) if entry["tx"] >= 0 else entry["tx"]
+    print(f"    {iface}: rx {rx_gib:.2f} GiB ({entry['rx']:.2f} MiB), tx {tx_gib:.2f} GiB ({entry['tx']:.2f} MiB) scope={entry['scope']}")
+else:
+  print("  Network: not found")
+PY
+  else
+    echo "  Solver log not found: ${SOLVER_STEP_LOG}"
+  fi
+  echo ""
   echo "Timings (seconds):"
   echo "Runtime staging total: ${RUNTIME_STAGE_DURATION}"
   echo "Model staging total: ${MODEL_STAGE_TOTAL_DURATION}"
@@ -1717,3 +1820,90 @@ echo "Combined video (1:1) rendering time: ${COMBINED_VIDEO_1_1_DURATION} second
 echo "Combined video (16:9) rendering time: ${COMBINED_VIDEO_16_9_DURATION} seconds"
 echo "================================"
 echo "Total time: $((RUNTIME_STAGE_DURATION + MODEL_STAGE_TOTAL_DURATION + PREP_DURATION + COMPILE_DURATION + SOLVE_DURATION + RENDER_TOP_VIEW_DURATION + RENDER_SLICE_FULL_HEIGHT_DURATION + RENDER_SLICE_REDUCED_HEIGHT_DURATION + TOP_VIEW_VIDEO_DURATION + SLICE_FULL_HEIGHT_VIDEO_DURATION + COMBINED_VIDEO_1_1_DURATION + COMBINED_VIDEO_16_9_DURATION)) seconds"
+echo ""
+echo "Resource metrics (from solver log):"
+if [[ -f "${SOLVER_STEP_LOG}" ]]; then
+  python3 - "${SOLVER_STEP_LOG}" <<'PY'
+import re
+import sys
+
+path = sys.argv[1]
+mem_re = re.compile(r"^MEM_USAGE_MAX\s+.*rss_mb=([0-9.]+)\s+hwm_mb=([0-9.]+)\s+vm_mb=([0-9.]+)\s+units=([A-Za-z]+)\s+scope=([A-Za-z0-9_]+)")
+ml_re = re.compile(r"^ML_TRAFFIC\s+.*input_mb=([0-9.]+)\s+output_mb=([0-9.]+)\s+preload_mb=([0-9.]+)\s+units=([A-Za-z]+)\s+scope=([A-Za-z0-9_]+)")
+net_re = re.compile(r"^NET_USAGE\s+if=([^\s]+)\s+rx_mb=([0-9.]+)\s+tx_mb=([0-9.]+)\s+units=([A-Za-z]+)\s+scope=([A-Za-z0-9_]+)")
+
+mem = None
+ml = None
+net = {}
+
+with open(path, "r", encoding="utf-8", errors="replace") as f:
+  for raw in f:
+    line = raw.strip()
+    m = mem_re.match(line)
+    if m:
+      mem = {
+        "rss": float(m.group(1)),
+        "hwm": float(m.group(2)),
+        "vm": float(m.group(3)),
+        "units": m.group(4),
+        "scope": m.group(5),
+      }
+      continue
+    m = ml_re.match(line)
+    if m:
+      ml = {
+        "input": float(m.group(1)),
+        "output": float(m.group(2)),
+        "preload": float(m.group(3)),
+        "units": m.group(4),
+        "scope": m.group(5),
+      }
+      continue
+    m = net_re.match(line)
+    if m:
+      iface = m.group(1)
+      net[iface] = {
+        "rx": float(m.group(2)),
+        "tx": float(m.group(3)),
+        "units": m.group(4),
+        "scope": m.group(5),
+      }
+
+def mib_to_gib(value_mib: float) -> float:
+  return value_mib / 1024.0
+
+if mem:
+  rss_gib = mib_to_gib(mem["rss"]) if mem["rss"] >= 0 else mem["rss"]
+  hwm_gib = mib_to_gib(mem["hwm"]) if mem["hwm"] >= 0 else mem["hwm"]
+  vm_gib = mib_to_gib(mem["vm"]) if mem["vm"] >= 0 else mem["vm"]
+  print(f"  max_rss: {rss_gib:.2f} GiB ({mem['rss']:.2f} MiB) scope={mem['scope']}")
+  print(f"  max_hwm: {hwm_gib:.2f} GiB ({mem['hwm']:.2f} MiB) scope={mem['scope']}")
+  if mem["vm"] >= 0:
+    print(f"  max_vm:  {vm_gib:.2f} GiB ({mem['vm']:.2f} MiB) scope={mem['scope']}")
+  else:
+    print(f"  max_vm:  {mem['vm']} {mem['units']} scope={mem['scope']}")
+else:
+  print("  Memory: not found")
+
+if ml:
+  in_gib = mib_to_gib(ml["input"]) if ml["input"] >= 0 else ml["input"]
+  out_gib = mib_to_gib(ml["output"]) if ml["output"] >= 0 else ml["output"]
+  pre_gib = mib_to_gib(ml["preload"]) if ml["preload"] >= 0 else ml["preload"]
+  print(f"  ml_input:  {in_gib:.2f} GiB ({ml['input']:.2f} MiB) scope={ml['scope']}")
+  print(f"  ml_output: {out_gib:.2f} GiB ({ml['output']:.2f} MiB) scope={ml['scope']}")
+  print(f"  ml_preload:{pre_gib:.2f} GiB ({ml['preload']:.2f} MiB) scope={ml['scope']}")
+else:
+  print("  ML traffic: not found")
+
+if net:
+  for iface in sorted(net.keys()):
+    entry = net[iface]
+    rx_gib = mib_to_gib(entry["rx"]) if entry["rx"] >= 0 else entry["rx"]
+    tx_gib = mib_to_gib(entry["tx"]) if entry["tx"] >= 0 else entry["tx"]
+    print(f"  {iface}: rx {rx_gib:.2f} GiB ({entry['rx']:.2f} MiB), tx {tx_gib:.2f} GiB ({entry['tx']:.2f} MiB) scope={entry['scope']}")
+else:
+  print("  Network: not found")
+PY
+else
+  echo "  Solver log not found: ${SOLVER_STEP_LOG}"
+fi
