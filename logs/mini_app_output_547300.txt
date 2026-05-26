@@ -1,0 +1,232 @@
+Using CPP_ML_INTERFACE_PROVIDER from environment variable: PHYDLL
+DB_HET_GROUP=1 Slurm raw vars: SLURM_GPUS_PER_NODE_HET_GROUP_1='', SLURM_GPUS_PER_TASK_HET_GROUP_1='', SLURM_TRES_PER_TASK_HET_GROUP_1='cpu=24', SLURM_NTASKS_PER_NODE_HET_GROUP_1='1', SLURM_GPUS_ON_NODE_HET_GROUP_1='' -> parsed: gpus_per_task=, gpus_per_node=1, gpus_on_node=1; computed GPUS_PER_NODE=1, DB_NODES=1, ML_INFERENCE_CPU_CORES=24; TOTAL_GPU_COUNT=1
+Using C++ ML interface for model management and inference
+Configuring for GPU-based ML inference with 1 GPUs per node.
+Calculated MPI_RANKS=96 from _nodes=1, _ntasks_per_node=96, SLURM_NTASKS=96, and _solver_ntasks_var=
+Using preliminary job name: circle_r500_d100_s10_periodic_8640x4320_c23mm_1n_96t_c-1n_TORCH__rank0_gather_none_split_3x3
+Calculated REDUCED_HEIGHT=540 to achieve 16:9 aspect ratio in final video with TARGET_WIDTH=8640 and TARGET_HEIGHT=4320
+Using CUSTOM_JOB_NAME_SUFFIX from environment variable: _cpp_interface_PHYDLL_1gpu_benchmark_giant_mlp_revamped_prepare
+Using CPP_ML_CONFIG based on provider: config_phydll.toml
+Warning: OVERWRITE_JOB_NAME_ENV is set to 1 but neither JOB_NAME_ENV nor JOB_NAME_TEMPLATE_ENV is set. Using default naming scheme with template: circle_r${RADIUS}_d${INIT_DEPTH}_s${TOTAL_STEPS}_${SAVE_MODE}_${TARGET_WIDTH}x${TARGET_HEIGHT}_${_partition}_${_nodes}n_${_ntasks_per_node}t_${_cpus_per_task}c-${DB_NODES}n_${MODEL_BACKEND}__${IO_MODE}_${MPI_SYNC_MODE}_${MODEL_IO_LAYOUT}${CUSTOM_JOB_NAME_SUFFIX}
+Module OpenSSL/1.1 is not loaded. Purging and loading required modules.
+Purging and loading required modules for SmartSim...
+Loading required modules...
+[INFO] Module OpenSSL/1.1 loaded.
+[WARN] This node does not have a GPU installed. CUDA will not work.
+[WARN] Please refer to https://help.itc.rwth-aachen.de for information on which
+nodes feature GPUs. 
+[INFO] Module CUDA/12.4.0 loaded.
+[INFO] Module GCCcore/11.3.0 loaded.
+[INFO] Module Clang/15.0.5 loaded.
+[INFO] Module GCC/11.3.0 loaded.
+[INFO] Module OpenMPI/4.1.4 loaded.
+[INFO] Module FFTW.MPI/3.3.10 loaded.
+[INFO] Module HDF5/1.12.2 loaded.
+[INFO] Module PnetCDF/1.12.3 loaded.
+[INFO] Module cuDNN/8.9.7.29-CUDA-12.4.0 loaded.
+[INFO] Module imkl/2024.2.0 loaded.
+Using SmartSim runtime root: /home/thes2181/python
+Using SmartSim runtime tar dir: /home/thes2181/python
+Keeping existing '/hpcwork/ro092286/smartsim/python' directory (not replacing with symlink).
+Overriding devices via argument: cuda-12
+
+=== Installing SmartSim for device: cuda-12 ===
+Including backend: torch
+Excluding torch backend for device cuda-12 to avoid CUDA 12.4 compatibility issues with PyTorch. We will install it separately using pip after the smartsim build.
+Including backend: onnxruntime
+Including backend: tensorflow
+SmartSim build command: smart build --device cuda-12 --skip-torch
+Install location: /home/thes2181/python/smartsim_cuda-12/
+Base directory for SmartSim installation: /hpcwork/ro092286/smartsim/
+Python virtual environment already exists at /home/thes2181/python/smartsim_cuda-12/
+Activating Python virtual environment for device: cuda-12
+smartsim is already installed in the virtual environment.
+Checking SmartSim build status...
+command succeeded
+SmartSim' redis is already built and available.
+SmartSim' has TensorFlow support.
+SmartSim is already fully built with all backends.
+Warning: bundled runtime libstdc++ does not report GLIBCXX_3.4.32 (source: /cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/13.2.0/lib64/libstdc++.so.6)
+Runtime libstdc++ already up-to-date in /home/thes2181/python/smartsim_cuda-12//runtime_libs
+
+--- Creating SmartSim runtime tar bundles ---
+Runtime tar is up-to-date; skipping: /home/thes2181/python/smartsim_cuda-12.tar
+Installation of the smartsim 'backend' complete. This includes the SmartRedis Python client. The Fortran/C/C++ clients can be built from source as needed.
+
+--- Installing SmartRedis C/C++ client ---
+SmartRedis directory already exists. Skipping clone.
+Already on the correct branch: develop
+Already at the correct commit: a5e235564f5d3912eec9541ea3ebce9dd42eccf7
+Current directory: /hpcwork/ro092286/smartsim
+OpenSSL/1.1
+CUDA/12.4.0
+GCCcore/11.3.0
+zlib/1.2.12
+binutils/2.38
+numactl/2.0.14
+XZ/5.2.5
+libxml2/2.9.13
+libpciaccess/0.16
+hwloc/2.7.1
+ncurses/6.3
+GMP/6.2.1
+Z3/4.10.2
+Clang/15.0.5
+GCC/11.3.0
+libevent/2.1.12
+UCX/1.12.1
+PMIx/4.1.2
+UCC/1.0.0
+OpenMPI/4.1.4
+FFTW/3.3.10
+FFTW.MPI/3.3.10
+Szip/2.1.1
+HDF5/1.12.2
+PnetCDF/1.12.3
+cuDNN/8.9.7.29-CUDA-12.4.0
+imkl/2024.2.0
+Warning: /hpcwork/thes2181/mini_app is not empty.
+Using runtime extra libs from /home/thes2181/python/smartsim_cuda-12/runtime_libs
+Resolving model artifact from manifest train_models/model_a/artifact_manifest_benchmark_giant_mlp.json for model=benchmark_giant_mlp backend=TORCH
+Resolved MODEL_PATH=/rwthfs/rz/cluster/hpcwork/ro092286/smartsim/mini_app/train_models/model_a/best_model_jit_benchmark_giant_mlp.pt
+Resolved MODEL_INPUTS=x_water,x_terrain
+Resolved MODEL_OUTPUTS=y
+Resolved MODEL_IO_LAYOUT=split_3x3
+Staging model file to fast volatile storage. Source: /rwthfs/rz/cluster/hpcwork/ro092286/smartsim/mini_app/train_models/model_a/best_model_jit_benchmark_giant_mlp.pt
+Model cache root (fixed local path): /tmp/ro092286/model (fs_type=xfs)
+Warning: Could not resolve explicit node list for het-group 1; falling back to single srun staging.
+MODEL_STAGE_PER_NODE label=db het_group=1 host=n23g0020.hpc.itc.rwth-aachen.de duration_s=1 path=/tmp/ro092286/model/best_model_jit_benchmark_giant_mlp.pt
+Model staged on het-groups 0 and 1; total staging time: 2s
+No existing trajectory found. Starting fresh...
+Prepared dataset: terrain=(4320, 8640) water_nonzero=785349 output=/hpcwork/thes2181/mini_app/circle_r500_d100_s10_periodic_8640x4320_c23mm_1n_96t_c-1n_TORCH__rank0_gather_none_split_3x3_cpp_interface_PHYDLL_1gpu_benchmark_giant_mlp_revamped_prepare/world_init.h5
+Preparation time: 6 seconds
+Compiling solver...
+-- Directory: /hpcwork/ro092286/smartsim/mini_app/solver_cpp
+-- The C compiler identification is GNU 11.3.0
+-- The CXX compiler identification is GNU 11.3.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/11.3.0/bin/gcc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/11.3.0/bin/g++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+WITH_SMARTSIM: ON
+WITH_AIX: ON
+AIX_USE_PREBUILT: ON
+WITH_PHYDLL: OFF
+WITH_TORCH: ON
+WITH_TENSORFLOW: OFF
+WITH_ONNX: OFF
+Using SmartRedis directory: /hpcwork/ro092286/smartsim/CPP-ML-Interface/extern/SmartRedis
+Using AIXelerator directory: /hpcwork/ro092286/smartsim/CPP-ML-Interface/extern/AIxeleratorService
+-- Found MPI_C: /cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/OpenMPI/4.1.4-GCC-11.3.0/lib/libmpi.so (found version "3.1") 
+-- Found MPI_CXX: /cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/OpenMPI/4.1.4-GCC-11.3.0/lib/libmpi.so (found version "3.1") 
+-- Found MPI: TRUE (found version "3.1")  
+-- MPI found: /cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/OpenMPI/4.1.4-GCC-11.3.0/bin/mpicxx
+-- AIXelerator support enabled.
+-- AIxelerator backend flags: WITH_TORCH=ON, WITH_TENSORFLOW=OFF, WITH_ONNX=OFF
+-- Using CPP-ML-Interface in the mini-app
+-- Found MPI: TRUE (found version "3.1") found components: CXX 
+-- Found HDF5: /cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/HDF5/1.12.2-gompi-2022a/lib/libhdf5.so;/usr/lib64/libpthread.a;/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/Szip/2.1.1-GCCcore-11.3.0/lib/libsz.so;/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/zlib/1.2.12-GCCcore-11.3.0/lib/libz.so;/usr/lib64/libdl.a;/usr/lib64/libm.so;/usr/lib64/libm.so;/usr/lib64/libpthread.a (found version "1.12.2") found components: C 
+-- HDF5 parallel support: YES
+-- Configuring done (12.1s)
+-- Generating done (0.3s)
+-- Build files have been written to: /hpcwork/ro092286/smartsim/mini_app/solver_cpp/build
+[ 33%] Generating merged registry (CPP-ML-Interface + terrain_solver headers)...
+Header files to scan: ['/hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/application/ml_coupling_application.hpp', '/hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/application/ml_coupling_application_flow_extrapolator.hpp', '/hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/application/ml_coupling_application_turbulence_closure.hpp', '/hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/behavior/ml_coupling_behavior.hpp', '/hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/behavior/ml_coupling_behavior_default.hpp', '/hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/behavior/ml_coupling_behavior_periodic.hpp', '/hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/data/ml_coupling_data.hpp', '/hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/data/ml_coupling_data_type.hpp', '/hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/data/ml_coupling_memory_layout.hpp', '/hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/normalization/ml_coupling_minmax_normalization.hpp', '/hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/normalization/ml_coupling_normalization.hpp', '/hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/provider/ml_coupling_provider.hpp', '/hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/provider/ml_coupling_provider_aixelerator.hpp', '/hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/provider/ml_coupling_provider_dummy.hpp', '/hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/provider/ml_coupling_provider_flexible.hpp', '/hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/provider/ml_coupling_provider_phydll.hpp', '/hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/provider/ml_coupling_provider_smartsim.hpp', '/hpcwork/ro092286/smartsim/mini_app/solver_cpp/include/terrain_application.hpp']
+Parsing: /hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/application/ml_coupling_application.hpp
+  MLCouplingApplication (defined in /hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/application/ml_coupling_application.hpp)
+    Template parameters: ['In', 'Out']
+File /hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/application/ml_coupling_application.hpp contains class MLCouplingApplication
+    Base class category: application
+Parsing: /hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/application/ml_coupling_application_flow_extrapolator.hpp
+    Subclass MLCouplingApplicationFlowExtrapolator template parameters: ['In', 'Out']
+    Registry name: MLCouplingApplicationFlowExtrapolator
+    Aliases: flow-extrapolator, flow_extrapolator, maia-flow-extrapolator
+    Found 2 constructor(s) for MLCouplingApplicationFlowExtrapolator:
+      Constructor 1: MLCouplingApplicationFlowExtrapolator(MLCouplingData<In> input_data, MLCouplingData<Out> output_data, MLCouplingNormalization<In, Out>* normalization, int cube_dimension = 8, int cube_overlap = 0, int input_sequence_length = 1, int forecast_window = 1, int n_ghost_layers = 0)
+      Constructor 2: MLCouplingApplicationFlowExtrapolator(MLCouplingData<In> input_data, MLCouplingData<In> input_data_after_preprocessing, MLCouplingData<Out> output_data_before_postprocessing, MLCouplingData<Out> output_data, MLCouplingNormalization<In, Out>* normalization, int cube_dimension = 8, int cube_overlap = 0, int input_sequence_length = 1, int forecast_window = 1, int n_ghost_layers = 0)
+Parsing: /hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/application/ml_coupling_application_turbulence_closure.hpp
+    Subclass MLCouplingApplicationTurbulenceClosure template parameters: ['In', 'Out']
+    Registry name: TurbulenceClosure
+    Aliases: turbulence-closure, turbulence_closure, turbulence
+    Found 2 constructor(s) for MLCouplingApplicationTurbulenceClosure:
+      Constructor 1: MLCouplingApplicationTurbulenceClosure(MLCouplingData<In> input_data, MLCouplingData<Out> output_data, MLCouplingNormalization<In, Out>* normalization)
+      Constructor 2: MLCouplingApplicationTurbulenceClosure(MLCouplingData<In> input_data, MLCouplingData<In> input_data_after_preprocessing, MLCouplingData<Out> output_data_before_postprocessing, MLCouplingData<Out> output_data, MLCouplingNormalization<In, Out>* normalization)
+Parsing: /hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/behavior/ml_coupling_behavior.hpp
+  MLCouplingBehavior (defined in /hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/behavior/ml_coupling_behavior.hpp)
+File /hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/behavior/ml_coupling_behavior.hpp contains class MLCouplingBehavior
+    Base class category: behavior
+Parsing: /hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/behavior/ml_coupling_behavior_default.hpp
+    Registry name: Default
+    Aliases: default
+    No explicit constructors found for MLCouplingBehaviorDefault (default constructor available)
+Parsing: /hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/behavior/ml_coupling_behavior_periodic.hpp
+    Registry name: Periodic
+    Aliases: periodic
+    Found 1 constructor(s) for MLCouplingBehaviorPeriodic:
+      Constructor 1: MLCouplingBehaviorPeriodic(int inference_interval, int coupled_steps_before_inference, int coupled_steps_stride, int step_increment_after_inference, std::function<bool ( int )> prohibit_inference = allow_inference_at_all_steps)
+Parsing: /hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/data/ml_coupling_data.hpp
+Parsing: /hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/data/ml_coupling_data_type.hpp
+Parsing: /hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/data/ml_coupling_memory_layout.hpp
+Parsing: /hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/normalization/ml_coupling_minmax_normalization.hpp
+    Subclass MLCouplingMinMaxNormalization template parameters: ['In', 'Out', 'T2']
+    Registry name: MinMax
+    Aliases: minmax, min-max, MinMaxNormalization
+    Found 3 constructor(s) for MLCouplingMinMaxNormalization:
+      Constructor 1: MLCouplingMinMaxNormalization(In input_min, In input_max, Out output_min, Out output_max)
+      Constructor 2: MLCouplingMinMaxNormalization(In* input_data, int input_data_size, Out* output_data, int output_data_size)
+      Constructor 3: MLCouplingMinMaxNormalization(MLCouplingData<In> input_data, MLCouplingData<Out> output_data)
+Parsing: /hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/normalization/ml_coupling_normalization.hpp
+  MLCouplingNormalization (defined in /hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/normalization/ml_coupling_normalization.hpp)
+    Template parameters: ['In', 'Out']
+File /hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/normalization/ml_coupling_normalization.hpp contains class MLCouplingNormalization
+    Base class category: normalization
+Parsing: /hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/provider/ml_coupling_provider.hpp
+  MLCouplingProvider (defined in /hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/provider/ml_coupling_provider.hpp)
+    Template parameters: ['In', 'Out']
+File /hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/provider/ml_coupling_provider.hpp contains class MLCouplingProvider
+    Base class category: provider
+Parsing: /hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/provider/ml_coupling_provider_aixelerator.hpp
+    Subclass MLCouplingProviderAixelerator template parameters: ['In', 'Out']
+    Registry name: Aixelerator
+    Aliases: aixelerator, AIxelerator, aix, AIx, AIX
+    Found 1 constructor(s) for MLCouplingProviderAixelerator:
+      Constructor 1: MLCouplingProviderAixelerator(std::string model_file, int batchsize = 1, MPI_Comm app_comm = MPI_COMM_WORLD, bool enable_hybrid = false, std::optional<float> host_fraction = std::nullopt, MLCouplingData<In>* input_after_preprocessing = nullptr, MLCouplingData<Out>* output_before_postprocessing = nullptr)
+Parsing: /hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/provider/ml_coupling_provider_dummy.hpp
+    Subclass MLCouplingProviderDummy template parameters: ['In', 'Out']
+    Registry name: Dummy
+    Aliases: dummy, Dummy
+    Found 1 constructor(s) for MLCouplingProviderDummy:
+      Constructor 1: MLCouplingProviderDummy(MLCouplingData<In>* input_after_preprocessing = nullptr, MLCouplingData<Out>* output_before_postprocessing = nullptr)
+Parsing: /hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/provider/ml_coupling_provider_flexible.hpp
+Parsing: /hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/provider/ml_coupling_provider_phydll.hpp
+    Subclass MLCouplingProviderPhydll template parameters: ['In', 'Out']
+    Registry name: Phydll
+    Aliases: phydll, PhyDLL
+    Found 1 constructor(s) for MLCouplingProviderPhydll:
+      Constructor 1: MLCouplingProviderPhydll(std::string model_file, std::string backend = "TORCH", std::string device = "GPU", MLCouplingData<In>* input_after_preprocessing = nullptr, MLCouplingData<Out>* output_before_postprocessing = nullptr)
+Parsing: /hpcwork/ro092286/smartsim/mini_app/solver_cpp/../../CPP-ML-Interface/include/provider/ml_coupling_provider_smartsim.hpp
+    Subclass MLCouplingProviderSmartsim template parameters: ['In', 'Out']
+    Registry name: Smartsim
+    Aliases: smartsim, SmartSim
+    Found 2 constructor(s) for MLCouplingProviderSmartsim:
+      Constructor 1: MLCouplingProviderSmartsim(std::string device, std::string model_backend, std::string model_path, std::string model_name = "model", std::string host = "", int port = - 1, int nodes = - 1, int num_gpus = - 1, int first_gpu = 0, int batch_size = 0, int min_batch_size = 0, int min_batch_timeout = 0, const std::vector<std::string>& tf_input_labels = { }, const std::vector<std::string>& tf_output_labels = { }, MLCouplingData<In>* input_after_preprocessing = nullptr, MLCouplingData<Out>* output_before_postprocessing = nullptr)
+      Constructor 2: MLCouplingProviderSmartsim(std::string device, std::string model_backend, std::string_view model, std::string model_name = "model", std::string host = "", int port = - 1, int nodes = - 1, int num_gpus = - 1, int first_gpu = 0, int batch_size = 0, int min_batch_size = 0, int min_batch_timeout = 0, const std::vector<std::string>& tf_input_labels = { }, const std::vector<std::string>& tf_output_labels = { }, MLCouplingData<In>* input_after_preprocessing = nullptr, MLCouplingData<Out>* output_before_postprocessing = nullptr)
+Parsing: /hpcwork/ro092286/smartsim/mini_app/solver_cpp/include/terrain_application.hpp
+    Subclass MLCouplingApplicationTerrainSolver template parameters: ['In', 'Out']
+    Registry name: MLCouplingApplicationTerrainSolver
+    Aliases: terrain-solver-app, terrain_solver_app
+    Found 2 constructor(s) for MLCouplingApplicationTerrainSolver:
+      Constructor 1: MLCouplingApplicationTerrainSolver(MLCouplingData<In> input_data, MLCouplingData<Out> output_data, MLCouplingNormalization<In, Out>* normalization)
+      Constructor 2: MLCouplingApplicationTerrainSolver(MLCouplingData<In> input_data, MLCouplingData<In> input_data_after_preprocessing, MLCouplingData<Out> output_data_before_postprocessing, MLCouplingData<Out> output_data, MLCouplingNormalization<In, Out>* normalization)
+gmake[2]: stat: generated_registry.hpp: Stale file handle
+[ 33%] Built target terrain_solver_registry
+gmake[2]: CMakeFiles/terrain_solver.dir/build.make: Stale file handle
+gmake[2]: *** No rule to make target 'CMakeFiles/terrain_solver.dir/build.make'.  Stop.
+gmake[1]: *** [CMakeFiles/Makefile2:149: CMakeFiles/terrain_solver.dir/all] Error 2
+gmake: *** [Makefile:91: all] Error 2

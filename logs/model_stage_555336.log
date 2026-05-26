@@ -1,0 +1,1 @@
+MODEL_STAGE_PER_NODE label=solver het_group=0 host=r23m0099.hpc.itc.rwth-aachen.de duration_s=1 path=/tmp/ro092286/model/best_model_jit_benchmark_giant_mlp_flat.pt
