@@ -81,6 +81,7 @@ struct Config {
     int gpus_per_node = 1;
     int ml_nodes = -1;
     int ml_batch_size = 50000;
+    bool force_terrain_upload_each_step = false;
 };
 
 struct Range {
@@ -150,6 +151,7 @@ static void usage() {
         << "                                   Model input layout for run_model (default: split_3x3)\n"
         << "  --model-inputs <csv>            Optional model input names (required for TF graph models)\n"
         << "  --model-outputs <csv>           Optional model output names (required for TF graph models)\n"
+        << "  --force-terrain-upload-each-step Force terrain upload each inference (SmartSim direct)\n"
         << "  --cpp-ml-config <path>           CPP-ML-Interface config file path\n"
         << "  --device <cpu|gpu>               Device to run the solver on (default: cpu)\n"
         << "  --gpus-per-node <int>            Number of GPUs per node (default: 1)\n"
@@ -226,6 +228,26 @@ struct MemoryTracker {
     }
 };
 
+struct MemoryTotalsTracker {
+    long long max_sum_rss_kb = -1;
+    long long max_sum_hwm_kb = -1;
+    long long max_sum_vm_kb = -1;
+
+    void update(long long sum_rss_kb, bool valid_rss,
+                long long sum_hwm_kb, bool valid_hwm,
+                long long sum_vm_kb, bool valid_vm) {
+        if (valid_rss && sum_rss_kb > max_sum_rss_kb) {
+            max_sum_rss_kb = sum_rss_kb;
+        }
+        if (valid_hwm && sum_hwm_kb > max_sum_hwm_kb) {
+            max_sum_hwm_kb = sum_hwm_kb;
+        }
+        if (valid_vm && sum_vm_kb > max_sum_vm_kb) {
+            max_sum_vm_kb = sum_vm_kb;
+        }
+    }
+};
+
 struct MlTrafficStats {
     long long input_bytes = 0;
     long long output_bytes = 0;
@@ -238,10 +260,12 @@ struct InterfaceCounters {
 };
 
 static MemoryTracker g_mem_tracker;
+static MemoryTotalsTracker g_mem_total_tracker;
 static MlTrafficStats g_ml_traffic;
 static InterfaceCounters g_start_lo;
 static InterfaceCounters g_start_ib0;
 static bool g_start_counters_ready = false;
+static MPI_Comm g_solver_comm = MPI_COMM_WORLD;
 
 static ProcessMemoryUsage read_process_memory_usage() {
     ProcessMemoryUsage usage;
@@ -291,9 +315,38 @@ static bool mem_verbose_enabled() {
 static void log_memory_usage(int rank,
                              const std::string& label,
                              int step = -1,
-                             long long chunk = -1) {
+                             long long chunk = -1,
+                             bool collective = true) {
     const ProcessMemoryUsage usage = read_process_memory_usage();
     g_mem_tracker.update(usage);
+    if (collective && g_solver_comm != MPI_COMM_NULL) {
+        const long long local_rss = usage.vm_rss_kb >= 0 ? usage.vm_rss_kb : 0;
+        const long long local_hwm = usage.vm_hwm_kb >= 0 ? usage.vm_hwm_kb : 0;
+        const long long local_vm = usage.vm_size_kb >= 0 ? usage.vm_size_kb : 0;
+
+        const int has_rss = usage.vm_rss_kb >= 0 ? 1 : 0;
+        const int has_hwm = usage.vm_hwm_kb >= 0 ? 1 : 0;
+        const int has_vm = usage.vm_size_kb >= 0 ? 1 : 0;
+
+        long long sum_rss = 0;
+        long long sum_hwm = 0;
+        long long sum_vm = 0;
+        int all_have_rss = 0;
+        int all_have_hwm = 0;
+        int all_have_vm = 0;
+
+        MPI_Allreduce(&local_rss, &sum_rss, 1, MPI_LONG_LONG, MPI_SUM, g_solver_comm);
+        MPI_Allreduce(&local_hwm, &sum_hwm, 1, MPI_LONG_LONG, MPI_SUM, g_solver_comm);
+        MPI_Allreduce(&local_vm, &sum_vm, 1, MPI_LONG_LONG, MPI_SUM, g_solver_comm);
+
+        MPI_Allreduce(&has_rss, &all_have_rss, 1, MPI_INT, MPI_MIN, g_solver_comm);
+        MPI_Allreduce(&has_hwm, &all_have_hwm, 1, MPI_INT, MPI_MIN, g_solver_comm);
+        MPI_Allreduce(&has_vm, &all_have_vm, 1, MPI_INT, MPI_MIN, g_solver_comm);
+
+        g_mem_total_tracker.update(sum_rss, all_have_rss != 0,
+                                   sum_hwm, all_have_hwm != 0,
+                                   sum_vm, all_have_vm != 0);
+    }
     if (!mem_verbose_enabled()) {
         return;
     }
@@ -335,6 +388,15 @@ static void report_memory_summary(MPI_Comm world, int world_rank) {
                       << " units=MiB scope=max_over_ranks" << std::endl;
         } else {
             std::cout << "MEM_USAGE_MAX unavailable=true reason=proc_and_rusage_missing" << std::endl;
+        }
+
+        if (g_mem_total_tracker.max_sum_rss_kb >= 0 || g_mem_total_tracker.max_sum_hwm_kb >= 0 || g_mem_total_tracker.max_sum_vm_kb >= 0) {
+            std::cout << "MEM_USAGE_SUM_MAX rss_mb=" << kb_to_mb(g_mem_total_tracker.max_sum_rss_kb)
+                      << " hwm_mb=" << kb_to_mb(g_mem_total_tracker.max_sum_hwm_kb)
+                      << " vm_mb=" << kb_to_mb(g_mem_total_tracker.max_sum_vm_kb)
+                      << " units=MiB scope=max_sum_over_samples" << std::endl;
+        } else {
+            std::cout << "MEM_USAGE_SUM_MAX unavailable=true reason=missing_samples" << std::endl;
         }
     }
 }
@@ -496,10 +558,84 @@ static std::string to_lower_copy(std::string value) {
     return value;
 }
 
-static bool config_mentions_aix_provider(const std::string& config_text) {
-    const std::string lower = to_lower_copy(config_text);
-    return lower.find("aixelerator") != std::string::npos || lower.find("aix") != std::string::npos;
+static std::string trim_copy(std::string value) {
+    const auto first = value.find_first_not_of(" \t\r\n");
+    if (first == std::string::npos) {
+        return "";
+    }
+    const auto last = value.find_last_not_of(" \t\r\n");
+    return value.substr(first, last - first + 1);
 }
+
+static std::string strip_toml_comment(std::string value) {
+    bool in_string = false;
+    char quote = '\0';
+    for (std::size_t i = 0; i < value.size(); ++i) {
+        const char c = value[i];
+        if ((c == '"' || c == '\'') && (i == 0 || value[i - 1] != '\\')) {
+            if (!in_string) {
+                in_string = true;
+                quote = c;
+            } else if (quote == c) {
+                in_string = false;
+            }
+        } else if (c == '#' && !in_string) {
+            return value.substr(0, i);
+        }
+    }
+    return value;
+}
+
+static std::string unquote_toml_string(std::string value) {
+    value = trim_copy(value);
+    if (value.size() >= 2 && ((value.front() == '"' && value.back() == '"') ||
+                              (value.front() == '\'' && value.back() == '\''))) {
+        return value.substr(1, value.size() - 2);
+    }
+    return value;
+}
+
+static std::string config_provider_class(const std::string& config_text) {
+    std::istringstream lines(config_text);
+    std::string line;
+    bool in_provider = false;
+
+    while (std::getline(lines, line)) {
+        line = trim_copy(strip_toml_comment(line));
+        if (line.empty()) {
+            continue;
+        }
+        if (line.front() == '[' && line.back() == ']') {
+            in_provider = (to_lower_copy(trim_copy(line.substr(1, line.size() - 2))) == "provider");
+            continue;
+        }
+        if (!in_provider) {
+            continue;
+        }
+        const auto eq = line.find('=');
+        if (eq == std::string::npos) {
+            continue;
+        }
+        const std::string key = to_lower_copy(trim_copy(line.substr(0, eq)));
+        if (key == "class") {
+            return to_lower_copy(unquote_toml_string(line.substr(eq + 1)));
+        }
+    }
+
+    return "";
+}
+
+static bool provider_class_is_aix(const std::string& provider_class) {
+    return provider_class == "aix" ||
+           provider_class == "aixelerator" ||
+           provider_class == "mlcouplingprovideraixelerator";
+}
+
+static bool provider_class_is_phydll(const std::string& provider_class) {
+    return provider_class == "phydll" ||
+           provider_class == "mlcouplingproviderphydll";
+}
+
 #endif
 
 static std::string get_processor_name() {
@@ -801,6 +937,8 @@ static Config parse_args(int argc, char** argv, int rank, int total_ranks) {
             cfg.print_build_timestamp = true;
         } else if (arg == "--write-surface") {
             cfg.write_surface = true;
+        } else if (arg == "--force-terrain-upload-each-step") {
+            cfg.force_terrain_upload_each_step = true;
         } else if (arg == "--overwrite-output") {
             cfg.overwrite_output = true;
         } else if (arg == "--model-path" || arg == "--model-backend" || arg == "--model-io-layout" || arg == "--model-inputs" || arg == "--model-outputs" ||
@@ -1609,6 +1747,7 @@ static double compute_local_step_ml_smartsim(SmartRedis::Client* client,
 
         const bool use_gpu_model = (cfg.device == "GPU");
         const bool use_flat_model_io = (cfg.model_io_layout == "flat_contiguous");
+        const bool force_terrain_upload = cfg.force_terrain_upload_each_step && !use_flat_model_io;
         const bool use_multigpu_api = use_gpu_model &&
                           (decomp.world_size > 1) && (cfg.gpus_per_node > 1);
         const int selected_gpu = use_multigpu_api ? (decomp.world_rank % cfg.gpus_per_node) : -1;
@@ -1626,7 +1765,7 @@ static double compute_local_step_ml_smartsim(SmartRedis::Client* client,
         for (std::size_t chunk_begin = 0, chunk_id = 0; chunk_begin < BATCH_SIZE;
              chunk_begin += chunk_cap, ++chunk_id) {
             const std::size_t chunk_count = std::min<std::size_t>(chunk_cap, BATCH_SIZE - chunk_begin);
-            add_ml_traffic(use_flat_model_io, use_flat_model_io, chunk_count);
+            add_ml_traffic(use_flat_model_io, use_flat_model_io || force_terrain_upload, chunk_count);
 
             const auto chunk_start = std::chrono::high_resolution_clock::now();
 
@@ -1665,6 +1804,24 @@ static double compute_local_step_ml_smartsim(SmartRedis::Client* client,
                     SRMemoryLayout::SRMemLayoutNested);
 
                 log_tensor_shard_location(client, decomp, water_key, "put_tensor");
+
+                if (force_terrain_upload) {
+                    build_nested_view_for_field_chunk(
+                        terrain,
+                        decomp,
+                        chunk_begin,
+                        chunk_count,
+                        chunk_batch,
+                        chunk_channels,
+                        chunk_rows);
+                    client->put_tensor(
+                        terrain_key,
+                        const_cast<float****>(chunk_batch.data()),
+                        std::vector<size_t>{chunk_count, 1, 3, 3},
+                        SRTensorType::SRTensorTypeFloat,
+                        SRMemoryLayout::SRMemLayoutNested);
+                    log_tensor_shard_location(client, decomp, terrain_key, "put_tensor");
+                }
             }
 
             auto put_time = std::chrono::high_resolution_clock::now();
@@ -2761,7 +2918,26 @@ int main(int argc, char** argv) {
     int world_size = 1;
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
-    record_interface_counters_start(MPI_COMM_WORLD);
+    MPI_Comm solver_comm = MPI_COMM_WORLD;
+    MPI_Comm solver_app_comm = MPI_COMM_NULL;
+    int* appnum_ptr = nullptr;
+    int appnum_flag = 0;
+    MPI_Comm_get_attr(MPI_COMM_WORLD, MPI_APPNUM, &appnum_ptr, &appnum_flag);
+    const int app_id = (appnum_flag && appnum_ptr != nullptr) ? *appnum_ptr : 0;
+    if (appnum_flag) {
+        const int color = (app_id == 0) ? 0 : MPI_UNDEFINED;
+        MPI_Comm_split(MPI_COMM_WORLD, color, world_rank, &solver_app_comm);
+        if (solver_app_comm != MPI_COMM_NULL) {
+            solver_comm = solver_app_comm;
+            MPI_Comm_rank(solver_comm, &world_rank);
+            MPI_Comm_size(solver_comm, &world_size);
+        } else {
+            MPI_Finalize();
+            return 0;
+        }
+    }
+    g_solver_comm = solver_comm;
+    record_interface_counters_start(solver_comm);
     log_memory_usage(world_rank, "after_mpi_init");
 
     bool use_smartsim = false;
@@ -2794,14 +2970,22 @@ int main(int argc, char** argv) {
         }
 
         // Prepare smartsim
-        if (getenv("SSDB") == nullptr) {
-            //setenv("SSDB", "127.0.0.1:6379", 0);
-            std::cout << "SSDB not set. Disabling Smartsim" << std::endl;
+        bool ssdb_available = (getenv("SSDB") != nullptr);
+
+        #ifdef USE_CPP_ML_INTERFACE
+        use_smartsim = false; // We use the interface instead
+        if (ssdb_available && world_rank == 0) {
+             std::cout << "Note: SSDB is set to " << getenv("SSDB") << " but using CPP-ML-Interface." << std::endl;
+        }
+        #else
+        if (!ssdb_available) {
+            if (world_rank == 0) std::cout << "SSDB not set. Disabling Smartsim" << std::endl;
             use_smartsim = false;
         } else {
-            std::cout << "Expecting smartsim database/orchestrator at " << getenv("SSDB") << std::endl;
+            if (world_rank == 0) std::cout << "Expecting smartsim database/orchestrator at " << getenv("SSDB") << std::endl;
             use_smartsim = true;
         }
+        #endif
         log_memory_usage(world_rank, "after_smartsim_env_check");
 
 #ifdef USE_CPP_ML_INTERFACE
@@ -2819,7 +3003,7 @@ int main(int argc, char** argv) {
             log_memory_usage(world_rank, "after_direct_smartsim_client");
 
             if (world_rank == 0) {
-                log_memory_usage(world_rank, "before_direct_model_load");
+                log_memory_usage(world_rank, "before_direct_model_load", -1, -1, false);
                 if (!std::filesystem::exists(cfg.model_path)) {
                     throw std::runtime_error("SmartRedis model file not found: " + cfg.model_path + " (cwd=" + std::filesystem::current_path().string() + ")");
                 }
@@ -2934,7 +3118,7 @@ int main(int argc, char** argv) {
                     std::cout << "Model load done in "
                               << std::chrono::duration_cast<std::chrono::milliseconds>(model_load_end - model_load_start).count()
                               << " ms" << std::endl;
-                    log_memory_usage(world_rank, "after_direct_model_load");
+                    log_memory_usage(world_rank, "after_direct_model_load", -1, -1, false);
                 } else {
                     if (cfg.model_backend == "TF" || cfg.model_backend == "TFLITE") {
                         client->set_model_from_file(
@@ -2961,7 +3145,7 @@ int main(int argc, char** argv) {
                             ""
                         );
                     }
-                    log_memory_usage(world_rank, "after_direct_model_load");
+                    log_memory_usage(world_rank, "after_direct_model_load", -1, -1, false);
                 }
             }
 
@@ -2973,16 +3157,16 @@ int main(int argc, char** argv) {
         std::size_t nz_u = 0;
         std::size_t nx_u = 0;
         if (cfg.io_mode == IoMode::Rank0Gather) {
-            read_global_dims_serial(cfg.input_hdf5, nz_u, nx_u, world_rank, MPI_COMM_WORLD);
+            read_global_dims_serial(cfg.input_hdf5, nz_u, nx_u, world_rank, solver_comm);
         } else {
-            read_global_dims_parallel(cfg.input_hdf5, nz_u, nx_u, MPI_COMM_WORLD);
+            read_global_dims_parallel(cfg.input_hdf5, nz_u, nx_u, solver_comm);
         }
         log_memory_usage(world_rank, "after_read_global_dims");
 
         const int nz = static_cast<int>(nz_u);
         const int nx = static_cast<int>(nx_u);
 
-        Decomposition decomp = build_decomposition(cfg, MPI_COMM_WORLD, world_rank, world_size, nx, nz);
+        Decomposition decomp = build_decomposition(cfg, solver_comm, world_rank, world_size, nx, nz);
         log_memory_usage(world_rank, "after_build_decomposition");
 
         #ifndef USE_CPP_ML_INTERFACE
@@ -3000,7 +3184,9 @@ int main(int argc, char** argv) {
                 }
 
                 const std::string cpp_ml_config_text = read_text_file(cfg.cpp_ml_config);
-                cpp_ml_provider_is_aix = config_mentions_aix_provider(cpp_ml_config_text);
+                const std::string cpp_ml_provider_class = config_provider_class(cpp_ml_config_text);
+                cpp_ml_provider_is_aix = provider_class_is_aix(cpp_ml_provider_class);
+                const bool cpp_ml_provider_is_phydll = provider_class_is_phydll(cpp_ml_provider_class);
 
                 const bool use_flat_model_io = (cfg.model_io_layout == "flat_contiguous");
                 if (cpp_ml_provider_is_aix && !use_flat_model_io) {
@@ -3068,15 +3254,23 @@ int main(int argc, char** argv) {
                 const std::string provider_model_name =
                     (cfg.device == "GPU") ? "water_step_model_gpu" : "water_step_model";
 
-                ConfigDottedOverrides cpp_ml_overrides{
-                    {"provider.device", cfg.device},
-                    {"provider.model_backend", cfg.model_backend},
-                    {"provider.model_path", cfg.model_path},
-                    {"provider.model_name", provider_model_name},
-                    {"provider.num_gpus", static_cast<int64_t>(cfg.gpus_per_node)},
-                    {"provider.batch_size", static_cast<int64_t>(cfg.ml_batch_size)}
-                };
-                if (cfg.ml_nodes > 0) {
+                ConfigDottedOverrides cpp_ml_overrides;
+                if (cpp_ml_provider_is_aix) {
+                    cpp_ml_overrides.emplace("provider.model_file", cfg.model_path);
+                    cpp_ml_overrides.emplace("provider.batchsize", static_cast<int64_t>(cfg.ml_batch_size));
+                } else if (cpp_ml_provider_is_phydll) {
+                    cpp_ml_overrides.emplace("provider.model_file", cfg.model_path);
+                    cpp_ml_overrides.emplace("provider.backend", cfg.model_backend);
+                    cpp_ml_overrides.emplace("provider.device", cfg.device);
+                } else {
+                    cpp_ml_overrides.emplace("provider.device", cfg.device);
+                    cpp_ml_overrides.emplace("provider.model_backend", cfg.model_backend);
+                    cpp_ml_overrides.emplace("provider.model_path", cfg.model_path);
+                    cpp_ml_overrides.emplace("provider.model_name", provider_model_name);
+                    cpp_ml_overrides.emplace("provider.num_gpus", static_cast<int64_t>(cfg.gpus_per_node));
+                    cpp_ml_overrides.emplace("provider.batch_size", static_cast<int64_t>(cfg.ml_batch_size));
+                }
+                if (!cpp_ml_provider_is_aix && cfg.ml_nodes > 0) {
                     cpp_ml_overrides.emplace("provider.nodes", static_cast<int64_t>(cfg.ml_nodes));
                 }
 
@@ -3136,14 +3330,18 @@ int main(int argc, char** argv) {
     #ifndef USE_CPP_ML_INTERFACE
         if (use_smartsim) {
 
+            if (cfg.force_terrain_upload_each_step) {
+                if (world_rank == 0) {
+                    std::cout << "Force terrain upload each step; skipping terrain pre-upload." << std::endl;
+                }
+            } else {
+
             const bool use_flat_model_io = (cfg.model_io_layout == "flat_contiguous");
             std::cout << "Preparing terrain tiles for ML model" << std::endl;
 
             const std::size_t BATCH_SIZE = static_cast<std::size_t>(decomp.local_nz) * static_cast<std::size_t>(decomp.local_nx);
 
             std::vector<float> terrain_tiles(BATCH_SIZE * 9, 0.0F);
-
-            g_ml_traffic.preload_bytes += static_cast<long long>(BATCH_SIZE * 9 * sizeof(float));
 
             for (int i = 0; i < decomp.local_nz; ++i) {
                 for (int j = 0; j < decomp.local_nx; ++j) {
@@ -3168,6 +3366,10 @@ int main(int argc, char** argv) {
             const std::size_t chunk_cap = std::min<std::size_t>(BATCH_SIZE, static_cast<std::size_t>(cfg.ml_batch_size));
 
             if (!use_flat_model_io) {
+                if (world_rank == 0) {
+                    std::cout << "Pre-uploading terrain tiles to SmartSim database." << std::endl;
+                }
+                g_ml_traffic.preload_bytes += static_cast<long long>(BATCH_SIZE * 9 * sizeof(float));
                 for (std::size_t chunk_begin = 0, chunk_id = 0; chunk_begin < BATCH_SIZE;
                      chunk_begin += chunk_cap, ++chunk_id) {
                     const std::size_t chunk_count = std::min<std::size_t>(chunk_cap, BATCH_SIZE - chunk_begin);
@@ -3197,6 +3399,8 @@ int main(int argc, char** argv) {
             }
 
             std::cout << "Finished preparing terrain tiles for ML model" << std::endl;
+
+            }
 
         }
     #endif
@@ -3238,6 +3442,25 @@ int main(int argc, char** argv) {
             }
             std::sort(milestone_steps.begin(), milestone_steps.end());
             milestone_steps.erase(std::unique(milestone_steps.begin(), milestone_steps.end()), milestone_steps.end());
+
+            // Water height history tracking at 25% X and 25% Z
+            const int target_z = static_cast<int>(nz) / 4;
+            const int target_x = static_cast<int>(nx) / 4;
+            const bool is_history_rank = (target_z >= decomp.cell_z.begin && target_z < decomp.cell_z.end &&
+                                         target_x >= decomp.cell_x.begin && target_x < decomp.cell_x.end);
+            std::ofstream history_file;
+            if (is_history_rank) {
+                std::filesystem::path out_dir = std::filesystem::path(cfg.output_hdf5).parent_path();
+                std::filesystem::path hist_path = out_dir / "water_height_history.txt";
+                history_file.open(hist_path);
+                if (history_file.is_open()) {
+                    history_file << "# Water height history at global coord (" << target_z << ", " << target_x << ")\n";
+                    history_file << "# Step, Height\n";
+                    const int local_z = target_z - decomp.cell_z.begin;
+                    const int local_x = target_x - decomp.cell_x.begin;
+                    history_file << "0, " << std::fixed << std::setprecision(6) << water[local_index(local_z + 1, local_x + 1, pitch)] << "\n";
+                }
+            }
 
             std::size_t next_milestone_idx = 0;
             const auto sim_start = std::chrono::steady_clock::now();
@@ -3345,6 +3568,14 @@ int main(int argc, char** argv) {
 
                 water.swap(next);
 
+                // Record history
+                if (is_history_rank && history_file.is_open()) {
+                    const int local_z = target_z - decomp.cell_z.begin;
+                    const int local_x = target_x - decomp.cell_x.begin;
+                    history_file << step << ", " << std::fixed << std::setprecision(6) << water[local_index(local_z + 1, local_x + 1, pitch)] << "\n";
+                    if (step % 10 == 0) history_file.flush();
+                }
+
                 const bool need_stats = do_report || do_save;
                 GlobalStats stats{};
                 if (need_stats) {
@@ -3430,18 +3661,21 @@ int main(int argc, char** argv) {
             std::cout << "[shutdown] entering MPI_Comm_free / MPI_Finalize" << std::endl;
         }
 
-        report_memory_summary(MPI_COMM_WORLD, world_rank);
-        report_ml_traffic(MPI_COMM_WORLD, world_rank);
-        report_interface_deltas(MPI_COMM_WORLD, world_rank);
+        report_memory_summary(solver_comm, world_rank);
+        report_ml_traffic(solver_comm, world_rank);
+        report_interface_deltas(solver_comm, world_rank);
 
         if (decomp.cart_comm != MPI_COMM_NULL) {
             MPI_Comm_free(&decomp.cart_comm);
+        }
+        if (solver_app_comm != MPI_COMM_NULL) {
+            MPI_Comm_free(&solver_app_comm);
         }
         MPI_Finalize();
         return 0;
     } catch (const std::exception& ex) {
         std::cerr << "ERROR: " << ex.what() << std::endl;
-        MPI_Abort(MPI_COMM_WORLD, 1);
+        MPI_Abort(solver_comm, 1);
         return 1;
     }
 }

@@ -1,0 +1,20 @@
+[logging]
+level = "debug"
+error_separate = false
+
+[provider]
+class = "AIX"
+model_file = "./train_models/model_a/best_model_benchmark_giant_mlp.pt"
+
+[normalization]
+class = "MinMax"
+input_min = 0.0
+input_max = 1.0
+output_min = 0.0
+output_max = 1.0
+
+[behavior]
+class = "Default"
+
+[application]
+class = "MLCouplingApplicationTerrainSolver"

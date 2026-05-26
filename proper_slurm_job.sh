@@ -75,6 +75,16 @@ export MLCOUPLING_SOLVER_HET_GROUP="${SOLVER_HET_GROUP}"
 export MLCOUPLING_SMARTSIM_HET_GROUP="${DB_HET_GROUP}"
 export SMARTSIM_DB_HET_GROUP="${DB_HET_GROUP}"
 
+FORCE_TERRAIN_UPLOAD_EACH_STEP=0
+if [[ -n "${CPP_ML_INTERFACE_PROVIDER_ENV:-}" ]]; then
+  CPP_ML_INTERFACE_PROVIDER="${CPP_ML_INTERFACE_PROVIDER_ENV}"
+  echo "Using CPP_ML_INTERFACE_PROVIDER from environment variable: ${CPP_ML_INTERFACE_PROVIDER}"
+fi
+if [[ -n "${FORCE_TERRAIN_UPLOAD_EACH_STEP_ENV:-}" ]]; then
+  FORCE_TERRAIN_UPLOAD_EACH_STEP="${FORCE_TERRAIN_UPLOAD_EACH_STEP_ENV}"
+  echo "Using FORCE_TERRAIN_UPLOAD_EACH_STEP from environment variable: ${FORCE_TERRAIN_UPLOAD_EACH_STEP}"
+fi
+
 
 #MODEL_NAME="perfect_model"
 #MODEL_NAME="transformer_mlp"
@@ -104,13 +114,32 @@ MODEL_BACKEND="TORCH"
 ML_BATCH_SIZE=50000
 MODEL_STAGE_MAX_RETRIES=2
 MODEL_STAGE_FALLBACK_TO_SHARED=1
+MODEL_STAGE_SOLVER_GROUP=1
 MODEL_STAGE_DB_GROUP=1
+if [[ "${USE_CPP_ML_INTERFACE}" -eq 1 ]]; then
+  _cpp_provider="${CPP_ML_INTERFACE_PROVIDER:u}"
+  if [[ "${_cpp_provider}" == "PHYDLL" ]]; then
+    MODEL_STAGE_SOLVER_GROUP=0
+  elif [[ "${_cpp_provider}" == "AIX" ]]; then
+    MODEL_STAGE_DB_GROUP=0
+  fi
+fi
 DB_NODE_PREFLIGHT=1
 MODEL_ARTIFACT_MANIFEST="train_models/model_a/artifact_manifest_benchmark_giant_mlp.json"
 #MODEL_ARTIFACT_MANIFEST="train_models/model_a/artifact_manifest_perfect_model.json"
 MODEL_IO_LAYOUT="split_3x3"
 MODEL_INPUTS=""
 MODEL_OUTPUTS=""
+if [[ "${USE_CPP_ML_INTERFACE}" -eq 1 ]]; then
+  _cpp_provider="${CPP_ML_INTERFACE_PROVIDER:u}"
+  if [[ "${_cpp_provider}" == "AIX" || "${_cpp_provider}" == "PHYDLL" ]]; then
+    MODEL_IO_LAYOUT="flat_contiguous"
+    MODEL_ARTIFACT_MANIFEST="${MODEL_ARTIFACT_MANIFEST%.json}_flat.json"
+    if [[ -z "${MODEL_PATH:-}" ]]; then
+      MODEL_PATH="train_models/model_a/best_model_jit_benchmark_giant_mlp_flat.pt"
+    fi
+  fi
+fi
 MODEL_PATH_SOURCE=""
 MODEL_PATH_FOR_SOLVER=""
 USE_LOCAL_MODEL_CACHE=1 # if 1, we copy the model to /tmp on the component 1 nodes, to bypass the shared filesystem which is slow for model loading at high GPU/node counts, and set MODEL_PATH_FOR_SOLVER to the local path; if 0, we use the original MODEL_PATH_SOURCE which is on the shared filesystem and can be accessed by all nodes but may have slower load times at high GPU/node counts
@@ -123,7 +152,7 @@ LOCAL_FAST_ROOT=""
 CONTROLLER_START_MAX_RETRIES=2
 SMARTSIM_RUNTIME_ROOT="/home/thes2181/python"
 USE_LOCAL_RUNTIME_STAGE=1
-CPP_ML_CONFIG="config.toml"
+CPP_ML_CONFIG=""
 RUNTIME_STAGE_MAX_RETRIES=2
 RUNTIME_STAGE_LOG=""
 RUNTIME_STAGE_DURATION=0
@@ -223,12 +252,19 @@ USE_GPU=$(( GPUS_PER_NODE > 0 ? 1 : 0 ))
 if (( USE_SMARTSIM == 1 || USE_CPP_ML_INTERFACE == 1 )); then
   if (( USE_SMARTSIM == 1 )); then
     echo "Use SmartSim for ML model management and inference"
+
+    if [ "$FORCE_TERRAIN_UPLOAD_EACH_STEP" = "1" ]; then
+      terrain_status="force_terrain_upload"
+    else
+      terrain_status="no_force_terrain_upload"
+    fi
+
     if (( USE_GPU == 1 )); then
       echo "Configuring for GPU-based ML inference with ${GPUS_PER_NODE} GPUs per node."
-      export CUSTOM_JOB_NAME_SUFFIX_ENV="_SMARTSIM_${GPUS_PER_NODE}gpu_${MODEL_NAME}_revamped_prepare"
+      export CUSTOM_JOB_NAME_SUFFIX_ENV="_SMARTSIM_${GPUS_PER_NODE}gpu_${MODEL_NAME}_revamped_prepare_${terrain_status}"
     else
       echo "Configuring for CPU-based ML inference with ${ML_INFERENCE_CPU_CORES} CPU cores per task."
-      export CUSTOM_JOB_NAME_SUFFIX_ENV="_SMARTSIM_${ML_INFERENCE_CPU_CORES}cpu_${MODEL_NAME}_revamped_prepare"
+      export CUSTOM_JOB_NAME_SUFFIX_ENV="_SMARTSIM_${ML_INFERENCE_CPU_CORES}cpu_${MODEL_NAME}_revamped_prepare_${terrain_status}"
     fi
   elif (( USE_CPP_ML_INTERFACE == 1 )); then
     echo "Using C++ ML interface for model management and inference"
@@ -482,6 +518,18 @@ if [[ -n "${CPP_ML_CONFIG_ENV:-}" ]]; then
   echo "Using CPP_ML_CONFIG from environment variable: ${CPP_ML_CONFIG}"
 fi
 
+if [[ -z "${CPP_ML_CONFIG}" ]]; then
+  _cpp_provider="${CPP_ML_INTERFACE_PROVIDER:u}"
+  if [[ "${_cpp_provider}" == "AIX" ]]; then
+    CPP_ML_CONFIG="config_aix.toml"
+  elif [[ "${_cpp_provider}" == "PHYDLL" ]]; then
+    CPP_ML_CONFIG="config_phydll.toml"
+  else
+    CPP_ML_CONFIG="config.toml"
+  fi
+  echo "Using CPP_ML_CONFIG based on provider: ${CPP_ML_CONFIG}"
+fi
+
 if [[ -n "${OVERWRITE_JOB_NAME_ENV:-}" ]]; then
   if [[ "${OVERWRITE_JOB_NAME_ENV}" -eq 1 ]]; then
     # check if JOB_NAME_ENV or JOB_NAME_TEMPLATE_ENV is also set and use name if set, otherwise use the template and if neither is set, use the default naming scheme and print a warning
@@ -637,7 +685,7 @@ else
 fi
 
 
-if [[ ( "${USE_SMARTSIM}" -eq 1 || ( "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER}" == "SMARTSIM" ) ) && "${USE_LOCAL_RUNTIME_STAGE}" -eq 1 ]]; then
+if [[ ( "${USE_SMARTSIM}" -eq 1 || ( "${USE_CPP_ML_INTERFACE}" -eq 1 && ( "${CPP_ML_INTERFACE_PROVIDER:u}" == "SMARTSIM" || ( "${CPP_ML_INTERFACE_PROVIDER:u}" == "PHYDLL" && "${USE_PYTHON_DL_CLIENT:-0}" == "1" ) ) ) ) && "${USE_LOCAL_RUNTIME_STAGE}" -eq 1 ]]; then
   RUNTIME_TAR_PATH="${SMARTSIM_RUNTIME_ROOT}/${RUNTIME_DEVICE}.tar"
   LOCAL_RUNTIME_BASE="/tmp/${USER}/smartsim_runtime"
   LOCAL_RUNTIME_TAR="/tmp/${USER}_${SLURM_JOB_ID}_${RUNTIME_DEVICE}.tar"
@@ -708,7 +756,7 @@ if [[ ( "${USE_SMARTSIM}" -eq 1 || ( "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_M
     setopt pipefail
     srun --export=ALL --het-group="${het_group}" --nodes "${node_count}" --ntasks-per-node 1 --cpus-per-task 1 \
       $([[ "${node_count}" -gt 1 ]] && echo "--distribution=block") \
-      /bin/zsh -lc "set -euo pipefail; mkdir -p '${LOCAL_RUNTIME_BASE}'; tar -xf '${LOCAL_RUNTIME_TAR}' -C '${LOCAL_RUNTIME_BASE}'; test -x '${LOCAL_RUNTIME_ENV}/bin/python3'; echo RUNTIME_STAGE_PER_NODE label=${label} het_group=${het_group} host=\$(hostname) runtime='${LOCAL_RUNTIME_ENV}'" \
+      /bin/zsh -lc "set -euo pipefail; df -h /tmp; mkdir -p '${LOCAL_RUNTIME_BASE}'; tar -xf '${LOCAL_RUNTIME_TAR}' -C '${LOCAL_RUNTIME_BASE}'; test -x '${LOCAL_RUNTIME_ENV}/bin/python3'; echo RUNTIME_STAGE_PER_NODE label=${label} het_group=${het_group} host=\$(hostname) runtime='${LOCAL_RUNTIME_ENV}'" \
       2>&1 | tee -a "${RUNTIME_STAGE_LOG}"
     stage_rc=${pipestatus[1]}
     unsetopt pipefail
@@ -991,8 +1039,10 @@ if [[ "${USE_LOCAL_MODEL_CACHE}" -eq 1 ]]; then
   }
 
   local_cache_ok=1
-  if ! stage_model_to_group "${SOLVER_HET_GROUP}" "${_nodes:-1}" "solver"; then
-    local_cache_ok=0
+  if [[ "${MODEL_STAGE_SOLVER_GROUP}" -eq 1 ]]; then
+    if ! stage_model_to_group "${SOLVER_HET_GROUP}" "${_nodes:-1}" "solver"; then
+      local_cache_ok=0
+    fi
   fi
 
   if [[ "${local_cache_ok}" -eq 1 ]] && [[ "${MODEL_STAGE_DB_GROUP}" -eq 1 ]] && [[ "${DB_HET_GROUP}" -ne "${SOLVER_HET_GROUP}" ]]; then
@@ -1160,7 +1210,7 @@ if [[ "${RUN_SOLVER}" -eq 1 ]]; then
 
   DB_HOSTNAME="127.0.0.1:6379"
 
-  if [[ "${USE_SMARTSIM}" -eq 1 || ( "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER}" == "SMARTSIM" ) ]]; then
+  if [[ "${USE_SMARTSIM}" -eq 1 || ( "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:u}" == "SMARTSIM" ) ]]; then
     if [[ "${DB_NODE_PREFLIGHT}" -eq 1 ]]; then
       echo "Running DB node preflight checks (ib0, port 6780, local write)..."
       DB_PREFLIGHT_LOG="logs/db_preflight_${SLURM_JOB_ID}.log"
@@ -1266,6 +1316,9 @@ if [[ "${RUN_SOLVER}" -eq 1 ]]; then
   if [[ -n "${CPP_ML_CONFIG}" ]]; then
     MODEL_IO_ARGS+=(--cpp-ml-config "${CPP_ML_CONFIG}")
   fi
+  if [[ "${FORCE_TERRAIN_UPLOAD_EACH_STEP}" -eq 1 ]]; then
+    MODEL_IO_ARGS+=(--force-terrain-upload-each-step)
+  fi
 
   # For multi-node jobs, --distribution=block evenly spreads tasks across nodes.
   # This prevents task desynchronization at shutdown (especially in rank0_gather I/O mode).
@@ -1280,31 +1333,108 @@ if [[ "${RUN_SOLVER}" -eq 1 ]]; then
     device="GPU"
   fi
 
-  SSDB="${DB_HOSTNAME}" srun --export=ALL --het-group="${SOLVER_HET_GROUP}" --ntasks-per-node "${_ntasks_per_node_num}" \
-    --cpus-per-task 1 \
-    ${SRUN_DIST} \
-    ./solver_cpp/${COMPILE_OUTPUT_PATH}/terrain_solver \
-    --device "${device}" \
-    --gpus-per-node "${GPUS_PER_NODE}" \
-    --ml-nodes "${DB_NODES}" \
-    --ml-batch-size "${ML_BATCH_SIZE}" \
-    --model-path "${MODEL_PATH_FOR_SOLVER}" \
-    --model-backend "${MODEL_BACKEND}" \
-    --model-io-layout "${MODEL_IO_LAYOUT}" \
-    "${MODEL_IO_ARGS[@]}" \
-    --input-hdf5 "${PREP_H5}" \
-    --output-hdf5 "${TRAJ_H5}" \
-    --steps "${TOTAL_STEPS}" \
-    --save-every "${SAVE_EVERY}" \
-    --save-mode "${SAVE_MODE}" \
-    --triangular-scale "${TRIANGULAR_SCALE}" \
-    --chunk-size "${CHUNK_SIZE}" \
-    --io-mode "${IO_MODE}" \
-    --mpi-sync-mode "${MPI_SYNC_MODE}" \
-    --hdf5-xfer-mode "${HDF5_XFER_MODE}" \
-    "${RANK_GRID_ARGS[@]}" \
-    "${OVERWRITE_ARG[@]}" \
-    --write-surface
+  if [[ "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:u}" == "PHYDLL" ]]; then
+    USE_PYTHON_DL_CLIENT=${USE_PYTHON_DL_CLIENT:-0}
+    PHYDLL_REBUILD_DL_CLIENT=${PHYDLL_REBUILD_DL_CLIENT:-1}
+    DL_CLIENT_CMD=()
+    if [[ "${USE_PYTHON_DL_CLIENT}" == "1" ]]; then
+      DL_CLIENT_CMD=("${PY_ENV}/bin/python3" "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/phydll_dl_client.py")
+      PHYDLL_REBUILD_DL_CLIENT=0
+    else
+      PHYDLL_DL_CLIENT="${PHYDLL_DL_CLIENT:-${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/build/phydll_dl_client}"
+      DL_CLIENT_CMD=("${PHYDLL_DL_CLIENT}")
+    fi
+
+    if [[ "${USE_PYTHON_DL_CLIENT}" == "0" ]]; then
+      if [[ "${PHYDLL_REBUILD_DL_CLIENT}" == "1" || ! -x "${PHYDLL_DL_CLIENT}" ]]; then
+        cmake -S "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients" -B "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/build"
+        cmake --build "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/build" -j
+      fi
+      if [[ ! -x "${PHYDLL_DL_CLIENT}" ]]; then
+        echo "PHYDLL_DL_CLIENT not executable: ${PHYDLL_DL_CLIENT}" >&2
+        exit 1
+      fi
+    fi
+
+    NP_PHY="${MPI_RANKS}"
+    PHYDLL_NP_DL="${PHYDLL_NP_DL:-1}"
+    PHYDLL_DL_NODES="${PHYDLL_DL_NODES:-${PHYDLL_NP_DL}}"
+    if [[ "${PHYDLL_NP_DL}" -lt 1 ]]; then
+      PHYDLL_NP_DL=1
+    fi
+    if [[ "${PHYDLL_DL_NODES}" -lt 1 ]]; then
+      PHYDLL_DL_NODES=1
+    fi
+    PHYDLL_DL_COUNT="${PHYDLL_DL_COUNT:-${NP_PHY}}"
+    export PHYDLL_DL_COUNT
+
+    PHYDLL_LIB_DIR="$(realpath "${MINI_APP_DIR}/../CPP-ML-Interface/extern/phydll/build/lib")"
+    DL_LD_LIBRARY_PATH="${PHYDLL_LIB_DIR}:${LD_LIBRARY_PATH:-}"
+
+    echo "Launching PhyDLL with NP_PHY=${NP_PHY}, NP_DL=${PHYDLL_NP_DL}, PHYDLL_DL_COUNT=${PHYDLL_DL_COUNT}"
+    echo "Using DL client: ${DL_CLIENT_CMD[*]}"
+
+    srun --export=ALL --het-group="${SOLVER_HET_GROUP}" --nodes "${_nodes:-1}" --ntasks-per-node "${_ntasks_per_node_num}" \
+      --cpus-per-task 1 \
+      ${SRUN_DIST} \
+      ./solver_cpp/${COMPILE_OUTPUT_PATH}/terrain_solver \
+      --device "${device}" \
+      --gpus-per-node "${GPUS_PER_NODE}" \
+      --ml-nodes "${DB_NODES}" \
+      --ml-batch-size "${ML_BATCH_SIZE}" \
+      --model-path "${MODEL_PATH_FOR_SOLVER}" \
+      --model-backend "${MODEL_BACKEND}" \
+      --model-io-layout "${MODEL_IO_LAYOUT}" \
+      "${MODEL_IO_ARGS[@]}" \
+      --input-hdf5 "${PREP_H5}" \
+      --output-hdf5 "${TRAJ_H5}" \
+      --steps "${TOTAL_STEPS}" \
+      --save-every "${SAVE_EVERY}" \
+      --save-mode "${SAVE_MODE}" \
+      --triangular-scale "${TRIANGULAR_SCALE}" \
+      --chunk-size "${CHUNK_SIZE}" \
+      --io-mode "${IO_MODE}" \
+      --mpi-sync-mode "${MPI_SYNC_MODE}" \
+      --hdf5-xfer-mode "${HDF5_XFER_MODE}" \
+      "${RANK_GRID_ARGS[@]}" \
+      "${OVERWRITE_ARG[@]}" \
+      --write-surface \
+      : --export=ALL --het-group="${DB_HET_GROUP}" --nodes "${PHYDLL_DL_NODES}" --ntasks "${PHYDLL_NP_DL}" --ntasks-per-node 1 \
+      --cpus-per-task "${ML_INFERENCE_CPU_CORES}" \
+      /bin/zsh -lc "export LD_LIBRARY_PATH='${DL_LD_LIBRARY_PATH}'; exec ${DL_CLIENT_CMD[*]}"
+  else
+    if [[ "${USE_SMARTSIM}" -eq 1 || ( "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:u}" == "SMARTSIM" ) ]]; then
+      export SSDB="${DB_HOSTNAME}"
+    else
+      unset SSDB
+    fi
+
+    srun --export=ALL --het-group="${SOLVER_HET_GROUP}" --ntasks-per-node "${_ntasks_per_node_num}" \
+      --cpus-per-task 1 \
+      ${SRUN_DIST} \
+      ./solver_cpp/${COMPILE_OUTPUT_PATH}/terrain_solver \
+      --device "${device}" \
+      --gpus-per-node "${GPUS_PER_NODE}" \
+      --ml-nodes "${DB_NODES}" \
+      --ml-batch-size "${ML_BATCH_SIZE}" \
+      --model-path "${MODEL_PATH_FOR_SOLVER}" \
+      --model-backend "${MODEL_BACKEND}" \
+      --model-io-layout "${MODEL_IO_LAYOUT}" \
+      "${MODEL_IO_ARGS[@]}" \
+      --input-hdf5 "${PREP_H5}" \
+      --output-hdf5 "${TRAJ_H5}" \
+      --steps "${TOTAL_STEPS}" \
+      --save-every "${SAVE_EVERY}" \
+      --save-mode "${SAVE_MODE}" \
+      --triangular-scale "${TRIANGULAR_SCALE}" \
+      --chunk-size "${CHUNK_SIZE}" \
+      --io-mode "${IO_MODE}" \
+      --mpi-sync-mode "${MPI_SYNC_MODE}" \
+      --hdf5-xfer-mode "${HDF5_XFER_MODE}" \
+      "${RANK_GRID_ARGS[@]}" \
+      "${OVERWRITE_ARG[@]}" \
+      --write-surface
+  fi
     #--write-surface 2>&1 | tee "${SOLVER_STEP_LOG}"
   SRUN_STATUS=${pipestatus[1]}
   unsetopt pipefail
@@ -1586,6 +1716,7 @@ TIMING_FILE="${EXTERNAL_DIR}/${JOB_NAME}/timing_and_parameters.txt"
   echo "MODEL_PATH_SOURCE: ${MODEL_PATH_SOURCE}"
   echo "MODEL_PATH_FOR_SOLVER: ${MODEL_PATH_FOR_SOLVER}"
   echo "MODEL_IO_LAYOUT: ${MODEL_IO_LAYOUT}"
+  echo "FORCE_TERRAIN_UPLOAD_EACH_STEP: ${FORCE_TERRAIN_UPLOAD_EACH_STEP}"
   echo "SOLVER_STEP_LOG: ${SOLVER_STEP_LOG}"
   echo ""
   echo "Model staging per-node log:"
@@ -1697,11 +1828,12 @@ import re
 import sys
 
 path = sys.argv[1]
-mem_re = re.compile(r"^MEM_USAGE_MAX\s+.*rss_mb=([0-9.]+)\s+hwm_mb=([0-9.]+)\s+vm_mb=([0-9.]+)\s+units=([A-Za-z]+)\s+scope=([A-Za-z0-9_]+)")
+mem_re = re.compile(r"^(MEM_USAGE_MAX|MEM_USAGE_SUM_MAX)\s+.*rss_mb=([0-9.]+)\s+hwm_mb=([0-9.]+)\s+vm_mb=([0-9.]+)\s+units=([A-Za-z]+)\s+scope=([A-Za-z0-9_]+)")
 ml_re = re.compile(r"^ML_TRAFFIC\s+.*input_mb=([0-9.]+)\s+output_mb=([0-9.]+)\s+preload_mb=([0-9.]+)\s+units=([A-Za-z]+)\s+scope=([A-Za-z0-9_]+)")
 net_re = re.compile(r"^NET_USAGE\s+if=([^\s]+)\s+rx_mb=([0-9.]+)\s+tx_mb=([0-9.]+)\s+units=([A-Za-z]+)\s+scope=([A-Za-z0-9_]+)")
 
-mem = None
+mem_max = None
+mem_sum = None
 ml = None
 net = {}
 
@@ -1710,13 +1842,17 @@ with open(path, "r", encoding="utf-8", errors="replace") as f:
     line = raw.strip()
     m = mem_re.match(line)
     if m:
-      mem = {
-        "rss": float(m.group(1)),
-        "hwm": float(m.group(2)),
-        "vm": float(m.group(3)),
-        "units": m.group(4),
-        "scope": m.group(5),
+      entry = {
+        "rss": float(m.group(2)),
+        "hwm": float(m.group(3)),
+        "vm": float(m.group(4)),
+        "units": m.group(5),
+        "scope": m.group(6),
       }
+      if m.group(1) == "MEM_USAGE_MAX":
+        mem_max = entry
+      else:
+        mem_sum = entry
       continue
     m = ml_re.match(line)
     if m:
@@ -1741,19 +1877,33 @@ with open(path, "r", encoding="utf-8", errors="replace") as f:
 def mib_to_gib(value_mib: float) -> float:
   return value_mib / 1024.0
 
-if mem:
-  rss_gib = mib_to_gib(mem["rss"]) if mem["rss"] >= 0 else mem["rss"]
-  hwm_gib = mib_to_gib(mem["hwm"]) if mem["hwm"] >= 0 else mem["hwm"]
-  vm_gib = mib_to_gib(mem["vm"]) if mem["vm"] >= 0 else mem["vm"]
-  print("  Memory:")
-  print(f"    max_rss: {rss_gib:.2f} GiB ({mem['rss']:.2f} MiB) scope={mem['scope']}")
-  print(f"    max_hwm: {hwm_gib:.2f} GiB ({mem['hwm']:.2f} MiB) scope={mem['scope']}")
-  if mem["vm"] >= 0:
-    print(f"    max_vm:  {vm_gib:.2f} GiB ({mem['vm']:.2f} MiB) scope={mem['scope']}")
+if mem_max:
+  rss_gib = mib_to_gib(mem_max["rss"]) if mem_max["rss"] >= 0 else mem_max["rss"]
+  hwm_gib = mib_to_gib(mem_max["hwm"]) if mem_max["hwm"] >= 0 else mem_max["hwm"]
+  vm_gib = mib_to_gib(mem_max["vm"]) if mem_max["vm"] >= 0 else mem_max["vm"]
+  print("  Memory (max over ranks):")
+  print(f"    max_rss: {rss_gib:.2f} GiB ({mem_max['rss']:.2f} MiB) scope={mem_max['scope']}")
+  print(f"    max_hwm: {hwm_gib:.2f} GiB ({mem_max['hwm']:.2f} MiB) scope={mem_max['scope']}")
+  if mem_max["vm"] >= 0:
+    print(f"    max_vm:  {vm_gib:.2f} GiB ({mem_max['vm']:.2f} MiB) scope={mem_max['scope']}")
   else:
-    print(f"    max_vm:  {mem['vm']} {mem['units']} scope={mem['scope']}")
+    print(f"    max_vm:  {mem_max['vm']} {mem_max['units']} scope={mem_max['scope']}")
 else:
-  print("  Memory: not found")
+  print("  Memory (max over ranks): not found")
+
+if mem_sum:
+  rss_gib = mib_to_gib(mem_sum["rss"]) if mem_sum["rss"] >= 0 else mem_sum["rss"]
+  hwm_gib = mib_to_gib(mem_sum["hwm"]) if mem_sum["hwm"] >= 0 else mem_sum["hwm"]
+  vm_gib = mib_to_gib(mem_sum["vm"]) if mem_sum["vm"] >= 0 else mem_sum["vm"]
+  print("  Memory (sum over ranks, max over samples):")
+  print(f"    max_rss: {rss_gib:.2f} GiB ({mem_sum['rss']:.2f} MiB) scope={mem_sum['scope']}")
+  print(f"    max_hwm: {hwm_gib:.2f} GiB ({mem_sum['hwm']:.2f} MiB) scope={mem_sum['scope']}")
+  if mem_sum["vm"] >= 0:
+    print(f"    max_vm:  {vm_gib:.2f} GiB ({mem_sum['vm']:.2f} MiB) scope={mem_sum['scope']}")
+  else:
+    print(f"    max_vm:  {mem_sum['vm']} {mem_sum['units']} scope={mem_sum['scope']}")
+else:
+  print("  Memory (sum over ranks, max over samples): not found")
 
 if ml:
   in_gib = mib_to_gib(ml["input"]) if ml["input"] >= 0 else ml["input"]
@@ -1828,11 +1978,12 @@ import re
 import sys
 
 path = sys.argv[1]
-mem_re = re.compile(r"^MEM_USAGE_MAX\s+.*rss_mb=([0-9.]+)\s+hwm_mb=([0-9.]+)\s+vm_mb=([0-9.]+)\s+units=([A-Za-z]+)\s+scope=([A-Za-z0-9_]+)")
+mem_re = re.compile(r"^(MEM_USAGE_MAX|MEM_USAGE_SUM_MAX)\s+.*rss_mb=([0-9.]+)\s+hwm_mb=([0-9.]+)\s+vm_mb=([0-9.]+)\s+units=([A-Za-z]+)\s+scope=([A-Za-z0-9_]+)")
 ml_re = re.compile(r"^ML_TRAFFIC\s+.*input_mb=([0-9.]+)\s+output_mb=([0-9.]+)\s+preload_mb=([0-9.]+)\s+units=([A-Za-z]+)\s+scope=([A-Za-z0-9_]+)")
 net_re = re.compile(r"^NET_USAGE\s+if=([^\s]+)\s+rx_mb=([0-9.]+)\s+tx_mb=([0-9.]+)\s+units=([A-Za-z]+)\s+scope=([A-Za-z0-9_]+)")
 
-mem = None
+mem_max = None
+mem_sum = None
 ml = None
 net = {}
 
@@ -1841,13 +1992,17 @@ with open(path, "r", encoding="utf-8", errors="replace") as f:
     line = raw.strip()
     m = mem_re.match(line)
     if m:
-      mem = {
-        "rss": float(m.group(1)),
-        "hwm": float(m.group(2)),
-        "vm": float(m.group(3)),
-        "units": m.group(4),
-        "scope": m.group(5),
+      entry = {
+        "rss": float(m.group(2)),
+        "hwm": float(m.group(3)),
+        "vm": float(m.group(4)),
+        "units": m.group(5),
+        "scope": m.group(6),
       }
+      if m.group(1) == "MEM_USAGE_MAX":
+        mem_max = entry
+      else:
+        mem_sum = entry
       continue
     m = ml_re.match(line)
     if m:
@@ -1872,18 +2027,31 @@ with open(path, "r", encoding="utf-8", errors="replace") as f:
 def mib_to_gib(value_mib: float) -> float:
   return value_mib / 1024.0
 
-if mem:
-  rss_gib = mib_to_gib(mem["rss"]) if mem["rss"] >= 0 else mem["rss"]
-  hwm_gib = mib_to_gib(mem["hwm"]) if mem["hwm"] >= 0 else mem["hwm"]
-  vm_gib = mib_to_gib(mem["vm"]) if mem["vm"] >= 0 else mem["vm"]
-  print(f"  max_rss: {rss_gib:.2f} GiB ({mem['rss']:.2f} MiB) scope={mem['scope']}")
-  print(f"  max_hwm: {hwm_gib:.2f} GiB ({mem['hwm']:.2f} MiB) scope={mem['scope']}")
-  if mem["vm"] >= 0:
-    print(f"  max_vm:  {vm_gib:.2f} GiB ({mem['vm']:.2f} MiB) scope={mem['scope']}")
+if mem_max:
+  rss_gib = mib_to_gib(mem_max["rss"]) if mem_max["rss"] >= 0 else mem_max["rss"]
+  hwm_gib = mib_to_gib(mem_max["hwm"]) if mem_max["hwm"] >= 0 else mem_max["hwm"]
+  vm_gib = mib_to_gib(mem_max["vm"]) if mem_max["vm"] >= 0 else mem_max["vm"]
+  print(f"  max_rss: {rss_gib:.2f} GiB ({mem_max['rss']:.2f} MiB) scope={mem_max['scope']}")
+  print(f"  max_hwm: {hwm_gib:.2f} GiB ({mem_max['hwm']:.2f} MiB) scope={mem_max['scope']}")
+  if mem_max["vm"] >= 0:
+    print(f"  max_vm:  {vm_gib:.2f} GiB ({mem_max['vm']:.2f} MiB) scope={mem_max['scope']}")
   else:
-    print(f"  max_vm:  {mem['vm']} {mem['units']} scope={mem['scope']}")
+    print(f"  max_vm:  {mem_max['vm']} {mem_max['units']} scope={mem_max['scope']}")
 else:
-  print("  Memory: not found")
+  print("  Memory (max over ranks): not found")
+
+if mem_sum:
+  rss_gib = mib_to_gib(mem_sum["rss"]) if mem_sum["rss"] >= 0 else mem_sum["rss"]
+  hwm_gib = mib_to_gib(mem_sum["hwm"]) if mem_sum["hwm"] >= 0 else mem_sum["hwm"]
+  vm_gib = mib_to_gib(mem_sum["vm"]) if mem_sum["vm"] >= 0 else mem_sum["vm"]
+  print(f"  total_max_rss: {rss_gib:.2f} GiB ({mem_sum['rss']:.2f} MiB) scope={mem_sum['scope']}")
+  print(f"  total_max_hwm: {hwm_gib:.2f} GiB ({mem_sum['hwm']:.2f} MiB) scope={mem_sum['scope']}")
+  if mem_sum["vm"] >= 0:
+    print(f"  total_max_vm:  {vm_gib:.2f} GiB ({mem_sum['vm']:.2f} MiB) scope={mem_sum['scope']}")
+  else:
+    print(f"  total_max_vm:  {mem_sum['vm']} {mem_sum['units']} scope={mem_sum['scope']}")
+else:
+  print("  Memory (sum over ranks, max over samples): not found")
 
 if ml:
   in_gib = mib_to_gib(ml["input"]) if ml["input"] >= 0 else ml["input"]
