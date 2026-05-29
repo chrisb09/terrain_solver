@@ -29,25 +29,25 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--torch-output",
         type=Path,
-        default=Path("train_models/model_a/real_function_jit.pt"),
+        default=Path("train_models/model_a/perfect_cuda.pt"),
         help="Output path for TorchScript model",
     )
     parser.add_argument(
         "--onnx-output",
         type=Path,
-        default=Path("train_models/model_a/real_function.onnx"),
+        default=Path("train_models/model_a/perfect.onnx"),
         help="Output path for ONNX model",
     )
     parser.add_argument(
         "--tf-output",
         type=Path,
-        default=Path("train_models/model_a/real_function_tf.pb"),
+        default=Path("train_models/model_a/perfect_tf.pb"),
         help="Output path for TensorFlow frozen graph",
     )
     parser.add_argument(
         "--artifact-manifest",
         type=Path,
-        default=Path("train_models/model_a/artifact_manifest_perfect_model.json"),
+        default=Path("train_models/model_a/artifact_manifest_perfect_split.json"),
         help="Output path for the artifact manifest",
     )
     parser.add_argument(

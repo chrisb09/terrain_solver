@@ -7,6 +7,9 @@ set(MAIN_CPP_FILE "terrain_solver.cpp")
 set(SMARTREDIS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../CPP-ML-Interface/extern/SmartRedis")
 set(CUSTOM_CORE_DEPENDENCIES_DIR "/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software")
 set(CPPML_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../CPP-ML-Interface")
+
+option(WITH_PHYDLL "Enable PhyDLL provider support through CPP-ML-Interface" ON)
+
 add_subdirectory("${CPPML_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/cpp-ml-interface-build" EXCLUDE_FROM_ALL)
 
 

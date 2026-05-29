@@ -85,6 +85,36 @@ if [[ -n "${FORCE_TERRAIN_UPLOAD_EACH_STEP_ENV:-}" ]]; then
   echo "Using FORCE_TERRAIN_UPLOAD_EACH_STEP from environment variable: ${FORCE_TERRAIN_UPLOAD_EACH_STEP}"
 fi
 
+ML_INTERFACE_MODE="${ML_INTERFACE_MODE:-}"
+if [[ -n "${ML_INTERFACE_ENV:-}" ]]; then
+  ML_INTERFACE_MODE="${ML_INTERFACE_ENV}"
+fi
+if [[ -z "${ML_INTERFACE_MODE}" ]]; then
+  if (( USE_SMARTSIM == 1 )); then
+    ML_INTERFACE_MODE="smartsim"
+  elif (( USE_CPP_ML_INTERFACE == 1 )); then
+    ML_INTERFACE_MODE="cpp"
+  else
+    ML_INTERFACE_MODE="auto"
+  fi
+fi
+ML_INTERFACE_MODE_LOWER="${ML_INTERFACE_MODE:l}"
+if [[ "${ML_INTERFACE_MODE_LOWER}" == "auto" ]]; then
+  if (( USE_CPP_ML_INTERFACE == 1 )); then
+    ML_INTERFACE_RESOLVED="cpp"
+  else
+    ML_INTERFACE_RESOLVED="smartsim"
+  fi
+else
+  ML_INTERFACE_RESOLVED="${ML_INTERFACE_MODE_LOWER}"
+fi
+
+if [[ "${FORCE_TERRAIN_UPLOAD_EACH_STEP}" == "1" ]]; then
+  terrain_status="force_terrain_upload"
+else
+  terrain_status="no_force_terrain_upload"
+fi
+
 
 #MODEL_NAME="perfect_model"
 #MODEL_NAME="transformer_mlp"
@@ -92,13 +122,13 @@ fi
 MODEL_NAME="benchmark_giant_mlp"
 
 if [[ "${MODEL_NAME}" == "perfect_model" ]]; then
-  MODEL_ARTIFACT_MANIFEST="train_models/model_a/artifact_manifest_perfect_model.json"
+  MODEL_ARTIFACT_MANIFEST="train_models/model_a/artifact_manifest_perfect_split.json"
 elif [[ "${MODEL_NAME}" == "transformer_mlp" ]]; then
-  MODEL_ARTIFACT_MANIFEST="train_models/model_a/artifact_manifest_transformer_mlp.json"
+  MODEL_ARTIFACT_MANIFEST="train_models/model_a/artifact_manifest_transformer_split.json"
 elif [[ "${MODEL_NAME}" == "watercnn_a" ]]; then
-  MODEL_ARTIFACT_MANIFEST="train_models/model_a/artifact_manifest_watercnn.json"
+  MODEL_ARTIFACT_MANIFEST="train_models/model_a/artifact_manifest_watercnn_split.json"
 elif [[ "${MODEL_NAME}" == "benchmark_giant_mlp" ]]; then
-  MODEL_ARTIFACT_MANIFEST="train_models/model_a/artifact_manifest_benchmark_giant_mlp.json"
+  MODEL_ARTIFACT_MANIFEST="train_models/model_a/artifact_manifest_giant_split.json"
 else
   echo "Error: Unknown MODEL_NAME '${MODEL_NAME}'" >&2
   exit 1
@@ -125,8 +155,6 @@ if [[ "${USE_CPP_ML_INTERFACE}" -eq 1 ]]; then
   fi
 fi
 DB_NODE_PREFLIGHT=1
-MODEL_ARTIFACT_MANIFEST="train_models/model_a/artifact_manifest_benchmark_giant_mlp.json"
-#MODEL_ARTIFACT_MANIFEST="train_models/model_a/artifact_manifest_perfect_model.json"
 MODEL_IO_LAYOUT="split_3x3"
 MODEL_INPUTS=""
 MODEL_OUTPUTS=""
@@ -134,9 +162,9 @@ if [[ "${USE_CPP_ML_INTERFACE}" -eq 1 ]]; then
   _cpp_provider="${CPP_ML_INTERFACE_PROVIDER:u}"
   if [[ "${_cpp_provider}" == "AIX" || "${_cpp_provider}" == "PHYDLL" ]]; then
     MODEL_IO_LAYOUT="flat_contiguous"
-    MODEL_ARTIFACT_MANIFEST="${MODEL_ARTIFACT_MANIFEST%.json}_flat.json"
+    MODEL_ARTIFACT_MANIFEST="${MODEL_ARTIFACT_MANIFEST%_split.json}_flat.json"
     if [[ -z "${MODEL_PATH:-}" ]]; then
-      MODEL_PATH="train_models/model_a/best_model_jit_benchmark_giant_mlp_flat.pt"
+      MODEL_PATH="train_models/model_a/giant_cuda.pt"
     fi
   fi
 fi
@@ -250,14 +278,8 @@ echo "DB_HET_GROUP=${DB_HET_GROUP} Slurm raw vars: ${_db_gpus_per_node_var}='${(
 USE_GPU=$(( GPUS_PER_NODE > 0 ? 1 : 0 ))
 
 if (( USE_SMARTSIM == 1 || USE_CPP_ML_INTERFACE == 1 )); then
-  if (( USE_SMARTSIM == 1 )); then
+  if [[ "${ML_INTERFACE_RESOLVED}" == "smartsim" ]]; then
     echo "Use SmartSim for ML model management and inference"
-
-    if [ "$FORCE_TERRAIN_UPLOAD_EACH_STEP" = "1" ]; then
-      terrain_status="force_terrain_upload"
-    else
-      terrain_status="no_force_terrain_upload"
-    fi
 
     if (( USE_GPU == 1 )); then
       echo "Configuring for GPU-based ML inference with ${GPUS_PER_NODE} GPUs per node."
@@ -266,14 +288,14 @@ if (( USE_SMARTSIM == 1 || USE_CPP_ML_INTERFACE == 1 )); then
       echo "Configuring for CPU-based ML inference with ${ML_INFERENCE_CPU_CORES} CPU cores per task."
       export CUSTOM_JOB_NAME_SUFFIX_ENV="_SMARTSIM_${ML_INFERENCE_CPU_CORES}cpu_${MODEL_NAME}_revamped_prepare_${terrain_status}"
     fi
-  elif (( USE_CPP_ML_INTERFACE == 1 )); then
+  elif [[ "${ML_INTERFACE_RESOLVED}" == "cpp" ]]; then
     echo "Using C++ ML interface for model management and inference"
     if (( USE_GPU == 1 )); then
       echo "Configuring for GPU-based ML inference with ${GPUS_PER_NODE} GPUs per node."
-      export CUSTOM_JOB_NAME_SUFFIX_ENV="_cpp_interface_${CPP_ML_INTERFACE_PROVIDER}_${GPUS_PER_NODE}gpu_${MODEL_NAME}_revamped_prepare"
+      export CUSTOM_JOB_NAME_SUFFIX_ENV="_cpp_interface_${CPP_ML_INTERFACE_PROVIDER}_${GPUS_PER_NODE}gpu_${MODEL_NAME}_revamped_prepare_${terrain_status}"
     else
       echo "Configuring for CPU-based ML inference with ${ML_INFERENCE_CPU_CORES} CPU cores per task."
-      export CUSTOM_JOB_NAME_SUFFIX_ENV="_cpp_interface_${CPP_ML_INTERFACE_PROVIDER}_${ML_INFERENCE_CPU_CORES}cpu_${MODEL_NAME}_revamped_prepare"
+      export CUSTOM_JOB_NAME_SUFFIX_ENV="_cpp_interface_${CPP_ML_INTERFACE_PROVIDER}_${ML_INFERENCE_CPU_CORES}cpu_${MODEL_NAME}_revamped_prepare_${terrain_status}"
     fi
   fi
 fi
@@ -476,6 +498,16 @@ fi
 if [[ -n "${COMPILE_OUTPUT_PATH_ENV:-}" ]]; then
   COMPILE_OUTPUT_PATH="${COMPILE_OUTPUT_PATH_ENV}"
   echo "Using COMPILE_OUTPUT_PATH from environment variable: ${COMPILE_OUTPUT_PATH}"
+fi
+if [[ "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:u}" == "PHYDLL" ]]; then
+  _phydll_cache="solver_cpp/${COMPILE_OUTPUT_PATH}/CMakeCache.txt"
+  if [[ "${SKIP_COMPILE}" -eq 1 && ! -x "solver_cpp/${COMPILE_OUTPUT_PATH}/terrain_solver" ]]; then
+    echo "PhyDLL provider requested but solver binary is missing; forcing compilation."
+    SKIP_COMPILE=0
+  elif [[ "${SKIP_COMPILE}" -eq 1 && ( ! -f "${_phydll_cache}" || "$(grep -E '^WITH_PHYDLL:BOOL=ON$' "${_phydll_cache}" 2>/dev/null || true)" == "" ) ]]; then
+    echo "PhyDLL provider requested but existing build is not configured with WITH_PHYDLL=ON; forcing compilation."
+    SKIP_COMPILE=0
+  fi
 fi
 if [[ -n "${FFMPEG_THREADS_ENV:-}" ]]; then
   FFMPEG_THREADS="${FFMPEG_THREADS_ENV}"
@@ -877,9 +909,19 @@ fi
 if [[ "${USE_GPU}" -eq 0 ]] && [[ "${MODEL_BACKEND:u}" == "TORCH" ]] && [[ "${TORCH_CPU_MODEL_CONVERT}" -eq 1 ]]; then
   MODEL_CPU_CONVERT_DIR="/tmp/${USER}/model_cpu_converted_${SLURM_JOB_ID}"
   MODEL_CPU_CONVERT_PATH="${MODEL_CPU_CONVERT_DIR}/$(basename "${MODEL_PATH_SOURCE%.*}")_cpu.pt"
-  mkdir -p "${MODEL_CPU_CONVERT_DIR}"
-  echo "Converting Torch model to CPU-compatible artifact: ${MODEL_PATH_SOURCE} -> ${MODEL_CPU_CONVERT_PATH}"
-  if ! python3 - "${MODEL_PATH_SOURCE}" "${MODEL_CPU_CONVERT_PATH}" <<'PY'
+  MODEL_CPU_ARTIFACT_PATH="${MODEL_PATH_SOURCE/_cuda/_cpu}"
+
+  if [[ "${MODEL_CPU_ARTIFACT_PATH}" != "${MODEL_PATH_SOURCE}" ]] && [[ -f "${MODEL_CPU_ARTIFACT_PATH}" ]]; then
+    echo "Using existing CPU model artifact: ${MODEL_CPU_ARTIFACT_PATH}"
+    MODEL_PATH_SOURCE="${MODEL_CPU_ARTIFACT_PATH}"
+  else
+    mkdir -p "${MODEL_CPU_CONVERT_DIR}"
+    if [[ -f "${MODEL_CPU_CONVERT_PATH}" ]]; then
+      echo "CPU-converted model already exists: ${MODEL_CPU_CONVERT_PATH}"
+    else
+      echo "Converting Torch model to CPU-compatible artifact: ${MODEL_PATH_SOURCE} -> ${MODEL_CPU_CONVERT_PATH}"
+      convert_start_ts=$(date +%s)
+      if ! python3 - "${MODEL_PATH_SOURCE}" "${MODEL_CPU_CONVERT_PATH}" <<'PY'
 import sys
 import torch
 
@@ -891,11 +933,16 @@ model = model.eval()
 torch.jit.save(model, dst)
 print(f"MODEL_CPU_CONVERT_OK src={src} dst={dst}")
 PY
-  then
-    echo "Error: CPU conversion failed for Torch model at ${MODEL_PATH_SOURCE}."
-    exit 1
+      then
+        echo "Error: CPU conversion failed for Torch model at ${MODEL_PATH_SOURCE}."
+        exit 1
+      fi
+      convert_end_ts=$(date +%s)
+      convert_elapsed=$((convert_end_ts - convert_start_ts))
+      echo "MODEL_CPU_CONVERT_TIME_S=${convert_elapsed}"
+    fi
+    MODEL_PATH_SOURCE="${MODEL_CPU_CONVERT_PATH}"
   fi
-  MODEL_PATH_SOURCE="${MODEL_CPU_CONVERT_PATH}"
 fi
 
 MODEL_PATH_FOR_SOLVER="${MODEL_PATH_SOURCE}"
@@ -1183,11 +1230,19 @@ if [[ "${RUN_SOLVER}" -eq 1 ]]; then
 
     COMPILE_START_TIME=$(date +%s)
 
-    COMPILE_ARG=""
+    COMPILE_ARGS=()
 
     if [[ "${USE_CPP_ML_INTERFACE}" -eq 1 ]]; then
       # enable the USE_CPP_ML_INTERFACE option defined in the CMakeLists.txt to compile the C++ ML inference interface
-      COMPILE_ARG="-DUSE_CPP_ML_INTERFACE=ON"
+      COMPILE_ARGS+=("-DUSE_CPP_ML_INTERFACE=ON")
+      if [[ "${CPP_ML_INTERFACE_PROVIDER:u}" == "PHYDLL" ]]; then
+        echo "Enabling WITH_PHYDLL=ON for CPP-ML PhyDLL provider."
+        COMPILE_ARGS+=("-DWITH_PHYDLL=ON")
+        if [[ ! -f "${MINI_APP_DIR}/../CPP-ML-Interface/extern/phydll/build/lib/libphydll.so" ]]; then
+          echo "PhyDLL library not found; building extern/phydll first."
+          "${MINI_APP_DIR}/../CPP-ML-Interface/build_phydll.sh"
+        fi
+      fi
     fi
 
     # by default, COMPILE_OUTPUT_PATH is "build", but if COMPILE_OUTPUT_SUBDIR is set it overrides it
@@ -1196,7 +1251,7 @@ if [[ "${RUN_SOLVER}" -eq 1 ]]; then
       rm -rf "solver_cpp/${COMPILE_OUTPUT_PATH}"
     fi
     mkdir -p "solver_cpp/${COMPILE_OUTPUT_PATH}"
-    cmake -S solver_cpp -B solver_cpp/${COMPILE_OUTPUT_PATH} ${COMPILE_ARG}
+    cmake -S solver_cpp -B solver_cpp/${COMPILE_OUTPUT_PATH} "${COMPILE_ARGS[@]}"
     cmake --build solver_cpp/${COMPILE_OUTPUT_PATH} -j
 
     COMPILE_END_TIME=$(date +%s)
@@ -1316,6 +1371,9 @@ if [[ "${RUN_SOLVER}" -eq 1 ]]; then
   if [[ -n "${CPP_ML_CONFIG}" ]]; then
     MODEL_IO_ARGS+=(--cpp-ml-config "${CPP_ML_CONFIG}")
   fi
+  if [[ -n "${ML_INTERFACE_MODE_LOWER}" ]]; then
+    MODEL_IO_ARGS+=(--ml-interface "${ML_INTERFACE_MODE_LOWER}")
+  fi
   if [[ "${FORCE_TERRAIN_UPLOAD_EACH_STEP}" -eq 1 ]]; then
     MODEL_IO_ARGS+=(--force-terrain-upload-each-step)
   fi
@@ -1365,13 +1423,16 @@ if [[ "${RUN_SOLVER}" -eq 1 ]]; then
     if [[ "${PHYDLL_DL_NODES}" -lt 1 ]]; then
       PHYDLL_DL_NODES=1
     fi
-    PHYDLL_DL_COUNT="${PHYDLL_DL_COUNT:-${NP_PHY}}"
-    export PHYDLL_DL_COUNT
+    PHYDLL_DL_FIELD_COUNT="${PHYDLL_DL_FIELD_COUNT:-${PHYDLL_DL_COUNT:-1}}"
+    if [[ "${PHYDLL_DL_FIELD_COUNT}" -lt 1 ]]; then
+      PHYDLL_DL_FIELD_COUNT=1
+    fi
+    export PHYDLL_DL_FIELD_COUNT
 
     PHYDLL_LIB_DIR="$(realpath "${MINI_APP_DIR}/../CPP-ML-Interface/extern/phydll/build/lib")"
     DL_LD_LIBRARY_PATH="${PHYDLL_LIB_DIR}:${LD_LIBRARY_PATH:-}"
 
-    echo "Launching PhyDLL with NP_PHY=${NP_PHY}, NP_DL=${PHYDLL_NP_DL}, PHYDLL_DL_COUNT=${PHYDLL_DL_COUNT}"
+    echo "Launching PhyDLL with NP_PHY=${NP_PHY}, NP_DL=${PHYDLL_NP_DL}, PHYDLL_DL_FIELD_COUNT=${PHYDLL_DL_FIELD_COUNT}"
     echo "Using DL client: ${DL_CLIENT_CMD[*]}"
 
     srun --export=ALL --het-group="${SOLVER_HET_GROUP}" --nodes "${_nodes:-1}" --ntasks-per-node "${_ntasks_per_node_num}" \

@@ -3,10 +3,9 @@
 #include <mpi.h>
 
 // project-specific headers
+#include "client.h"
 #ifdef USE_CPP_ML_INTERFACE
 #include "ml_coupling.hpp"
-#else
-#include "client.h"
 #endif
 
 // standard library headers
@@ -81,6 +80,7 @@ struct Config {
     int gpus_per_node = 1;
     int ml_nodes = -1;
     int ml_batch_size = 50000;
+    std::string ml_interface = "auto";
     bool force_terrain_upload_each_step = false;
 };
 
@@ -157,6 +157,8 @@ static void usage() {
         << "  --gpus-per-node <int>            Number of GPUs per node (default: 1)\n"
         << "  --ml-nodes <int>                 Number of ML/DB nodes for CPP-ML provider\n"
         << "  --ml-batch-size <int>            Max per-rank ML batch size (default: 50000)\n"
+        << "  --ml-interface <auto|cpp|smartsim>\n"
+        << "                                   ML interface selection (default: auto)\n"
         << "  --steps <int>                    Number of simulation steps (default: 100)\n"
         << "  --save-every <int>               Save every N steps (default: 1)\n"
         << "  --save-mode <periodic|triangular>\n"
@@ -648,7 +650,6 @@ static std::string get_processor_name() {
     return std::string(name.data(), static_cast<std::size_t>(length));
 }
 
-#ifndef USE_CPP_ML_INTERFACE
 static void log_cluster_shard_map(SmartRedis::Client* client,
                                   const Decomposition& decomp) {
     if (client == nullptr || decomp.world_rank != 0) {
@@ -781,7 +782,6 @@ static void log_model_execution_route(SmartRedis::Client* client,
                   << ": " << ex.what() << std::endl;
     }
 }
-#endif
 
 static std::string sync_mode_to_string(SyncMode mode) {
     if (mode == SyncMode::None) {
@@ -809,6 +809,19 @@ static std::string parse_device(const std::string& value) {
         return "GPU";
     }
     throw std::runtime_error("Unsupported device: " + value);
+}
+
+static std::string parse_ml_interface(const std::string& value) {
+    if (equals_ignore_case(value, "auto")) {
+        return "auto";
+    }
+    if (equals_ignore_case(value, "cpp")) {
+        return "cpp";
+    }
+    if (equals_ignore_case(value, "smartsim")) {
+        return "smartsim";
+    }
+    throw std::runtime_error("Unsupported --ml-interface: " + value);
 }
 
 static std::string parse_model_backend(const std::string& value) {
@@ -942,7 +955,7 @@ static Config parse_args(int argc, char** argv, int rank, int total_ranks) {
         } else if (arg == "--overwrite-output") {
             cfg.overwrite_output = true;
         } else if (arg == "--model-path" || arg == "--model-backend" || arg == "--model-io-layout" || arg == "--model-inputs" || arg == "--model-outputs" ||
-                   arg == "--cpp-ml-config" ||
+               arg == "--cpp-ml-config" || arg == "--ml-interface" ||
                    arg == "--input-hdf5" || arg == "--output-hdf5" ||
                    arg == "--steps" || arg == "--device" ||
                    arg == "--gpus-per-node" || arg == "--ml-nodes" || arg == "--ml-batch-size" ||
@@ -962,6 +975,8 @@ static Config parse_args(int argc, char** argv, int rank, int total_ranks) {
                 cfg.model_outputs = split_csv(value);
             } else if (arg == "--cpp-ml-config") {
                 cfg.cpp_ml_config = value;
+            } else if (arg == "--ml-interface") {
+                cfg.ml_interface = parse_ml_interface(value);
             } else if (arg == "--gpus-per-node") {
                 const int gpus = std::stoi(value);
                 require(gpus >= 0, "--gpus-per-node must be >= 0.");
@@ -1716,7 +1731,6 @@ static double compute_local_step_ml_cpp(MLCoupling<float, float>& ml_coupling,
 
     return moved;
 }
-#else
 static double compute_local_step_ml_smartsim(SmartRedis::Client* client,
     const std::vector<float>& terrain,
     const std::vector<float>& current,
@@ -2920,21 +2934,18 @@ int main(int argc, char** argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm solver_comm = MPI_COMM_WORLD;
     MPI_Comm solver_app_comm = MPI_COMM_NULL;
-    int* appnum_ptr = nullptr;
-    int appnum_flag = 0;
-    MPI_Comm_get_attr(MPI_COMM_WORLD, MPI_APPNUM, &appnum_ptr, &appnum_flag);
-    const int app_id = (appnum_flag && appnum_ptr != nullptr) ? *appnum_ptr : 0;
-    if (appnum_flag) {
-        const int color = (app_id == 0) ? 0 : MPI_UNDEFINED;
-        MPI_Comm_split(MPI_COMM_WORLD, color, world_rank, &solver_app_comm);
-        if (solver_app_comm != MPI_COMM_NULL) {
-            solver_comm = solver_app_comm;
-            MPI_Comm_rank(solver_comm, &world_rank);
-            MPI_Comm_size(solver_comm, &world_size);
-        } else {
-            MPI_Finalize();
-            return 0;
-        }
+
+    // We no longer rely on MPI_APPNUM, because Slurm srun with OpenMPI 5 assigns appnum 0 to both components!
+    // Since this binary is ALWAYS the solver, we unconditionally assign it color 0.
+    const int color = 0;
+    MPI_Comm_split(MPI_COMM_WORLD, color, world_rank, &solver_app_comm);
+    if (solver_app_comm != MPI_COMM_NULL) {
+        solver_comm = solver_app_comm;
+        MPI_Comm_rank(solver_comm, &world_rank);
+        MPI_Comm_size(solver_comm, &world_size);
+    } else {
+        MPI_Finalize();
+        return 0;
     }
     g_solver_comm = solver_comm;
     record_interface_counters_start(solver_comm);
@@ -2942,6 +2953,7 @@ int main(int argc, char** argv) {
 
     bool use_smartsim = false;
     bool use_ml_interface = false;
+    SmartRedis::Client* client = nullptr;
 #ifdef USE_CPP_ML_INTERFACE
     bool cpp_ml_provider_is_aix = false;
     std::unique_ptr<MLCoupling<float, float>> ml_coupling;
@@ -2969,32 +2981,61 @@ int main(int argc, char** argv) {
 #endif
         }
 
-        // Prepare smartsim
-        bool ssdb_available = (getenv("SSDB") != nullptr);
-
-        #ifdef USE_CPP_ML_INTERFACE
-        use_smartsim = false; // We use the interface instead
-        if (ssdb_available && world_rank == 0) {
-             std::cout << "Note: SSDB is set to " << getenv("SSDB") << " but using CPP-ML-Interface." << std::endl;
+        // Prepare smartsim / ML interface selection
+        const bool ssdb_available = (getenv("SSDB") != nullptr);
+        std::string ml_interface = to_lower_copy(cfg.ml_interface);
+        if (ml_interface == "auto") {
+            const std::string env_choice = to_lower_copy(get_env_string("ML_INTERFACE"));
+            if (!env_choice.empty()) {
+                ml_interface = env_choice;
+            }
         }
-        #else
-        if (!ssdb_available) {
-            if (world_rank == 0) std::cout << "SSDB not set. Disabling Smartsim" << std::endl;
+        if (ml_interface == "auto") {
+            const int use_smartsim_env = get_env_int("USE_SMARTSIM", -1);
+            if (use_smartsim_env == 1) {
+                ml_interface = "smartsim";
+            } else if (use_smartsim_env == 0) {
+                ml_interface = "cpp";
+            }
+        }
+#ifdef USE_CPP_ML_INTERFACE
+        const bool cpp_interface_available = true;
+#else
+        const bool cpp_interface_available = false;
+#endif
+        if (ml_interface == "cpp") {
+            require(cpp_interface_available,
+                    "CPP-ML interface requested but binary was built without USE_CPP_ML_INTERFACE.");
             use_smartsim = false;
-        } else {
-            if (world_rank == 0) std::cout << "Expecting smartsim database/orchestrator at " << getenv("SSDB") << std::endl;
+            use_ml_interface = true;
+        } else if (ml_interface == "smartsim") {
+            require(ssdb_available, "SSDB not set. Cannot use SmartSim direct mode.");
             use_smartsim = true;
+            use_ml_interface = true;
+        } else {
+#ifdef USE_CPP_ML_INTERFACE
+            use_smartsim = false;
+            use_ml_interface = true;
+#else
+            if (!ssdb_available) {
+                if (world_rank == 0) std::cout << "SSDB not set. Disabling Smartsim" << std::endl;
+                use_smartsim = false;
+                use_ml_interface = false;
+            } else {
+                if (world_rank == 0) std::cout << "Expecting smartsim database/orchestrator at " << getenv("SSDB") << std::endl;
+                use_smartsim = true;
+                use_ml_interface = true;
+            }
+#endif
         }
-        #endif
+        if (!use_smartsim && ssdb_available && world_rank == 0) {
+            std::cout << "Note: SSDB is set to " << getenv("SSDB") << " but using CPP-ML-Interface." << std::endl;
+        }
+        if (world_rank == 0) {
+            std::cout << "Resolved ML interface: " << (use_smartsim ? "smartsim" : (use_ml_interface ? "cpp" : "none")) << std::endl;
+        }
         log_memory_usage(world_rank, "after_smartsim_env_check");
 
-#ifdef USE_CPP_ML_INTERFACE
-        use_ml_interface = true;
-    (void)use_smartsim;
-#else
-        use_ml_interface = use_smartsim;
-        SmartRedis::Client* client = nullptr;
-    #ifndef USE_CPP_ML_INTERFACE
         if (use_smartsim) {
             log_memory_usage(world_rank, "before_direct_smartsim_client");
             client = new SmartRedis::Client("terrain_solver_" + std::to_string(world_rank));
@@ -3151,8 +3192,6 @@ int main(int argc, char** argv) {
 
 
         }
-    #endif
-    #endif
 
         std::size_t nz_u = 0;
         std::size_t nx_u = 0;
@@ -3169,15 +3208,14 @@ int main(int argc, char** argv) {
         Decomposition decomp = build_decomposition(cfg, solver_comm, world_rank, world_size, nx, nz);
         log_memory_usage(world_rank, "after_build_decomposition");
 
-        #ifndef USE_CPP_ML_INTERFACE
-            if (use_smartsim) {
+        if (use_smartsim) {
             log_cluster_shard_map(client, decomp);
         }
-        #endif
 
         #ifdef USE_CPP_ML_INTERFACE
+            if (use_ml_interface && !use_smartsim) {
                 if (cfg.cpp_ml_config.empty()) {
-                    throw std::runtime_error("--cpp-ml-config is required when USE_CPP_ML_INTERFACE is enabled.");
+                    throw std::runtime_error("--cpp-ml-config is required when using the CPP-ML interface.");
                 }
                 if (!std::filesystem::exists(cfg.cpp_ml_config)) {
                     throw std::runtime_error("CPP-ML config file not found: " + cfg.cpp_ml_config);
@@ -3285,6 +3323,7 @@ int main(int argc, char** argv) {
                 if (!ml_coupling) {
                     throw std::runtime_error("Failed to create MLCoupling from config: " + cfg.cpp_ml_config);
                 }
+            }
         #endif
 
         if (world_rank == 0) {
@@ -3327,7 +3366,6 @@ int main(int argc, char** argv) {
 
         // Split the terrain data into width x height many 3x3 tiles (one tile per cell), and pack each tile into a contiguous 9-float array. This is the format expected by the ML model. 
 
-    #ifndef USE_CPP_ML_INTERFACE
         if (use_smartsim) {
 
             if (cfg.force_terrain_upload_each_step) {
@@ -3403,7 +3441,6 @@ int main(int argc, char** argv) {
             }
 
         }
-    #endif
 
         StepScratch step_scratch(decomp.local_nz, decomp.local_nx);
 
@@ -3481,18 +3518,30 @@ int main(int argc, char** argv) {
                 
                 if (use_ml_step) {
                     #ifdef USE_CPP_ML_INTERFACE
-                        moved_this_step_local = compute_local_step_ml_cpp(
-                            *ml_coupling,
-                            terrain,
-                            water,
-                            next,
-                            decomp,
-                            cfg.clamp_epsilon,
-                            cfg,
-                            ml_tile_output,
-                            cpp_ml_buffers,
-                            cpp_ml_provider_is_aix,
-                            step);
+                        if (use_smartsim) {
+                            moved_this_step_local = compute_local_step_ml_smartsim(
+                                client,
+                                terrain,
+                                water,
+                                next,
+                                decomp,
+                                cfg.clamp_epsilon,
+                                cfg,
+                                ml_tile_output);
+                        } else {
+                            moved_this_step_local = compute_local_step_ml_cpp(
+                                *ml_coupling,
+                                terrain,
+                                water,
+                                next,
+                                decomp,
+                                cfg.clamp_epsilon,
+                                cfg,
+                                ml_tile_output,
+                                cpp_ml_buffers,
+                                cpp_ml_provider_is_aix,
+                                step);
+                        }
                     #else
                         moved_this_step_local = compute_local_step_ml_smartsim(
                             client,

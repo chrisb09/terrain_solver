@@ -28,7 +28,7 @@ def parse_args():
     p.add_argument(
         "--artifact-manifest",
         type=Path,
-        default=Path("train_models/model_a/artifact_manifest_transformer_mlp.json"),
+        default=Path("train_models/model_a/artifact_manifest_transformer_split.json"),
         help="Artifact manifest written by train.py.",
     )
     p.add_argument(
