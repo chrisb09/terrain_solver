@@ -60,4 +60,4 @@ submit_sequential "CMI_smartsim_${PREFIX}_force_terrain" "ALL,USE_SMARTSIM=0,FOR
 submit_sequential "CMI_aix_${PREFIX}_terrain_solver" "USE_SMARTSIM=0,CPP_ML_INTERFACE_PROVIDER_ENV=AIX,SKIP_COMPILE_ENV=1"
 
 # 5. PhyDLL via CPP-ML-Interface
-submit_sequential "CMI_phydll_${PREFIX}_terrain_solver" "USE_SMARTSIM=0,CPP_ML_INTERFACE_PROVIDER_ENV=PHYDLL,SKIP_COMPILE_ENV=1" "--time=00:30:00"
+submit_sequential "CMI_phydll_${PREFIX}_terrain_solver" "USE_SMARTSIM=0,CPP_ML_INTERFACE_PROVIDER_ENV=PHYDLL,SKIP_COMPILE_ENV=1" "--time=00:30:00" 

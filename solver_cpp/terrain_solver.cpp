@@ -633,6 +633,12 @@ static bool provider_class_is_aix(const std::string& provider_class) {
            provider_class == "mlcouplingprovideraixelerator";
 }
 
+static bool provider_class_is_smartsim(const std::string& provider_class) {
+    return provider_class == "smartsim" ||
+           provider_class == "smartsimprovider" ||
+           provider_class == "mlcouplingprovidersmartsim";
+}
+
 static bool provider_class_is_phydll(const std::string& provider_class) {
     return provider_class == "phydll" ||
            provider_class == "mlcouplingproviderphydll";
@@ -2956,6 +2962,7 @@ int main(int argc, char** argv) {
     SmartRedis::Client* client = nullptr;
 #ifdef USE_CPP_ML_INTERFACE
     bool cpp_ml_provider_is_aix = false;
+    bool cpp_ml_provider_is_smartsim = false;
     std::unique_ptr<MLCoupling<float, float>> ml_coupling;
     CppMlBuffers cpp_ml_buffers;
 #endif
@@ -3225,6 +3232,7 @@ int main(int argc, char** argv) {
                 const std::string cpp_ml_provider_class = config_provider_class(cpp_ml_config_text);
                 cpp_ml_provider_is_aix = provider_class_is_aix(cpp_ml_provider_class);
                 const bool cpp_ml_provider_is_phydll = provider_class_is_phydll(cpp_ml_provider_class);
+                cpp_ml_provider_is_smartsim = provider_class_is_smartsim(cpp_ml_provider_class);
 
                 const bool use_flat_model_io = (cfg.model_io_layout == "flat_contiguous");
                 if (cpp_ml_provider_is_aix && !use_flat_model_io) {
@@ -3308,7 +3316,8 @@ int main(int argc, char** argv) {
                     cpp_ml_overrides.emplace("provider.num_gpus", static_cast<int64_t>(cfg.gpus_per_node));
                     cpp_ml_overrides.emplace("provider.batch_size", static_cast<int64_t>(cfg.ml_batch_size));
                 }
-                if (!cpp_ml_provider_is_aix && cfg.ml_nodes > 0) {
+                if (cpp_ml_provider_is_smartsim &&
+                    cfg.ml_nodes > 0) {
                     cpp_ml_overrides.emplace("provider.nodes", static_cast<int64_t>(cfg.ml_nodes));
                 }
 

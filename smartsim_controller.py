@@ -83,16 +83,18 @@ db = exp.create_database(port=6780,
 #                         time="00:10:00",
                          single_cmd=False,
                          db_nodes=args.db_nodes,
-#                         intra_op_threads=1, # Threads within operations
-#                         inter_op_threads=args.cpu_cores_per_node # Threads for parallelism between operations, usually its better to prefer intra-op parallelism for ML models
+                         intra_op_threads=8, # Parallelism within a single model execution
+                         inter_op_threads=1, # Parallelism between independent ops (usually 1 is fine)
+                         threads_per_queue=min(8, args.cpu_cores_per_node // 8) if args.cpu_cores_per_node >= 8 else 1
                          )
 
 db.set_run_arg("export", "ALL")
-if args.het_group is not None:
+# Only apply het-group if we are actually in a heterogeneous job allocation.
+if args.het_group is not None and (env.get("SLURM_HET_SIZE") or env.get("SLURM_JOB_NUM_NODES_HET_GROUP_0")):
     db.set_run_arg("het-group", args.het_group)
     
-#if not use_gpu:
-#    db.set_cpus(args.cpu_cores_per_node)
+if not use_gpu:
+    db.set_cpus(args.cpu_cores_per_node)
 
 exp.start(db, block=False, summary=True)
 

@@ -108,8 +108,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${SMARTREDIS_DIR}/install/inc
 target_link_directories(${PROJECT_NAME} PRIVATE ${SMARTREDIS_DIR}/install/lib64)
 target_link_libraries(${PROJECT_NAME} PRIVATE smartredis)
 
-# Link against the CPP-ML-Interface headers (no .so required)
-target_link_libraries(${PROJECT_NAME} PRIVATE cpp_ml_interface_headers)
+# Link against the CPP-ML-Interface headers and library
+target_link_libraries(${PROJECT_NAME} PRIVATE cpp_ml_interface_headers cpp_ml_interface_library)
 
 # Add Intel compiler libraries path for SmartRedis dependencies
 target_link_directories(${PROJECT_NAME} PRIVATE ${CUSTOM_CORE_DEPENDENCIES_DIR}/imkl/2024.2.0/compiler/2024.2/lib)

@@ -69,8 +69,25 @@ USE_SMARTSIM=${USE_SMARTSIM:-0} # directly use SmartSim for model management and
 USE_CPP_ML_INTERFACE=$(( ! USE_SMARTSIM ))
 CPP_ML_INTERFACE_PROVIDER="SMARTSIM" # SMARTSIM, AIX, PHYDLL
 CPP_ML_INTERFACE_LOG_LEVEL="info" # debug, info, warning, error
-SOLVER_HET_GROUP=0
-DB_HET_GROUP=1
+# Detect if we are running in a heterogeneous job allocation.
+# We check SLURM_HET_SIZE or if a specific het-group variable exists.
+if [[ -n "${SLURM_HET_SIZE:-}" ]] || [[ -n "${SLURM_JOB_NUM_NODES_HET_GROUP_0:-}" ]]; then
+  SOLVER_HET_GROUP=0
+  DB_HET_GROUP=1
+else
+  # Single allocation mode (e.g. devel partition)
+  SOLVER_HET_GROUP=0
+  DB_HET_GROUP=0
+fi
+
+# Helper function to get the --het-group flag for srun only if we are in a hetjob.
+get_srun_het_flag() {
+  local grp="$1"
+  if [[ -n "${SLURM_HET_SIZE:-}" ]] || [[ -n "${SLURM_JOB_NUM_NODES_HET_GROUP_0:-}" ]]; then
+    echo "--het-group=${grp}"
+  fi
+}
+
 export MLCOUPLING_SOLVER_HET_GROUP="${SOLVER_HET_GROUP}"
 export MLCOUPLING_SMARTSIM_HET_GROUP="${DB_HET_GROUP}"
 export SMARTSIM_DB_HET_GROUP="${DB_HET_GROUP}"
@@ -119,7 +136,7 @@ fi
 #MODEL_NAME="perfect_model"
 #MODEL_NAME="transformer_mlp"
 #MODEL_NAME="watercnn_a"
-MODEL_NAME="benchmark_giant_mlp"
+MODEL_NAME="${MODEL_NAME_ENV:-benchmark_giant_mlp}"
 
 if [[ "${MODEL_NAME}" == "perfect_model" ]]; then
   MODEL_ARTIFACT_MANIFEST="train_models/model_a/artifact_manifest_perfect_split.json"
@@ -340,16 +357,9 @@ _solver_nodes_var="SLURM_JOB_NUM_NODES_HET_GROUP_${SOLVER_HET_GROUP}"
 _solver_ntasks_var="SLURM_NTASKS_HET_GROUP_${SOLVER_HET_GROUP}"
 _solver_ntasks_per_node_var="SLURM_NTASKS_PER_NODE_HET_GROUP_${SOLVER_HET_GROUP}"
 
-_nodes="${(P)_solver_nodes_var:-${SLURM_JOB_NUM_NODES:-}}"
-_ntasks_per_node="${(P)_solver_ntasks_per_node_var:-${SLURM_NTASKS_PER_NODE:-}}"
-_cpus_per_task="${SLURM_CPUS_PER_TASK:-}"
-
-# SLURM_NTASKS_PER_NODE can be formatted like "24(x2)" or comma-separated in hetjobs.
-_ntasks_per_node_num="${_ntasks_per_node%%\(*}"
-_ntasks_per_node_num="${_ntasks_per_node_num%%,*}"
-if [[ -z "${_ntasks_per_node_num}" ]]; then
-  _ntasks_per_node_num=1
-fi
+_nodes="${(P)_solver_nodes_var:-${SLURM_JOB_NUM_NODES:-1}}"
+_ntasks_per_node_raw="${(P)_solver_ntasks_per_node_var:-${SLURM_NTASKS_PER_NODE:-}}"
+_cpus_per_task="${SLURM_CPUS_PER_TASK:-1}"
 
 # Prefer Slurm's already-computed task count for the selected solver het-group.
 if [[ -n "${(P)_solver_ntasks_var:-}" ]]; then
@@ -357,8 +367,26 @@ if [[ -n "${(P)_solver_ntasks_var:-}" ]]; then
 elif [[ -n "${SLURM_NTASKS:-}" ]] && [[ -z "${SLURM_HET_SIZE:-}" ]]; then
   MPI_RANKS="${SLURM_NTASKS}"
 else
-  MPI_RANKS=$(( ${_nodes:-1} * ${_ntasks_per_node_num} ))
+  # Calculate fallback MPI_RANKS from node and task count.
+  # We extract the numeric part of raw ntasks-per-node for the multiplication.
+  _tmp_ntasks_per_node="${_ntasks_per_node_raw%%\(*}"
+  _tmp_ntasks_per_node="${_tmp_ntasks_per_node%%,*}"
+  MPI_RANKS=$(( _nodes * ${_tmp_ntasks_per_node:-1} ))
 fi
+
+# Ensure _ntasks_per_node is populated for the job name template
+if [[ -z "${_ntasks_per_node_raw}" ]]; then
+  _ntasks_per_node=$(( MPI_RANKS / _nodes ))
+else
+  _ntasks_per_node="${_ntasks_per_node_raw}"
+fi
+
+# Extract the numeric part of tasks-per-node for use in srun and other calculations.
+# SLURM_NTASKS_PER_NODE can be formatted like "24(x2)" or comma-separated in hetjobs.
+_ntasks_per_node_num="${_ntasks_per_node%%\(*}"
+_ntasks_per_node_num="${_ntasks_per_node_num%%,*}"
+_ntasks_per_node_num="${_ntasks_per_node_num:-1}"
+
 echo "Calculated MPI_RANKS=${MPI_RANKS} from _nodes=${_nodes}, _ntasks_per_node=${_ntasks_per_node}, SLURM_NTASKS=${SLURM_NTASKS}, and _solver_ntasks_var=${(P)_solver_ntasks_var:-}"
 IO_MODE="rank0_gather"     # parallel_hdf5, rank0_gather
 MPI_SYNC_MODE="none"        # none, step, report
@@ -742,7 +770,7 @@ if [[ ( "${USE_SMARTSIM}" -eq 1 || ( "${USE_CPP_ML_INTERFACE}" -eq 1 && ( "${CPP
     local cp_rc
 
     setopt pipefail
-    srun --export=ALL --het-group="${het_group}" --nodes "${node_count}" --ntasks-per-node 1 --cpus-per-task 1 \
+    srun --export=ALL $(get_srun_het_flag "${het_group}") --nodes "${node_count}" --ntasks-per-node 1 --cpus-per-task 1 \
       $([[ "${node_count}" -gt 1 ]] && echo "--distribution=block") \
       /bin/zsh -lc "set -euo pipefail; cp -f '${RUNTIME_TAR_PATH}' '${LOCAL_RUNTIME_TAR}'; test -s '${LOCAL_RUNTIME_TAR}'; echo RUNTIME_TAR_COPY_PER_NODE label=${label} het_group=${het_group} host=\$(hostname) tar='${LOCAL_RUNTIME_TAR}'" \
       2>&1 | tee -a "${RUNTIME_STAGE_LOG}"
@@ -786,7 +814,7 @@ if [[ ( "${USE_SMARTSIM}" -eq 1 || ( "${USE_CPP_ML_INTERFACE}" -eq 1 && ( "${CPP
     local stage_rc
 
     setopt pipefail
-    srun --export=ALL --het-group="${het_group}" --nodes "${node_count}" --ntasks-per-node 1 --cpus-per-task 1 \
+    srun --export=ALL $(get_srun_het_flag "${het_group}") --nodes "${node_count}" --ntasks-per-node 1 --cpus-per-task 1 \
       $([[ "${node_count}" -gt 1 ]] && echo "--distribution=block") \
       /bin/zsh -lc "set -euo pipefail; df -h /tmp; mkdir -p '${LOCAL_RUNTIME_BASE}'; tar -xf '${LOCAL_RUNTIME_TAR}' -C '${LOCAL_RUNTIME_BASE}'; test -x '${LOCAL_RUNTIME_ENV}/bin/python3'; echo RUNTIME_STAGE_PER_NODE label=${label} het_group=${het_group} host=\$(hostname) runtime='${LOCAL_RUNTIME_ENV}'" \
       2>&1 | tee -a "${RUNTIME_STAGE_LOG}"
@@ -1024,7 +1052,7 @@ if [[ "${USE_LOCAL_MODEL_CACHE}" -eq 1 ]]; then
     if [[ "${#group_nodes[@]}" -eq 0 ]]; then
       echo "Warning: Could not resolve explicit node list for het-group ${het_group}; falling back to single srun staging." | tee -a "${MODEL_STAGE_LOG}"
       setopt pipefail
-      srun --export=ALL --het-group="${het_group}" --nodes "${node_count}" --ntasks-per-node 1 --cpus-per-task 1 \
+      srun --export=ALL $(get_srun_het_flag "${het_group}") --nodes "${node_count}" --ntasks-per-node 1 --cpus-per-task 1 \
         $([[ "${node_count}" -gt 1 ]] && echo "--distribution=block") \
         /bin/zsh -lc "set -euo pipefail; _t0=\$(date +%s); mkdir -p \"${MODEL_LOCAL_DIR}\"; cp -f \"${MODEL_PATH_SOURCE}\" \"${MODEL_LOCAL_PATH}\"; test -s \"${MODEL_LOCAL_PATH}\"; _t1=\$(date +%s); echo MODEL_STAGE_PER_NODE label=${label} het_group=${het_group} host=\$(hostname) duration_s=\$((_t1-_t0)) path=${MODEL_LOCAL_PATH}" \
         2>&1 | tee -a "${MODEL_STAGE_LOG}"
@@ -1042,7 +1070,7 @@ if [[ "${USE_LOCAL_MODEL_CACHE}" -eq 1 ]]; then
         node_ok=0
         for attempt in {1..${MODEL_STAGE_MAX_RETRIES}}; do
           set +e
-          srun --export=ALL --het-group="${het_group}" --nodes 1 --ntasks 1 --cpus-per-task 1 --nodelist "${node}" \
+          srun --export=ALL $(get_srun_het_flag "${het_group}") --nodes 1 --ntasks 1 --cpus-per-task 1 --nodelist "${node}" \
             /bin/zsh -lc "set -euo pipefail; _t0=\$(date +%s); mkdir -p \"${MODEL_LOCAL_DIR}\"; cp -f \"${MODEL_PATH_SOURCE}\" \"${MODEL_LOCAL_PATH}\"; test -s \"${MODEL_LOCAL_PATH}\"; _t1=\$(date +%s); echo MODEL_STAGE_PER_NODE label=${label} het_group=${het_group} host=\$(hostname) duration_s=\$((_t1-_t0)) path=${MODEL_LOCAL_PATH}" \
             >> "${MODEL_STAGE_LOG}" 2>&1
           stage_rc=$?
@@ -1056,7 +1084,7 @@ if [[ "${USE_LOCAL_MODEL_CACHE}" -eq 1 ]]; then
           echo "MODEL_STAGE_ERROR label=${label} het_group=${het_group} host=${node} attempt=${attempt}/${MODEL_STAGE_MAX_RETRIES} rc=${stage_rc}" | tee -a "${MODEL_STAGE_LOG}"
 
           set +e
-          srun --export=ALL --het-group="${het_group}" --nodes 1 --ntasks 1 --cpus-per-task 1 --nodelist "${node}" \
+          srun --export=ALL $(get_srun_het_flag "${het_group}") --nodes 1 --ntasks 1 --cpus-per-task 1 --nodelist "${node}" \
             /bin/zsh -lc "set +e; echo MODEL_STAGE_DIAG host=\$(hostname); echo MODEL_STAGE_DIAG pwd=\$(pwd); ls -ld \"${LOCAL_FAST_ROOT}\" \"${MODEL_LOCAL_DIR}\" 2>/dev/null || true; df -h \"${LOCAL_FAST_ROOT}\" 2>/dev/null || true; df -i \"${LOCAL_FAST_ROOT}\" 2>/dev/null || true; test -r \"${MODEL_PATH_SOURCE}\" && echo MODEL_STAGE_DIAG model_source_readable=1 || echo MODEL_STAGE_DIAG model_source_readable=0" \
             >> "${MODEL_STAGE_LOG}" 2>&1
           set -e
@@ -1159,6 +1187,11 @@ except Exception:
     print(-1)
 " 2>/dev/null || echo "-1")
   echo "Trajectory file exists. Last saved step: ${LAST_STEP_IN_TRAJ} (target: ${TOTAL_STEPS})"
+fi
+
+if [[ "${FORCE_FRESH_RUN_ENV:-0}" == "1" ]]; then
+  echo "FORCE_FRESH_RUN_ENV is set; ignoring existing trajectory and starting fresh."
+  LAST_STEP_IN_TRAJ=-1
 fi
 
 SOLVE_DURATION=0
@@ -1272,7 +1305,7 @@ if [[ "${RUN_SOLVER}" -eq 1 ]]; then
       mkdir -p logs
       : > "${DB_PREFLIGHT_LOG}"
       set +e
-      srun --export=ALL --het-group="${DB_HET_GROUP}" --nodes "${DB_NODES}" --ntasks-per-node 1 --cpus-per-task 1 \
+      srun --export=ALL $(get_srun_het_flag "${DB_HET_GROUP}") --nodes "${DB_NODES}" --ntasks-per-node 1 --cpus-per-task 1 \
         $([[ "${DB_NODES}" -gt 1 ]] && echo "--distribution=block") \
         /bin/zsh -lc 'set +e; _host=$(hostname); _ib=$(ip -o -4 addr show ib0 2>/dev/null | awk "{print \$4}" | head -n1); if [[ -z "${_ib}" ]]; then _ib="missing"; fi; echo "DB_PREFLIGHT host=${_host} ib0=${_ib}"; python3 -c "import socket; s=socket.socket(); s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1); s.bind((\"0.0.0.0\", 6780)); s.close(); print(\"DB_PREFLIGHT port_bind_6780=ok\")" 2>/dev/null || echo "DB_PREFLIGHT port_bind_6780=fail"; _root="${LOCAL_FAST_ROOT:-/tmp}"; _probe="${_root%/}/.db_preflight_${SLURM_JOB_ID}_$$"; mkdir -p "${_probe}" 2>/dev/null && echo "DB_PREFLIGHT fs_write=ok root=${_root}" && rmdir "${_probe}" 2>/dev/null || echo "DB_PREFLIGHT fs_write=fail root=${_root}"' \
         2>&1 | tee -a "${DB_PREFLIGHT_LOG}"
@@ -1307,7 +1340,11 @@ if [[ "${RUN_SOLVER}" -eq 1 ]]; then
     while [[ "${controller_attempt}" -le "${CONTROLLER_START_MAX_RETRIES}" ]]; do
       rm -f "${DB_HOSTNAME_FILE}"
       echo "=== CONTROLLER_ATTEMPT ${controller_attempt}/${CONTROLLER_START_MAX_RETRIES} ===" >> "${driver_log}"
-      ${python_path} smartsim_controller.py --db_nodes "${DB_NODES}" --het_group="${DB_HET_GROUP}" --hostname_file="${DB_HOSTNAME_FILE}" $([ "${USE_GPU}" -eq 1 ] && echo "--use_gpu") --cpu_cores_per_node="${ML_INFERENCE_CPU_CORES}" >> "${driver_log}" 2>&1 &
+      ${python_path} smartsim_controller.py --db_nodes "${DB_NODES}" \
+          $([[ -n "${SLURM_HET_SIZE:-}" || -n "${SLURM_JOB_NUM_NODES_HET_GROUP_0:-}" ]] && echo "--het_group=${DB_HET_GROUP}") \
+          --hostname_file="${DB_HOSTNAME_FILE}" \
+          $([ "${USE_GPU}" -eq 1 ] && echo "--use_gpu") \
+          --cpu_cores_per_node="${ML_INFERENCE_CPU_CORES}" >> "${driver_log}" 2>&1 &
       DRIVER_PID=$!
       echo "Wait until database hostname file ${DB_HOSTNAME_FILE} is created by the SmartSim controller...(attempt ${controller_attempt}/${CONTROLLER_START_MAX_RETRIES}, at most ${max_wait_time}s)"
       wait_time=0
@@ -1391,6 +1428,11 @@ if [[ "${RUN_SOLVER}" -eq 1 ]]; then
     device="GPU"
   fi
 
+  # Prevent PyTorch/OpenMP thread oversubscription in AIX provider.
+  # For MPI-parallelized solver, each task should typically use only 1 thread.
+  export OMP_NUM_THREADS=1
+  export TORCH_NUM_THREADS=1
+
   if [[ "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:u}" == "PHYDLL" ]]; then
     USE_PYTHON_DL_CLIENT=${USE_PYTHON_DL_CLIENT:-0}
     PHYDLL_REBUILD_DL_CLIENT=${PHYDLL_REBUILD_DL_CLIENT:-1}
@@ -1435,7 +1477,7 @@ if [[ "${RUN_SOLVER}" -eq 1 ]]; then
     echo "Launching PhyDLL with NP_PHY=${NP_PHY}, NP_DL=${PHYDLL_NP_DL}, PHYDLL_DL_FIELD_COUNT=${PHYDLL_DL_FIELD_COUNT}"
     echo "Using DL client: ${DL_CLIENT_CMD[*]}"
 
-    srun --export=ALL --het-group="${SOLVER_HET_GROUP}" --nodes "${_nodes:-1}" --ntasks-per-node "${_ntasks_per_node_num}" \
+    srun --export=ALL $(get_srun_het_flag "${SOLVER_HET_GROUP}") --nodes "${_nodes:-1}" --ntasks-per-node "${_ntasks_per_node_num}" \
       --cpus-per-task 1 \
       ${SRUN_DIST} \
       ./solver_cpp/${COMPILE_OUTPUT_PATH}/terrain_solver \
@@ -1470,7 +1512,7 @@ if [[ "${RUN_SOLVER}" -eq 1 ]]; then
       unset SSDB
     fi
 
-    srun --export=ALL --het-group="${SOLVER_HET_GROUP}" --ntasks-per-node "${_ntasks_per_node_num}" \
+    srun --export=ALL $(get_srun_het_flag "${SOLVER_HET_GROUP}") --ntasks-per-node "${_ntasks_per_node_num}" \
       --cpus-per-task 1 \
       ${SRUN_DIST} \
       ./solver_cpp/${COMPILE_OUTPUT_PATH}/terrain_solver \
