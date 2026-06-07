@@ -24,3 +24,15 @@ stdout
 close_driver*
 
 solver_cpp/build
+
+# Local/Runtime files
+core.*
+logs/
+job_plot.png
+phydll-*.log
+q_monitor_last_data.txt
+test_appnum
+test_eval.sh
+output_*.txt
+train_models_old/
+

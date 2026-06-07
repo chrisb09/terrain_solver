@@ -168,7 +168,7 @@ if [[ "${USE_CPP_ML_INTERFACE}" -eq 1 ]]; then
   if [[ "${_cpp_provider}" == "PHYDLL" ]]; then
     MODEL_STAGE_SOLVER_GROUP=0
   elif [[ "${_cpp_provider}" == "AIX" ]]; then
-    MODEL_STAGE_DB_GROUP=0
+    MODEL_STAGE_DB_GROUP=1
   fi
 fi
 DB_NODE_PREFLIGHT=1
@@ -1114,15 +1114,21 @@ if [[ "${USE_LOCAL_MODEL_CACHE}" -eq 1 ]]; then
   }
 
   local_cache_ok=1
+  local solver_staged=0
   if [[ "${MODEL_STAGE_SOLVER_GROUP}" -eq 1 ]]; then
     if ! stage_model_to_group "${SOLVER_HET_GROUP}" "${_nodes:-1}" "solver"; then
       local_cache_ok=0
+    else
+      solver_staged=1
     fi
   fi
 
-  if [[ "${local_cache_ok}" -eq 1 ]] && [[ "${MODEL_STAGE_DB_GROUP}" -eq 1 ]] && [[ "${DB_HET_GROUP}" -ne "${SOLVER_HET_GROUP}" ]]; then
-    if ! stage_model_to_group "${DB_HET_GROUP}" "${DB_NODES}" "db"; then
-      local_cache_ok=0
+  if [[ "${local_cache_ok}" -eq 1 ]] && [[ "${MODEL_STAGE_DB_GROUP}" -eq 1 ]]; then
+    # Stage to DB group if it's a different group, OR if it's the same group but we haven't staged it yet
+    if [[ "${DB_HET_GROUP}" -ne "${SOLVER_HET_GROUP}" ]] || [[ "${solver_staged}" -eq 0 ]]; then
+      if ! stage_model_to_group "${DB_HET_GROUP}" "${DB_NODES}" "db"; then
+        local_cache_ok=0
+      fi
     fi
   fi
 
@@ -1474,69 +1480,164 @@ if [[ "${RUN_SOLVER}" -eq 1 ]]; then
     PHYDLL_LIB_DIR="$(realpath "${MINI_APP_DIR}/../CPP-ML-Interface/extern/phydll/build/lib")"
     DL_LD_LIBRARY_PATH="${PHYDLL_LIB_DIR}:${LD_LIBRARY_PATH:-}"
 
+    if [[ "${DB_HET_GROUP}" -eq "${SOLVER_HET_GROUP}" ]]; then
+      # Single allocation mode: use mpirun instead of srun to avoid duplicate het group errors
+      NP_PHY=$(( SLURM_NTASKS - PHYDLL_NP_DL ))
+      launch_cmd="mpirun -n ${NP_PHY} \
+        ./solver_cpp/${COMPILE_OUTPUT_PATH}/terrain_solver \
+        --device \"${device}\" \
+        --gpus-per-node \"${GPUS_PER_NODE}\" \
+        --ml-nodes \"${DB_NODES}\" \
+        --ml-batch-size \"${ML_BATCH_SIZE}\" \
+        --model-path \"${MODEL_PATH_FOR_SOLVER}\" \
+        --model-backend \"${MODEL_BACKEND}\" \
+        --model-io-layout \"${MODEL_IO_LAYOUT}\" \
+        ${MODEL_IO_ARGS[@]} \
+        --input-hdf5 \"${PREP_H5}\" \
+        --output-hdf5 \"${TRAJ_H5}\" \
+        --steps \"${TOTAL_STEPS}\" \
+        --save-every \"${SAVE_EVERY}\" \
+        --save-mode \"${SAVE_MODE}\" \
+        --triangular-scale \"${TRIANGULAR_SCALE}\" \
+        --chunk-size \"${CHUNK_SIZE}\" \
+        --io-mode \"${IO_MODE}\" \
+        --mpi-sync-mode \"${MPI_SYNC_MODE}\" \
+        --hdf5-xfer-mode \"${HDF5_XFER_MODE}\" \
+        ${RANK_GRID_ARGS[@]} \
+        ${OVERWRITE_ARG[@]} \
+        --write-surface \
+        : -n ${PHYDLL_NP_DL} -x LD_LIBRARY_PATH=\"${DL_LD_LIBRARY_PATH}\" \
+        ${DL_CLIENT_CMD[*]}"
+    else
+      # HetJob mode: use srun
+      srun_solver_args="--export=ALL $(get_srun_het_flag "${SOLVER_HET_GROUP}") --nodes \"${_nodes:-1}\" --ntasks-per-node \"${_ntasks_per_node_num}\""
+      srun_dl_args="--export=ALL $(get_srun_het_flag "${DB_HET_GROUP}") --nodes \"${PHYDLL_DL_NODES}\" --ntasks \"${PHYDLL_NP_DL}\" --ntasks-per-node 1 --cpus-per-task \"${ML_INFERENCE_CPU_CORES}\""
+      
+      launch_cmd="srun ${srun_solver_args} \
+        --cpus-per-task 1 \
+        ${SRUN_DIST} \
+        ./solver_cpp/${COMPILE_OUTPUT_PATH}/terrain_solver \
+        --device \"${device}\" \
+        --gpus-per-node \"${GPUS_PER_NODE}\" \
+        --ml-nodes \"${DB_NODES}\" \
+        --ml-batch-size \"${ML_BATCH_SIZE}\" \
+        --model-path \"${MODEL_PATH_FOR_SOLVER}\" \
+        --model-backend \"${MODEL_BACKEND}\" \
+        --model-io-layout \"${MODEL_IO_LAYOUT}\" \
+        \"${MODEL_IO_ARGS[@]}\" \
+        --input-hdf5 \"${PREP_H5}\" \
+        --output-hdf5 \"${TRAJ_H5}\" \
+        --steps \"${TOTAL_STEPS}\" \
+        --save-every \"${SAVE_EVERY}\" \
+        --save-mode \"${SAVE_MODE}\" \
+        --triangular-scale \"${TRIANGULAR_SCALE}\" \
+        --chunk-size \"${CHUNK_SIZE}\" \
+        --io-mode \"${IO_MODE}\" \
+        --mpi-sync-mode \"${MPI_SYNC_MODE}\" \
+        --hdf5-xfer-mode \"${HDF5_XFER_MODE}\" \
+        \"${RANK_GRID_ARGS[@]}\" \
+        \"${OVERWRITE_ARG[@]}\" \
+        --write-surface \
+        : ${srun_dl_args} \
+        /bin/zsh -lc \"export LD_LIBRARY_PATH='${DL_LD_LIBRARY_PATH}'; exec ${DL_CLIENT_CMD[*]}\""
+    fi
+
     echo "Launching PhyDLL with NP_PHY=${NP_PHY}, NP_DL=${PHYDLL_NP_DL}, PHYDLL_DL_FIELD_COUNT=${PHYDLL_DL_FIELD_COUNT}"
     echo "Using DL client: ${DL_CLIENT_CMD[*]}"
 
-    srun --export=ALL $(get_srun_het_flag "${SOLVER_HET_GROUP}") --nodes "${_nodes:-1}" --ntasks-per-node "${_ntasks_per_node_num}" \
-      --cpus-per-task 1 \
-      ${SRUN_DIST} \
-      ./solver_cpp/${COMPILE_OUTPUT_PATH}/terrain_solver \
-      --device "${device}" \
-      --gpus-per-node "${GPUS_PER_NODE}" \
-      --ml-nodes "${DB_NODES}" \
-      --ml-batch-size "${ML_BATCH_SIZE}" \
-      --model-path "${MODEL_PATH_FOR_SOLVER}" \
-      --model-backend "${MODEL_BACKEND}" \
-      --model-io-layout "${MODEL_IO_LAYOUT}" \
-      "${MODEL_IO_ARGS[@]}" \
-      --input-hdf5 "${PREP_H5}" \
-      --output-hdf5 "${TRAJ_H5}" \
-      --steps "${TOTAL_STEPS}" \
-      --save-every "${SAVE_EVERY}" \
-      --save-mode "${SAVE_MODE}" \
-      --triangular-scale "${TRIANGULAR_SCALE}" \
-      --chunk-size "${CHUNK_SIZE}" \
-      --io-mode "${IO_MODE}" \
-      --mpi-sync-mode "${MPI_SYNC_MODE}" \
-      --hdf5-xfer-mode "${HDF5_XFER_MODE}" \
-      "${RANK_GRID_ARGS[@]}" \
-      "${OVERWRITE_ARG[@]}" \
-      --write-surface \
-      : --export=ALL --het-group="${DB_HET_GROUP}" --nodes "${PHYDLL_DL_NODES}" --ntasks "${PHYDLL_NP_DL}" --ntasks-per-node 1 \
-      --cpus-per-task "${ML_INFERENCE_CPU_CORES}" \
-      /bin/zsh -lc "export LD_LIBRARY_PATH='${DL_LD_LIBRARY_PATH}'; exec ${DL_CLIENT_CMD[*]}"
-  else
-    if [[ "${USE_SMARTSIM}" -eq 1 || ( "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:u}" == "SMARTSIM" ) ]]; then
-      export SSDB="${DB_HOSTNAME}"
+    eval "${launch_cmd}"
+
     else
-      unset SSDB
+    if [[ "${USE_SMARTSIM}" -eq 1 || ( "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:u}" == "SMARTSIM" ) ]]; then
+    export SSDB="${DB_HOSTNAME}"
+    else
+    unset SSDB
     fi
 
-    srun --export=ALL $(get_srun_het_flag "${SOLVER_HET_GROUP}") --ntasks-per-node "${_ntasks_per_node_num}" \
-      --cpus-per-task 1 \
-      ${SRUN_DIST} \
-      ./solver_cpp/${COMPILE_OUTPUT_PATH}/terrain_solver \
-      --device "${device}" \
-      --gpus-per-node "${GPUS_PER_NODE}" \
-      --ml-nodes "${DB_NODES}" \
-      --ml-batch-size "${ML_BATCH_SIZE}" \
-      --model-path "${MODEL_PATH_FOR_SOLVER}" \
-      --model-backend "${MODEL_BACKEND}" \
-      --model-io-layout "${MODEL_IO_LAYOUT}" \
-      "${MODEL_IO_ARGS[@]}" \
-      --input-hdf5 "${PREP_H5}" \
-      --output-hdf5 "${TRAJ_H5}" \
-      --steps "${TOTAL_STEPS}" \
-      --save-every "${SAVE_EVERY}" \
-      --save-mode "${SAVE_MODE}" \
-      --triangular-scale "${TRIANGULAR_SCALE}" \
-      --chunk-size "${CHUNK_SIZE}" \
-      --io-mode "${IO_MODE}" \
-      --mpi-sync-mode "${MPI_SYNC_MODE}" \
-      --hdf5-xfer-mode "${HDF5_XFER_MODE}" \
-      "${RANK_GRID_ARGS[@]}" \
-      "${OVERWRITE_ARG[@]}" \
-      --write-surface
+    if [[ "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:u}" == "AIX" ]]; then
+    srun_cmd="srun --export=ALL $(get_srun_het_flag "${SOLVER_HET_GROUP}") --ntasks-per-node "${_ntasks_per_node_num}" \
+        --cpus-per-task 1 \
+        ${SRUN_DIST} \
+        ./solver_cpp/${COMPILE_OUTPUT_PATH}/terrain_solver \
+        --device "${device}" \
+        --gpus-per-node "${GPUS_PER_NODE}" \
+        --ml-nodes "${DB_NODES}" \
+        --ml-batch-size "${ML_BATCH_SIZE}" \
+        --model-path "${MODEL_PATH_FOR_SOLVER}" \
+        --model-backend "${MODEL_BACKEND}" \
+        --model-io-layout "${MODEL_IO_LAYOUT}" \
+        ${MODEL_IO_ARGS[@]} \
+        --input-hdf5 "${PREP_H5}" \
+        --output-hdf5 "${TRAJ_H5}" \
+        --steps "${TOTAL_STEPS}" \
+        --save-every "${SAVE_EVERY}" \
+        --save-mode "${SAVE_MODE}" \
+        --triangular-scale "${TRIANGULAR_SCALE}" \
+        --chunk-size "${CHUNK_SIZE}" \
+        --io-mode "${IO_MODE}" \
+        --mpi-sync-mode "${MPI_SYNC_MODE}" \
+        --hdf5-xfer-mode "${HDF5_XFER_MODE}" \
+        ${RANK_GRID_ARGS[@]} \
+        ${OVERWRITE_ARG[@]} \
+        --write-surface"
+
+    if [[ "${DB_HET_GROUP}" -ne "${SOLVER_HET_GROUP}" ]]; then
+        echo "Launching AIX with MPMD: Solver on CPU nodes (het-group ${SOLVER_HET_GROUP}) and GPU node (het-group ${DB_HET_GROUP})"
+        srun_cmd="${srun_cmd} : --export=ALL $(get_srun_het_flag "${DB_HET_GROUP}") --nodes "${DB_NODES}" --ntasks "${DB_NODES}" --ntasks-per-node 1 \
+        --cpus-per-task "${ML_INFERENCE_CPU_CORES}" \
+        ./solver_cpp/${COMPILE_OUTPUT_PATH}/terrain_solver \
+        --device "${device}" \
+        --gpus-per-node "${GPUS_PER_NODE}" \
+        --ml-nodes "${DB_NODES}" \
+        --ml-batch-size "${ML_BATCH_SIZE}" \
+        --model-path "${MODEL_PATH_FOR_SOLVER}" \
+        --model-backend "${MODEL_BACKEND}" \
+        --model-io-layout "${MODEL_IO_LAYOUT}" \
+        ${MODEL_IO_ARGS[@]} \
+        --input-hdf5 "${PREP_H5}" \
+        --output-hdf5 "${TRAJ_H5}" \
+        --steps "${TOTAL_STEPS}" \
+        --save-every "${SAVE_EVERY}" \
+        --save-mode "${SAVE_MODE}" \
+        --triangular-scale "${TRIANGULAR_SCALE}" \
+        --chunk-size "${CHUNK_SIZE}" \
+        --io-mode "${IO_MODE}" \
+        --mpi-sync-mode "${MPI_SYNC_MODE}" \
+        --hdf5-xfer-mode "${HDF5_XFER_MODE}" \
+        ${RANK_GRID_ARGS[@]} \
+        ${OVERWRITE_ARG[@]} \
+        --write-surface"
+    else
+        echo "Launching AIX on single allocation"
+    fi
+    eval "${srun_cmd}"
+    else
+      srun --export=ALL $(get_srun_het_flag "${SOLVER_HET_GROUP}") --ntasks-per-node "${_ntasks_per_node_num}" \
+        --cpus-per-task 1 \
+        ${SRUN_DIST} \
+        ./solver_cpp/${COMPILE_OUTPUT_PATH}/terrain_solver \
+        --device "${device}" \
+        --gpus-per-node "${GPUS_PER_NODE}" \
+        --ml-nodes "${DB_NODES}" \
+        --ml-batch-size "${ML_BATCH_SIZE}" \
+        --model-path "${MODEL_PATH_FOR_SOLVER}" \
+        --model-backend "${MODEL_BACKEND}" \
+        --model-io-layout "${MODEL_IO_LAYOUT}" \
+        "${MODEL_IO_ARGS[@]}" \
+        --input-hdf5 "${PREP_H5}" \
+        --output-hdf5 "${TRAJ_H5}" \
+        --steps "${TOTAL_STEPS}" \
+        --save-every "${SAVE_EVERY}" \
+        --save-mode "${SAVE_MODE}" \
+        --triangular-scale "${TRIANGULAR_SCALE}" \
+        --chunk-size "${CHUNK_SIZE}" \
+        --io-mode "${IO_MODE}" \
+        --mpi-sync-mode "${MPI_SYNC_MODE}" \
+        --hdf5-xfer-mode "${HDF5_XFER_MODE}" \
+        "${RANK_GRID_ARGS[@]}" \
+        "${OVERWRITE_ARG[@]}" \
+        --write-surface
+    fi
   fi
     #--write-surface 2>&1 | tee "${SOLVER_STEP_LOG}"
   SRUN_STATUS=${pipestatus[1]}

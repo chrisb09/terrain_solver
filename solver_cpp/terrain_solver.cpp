@@ -3304,7 +3304,9 @@ int main(int argc, char** argv) {
                 if (cpp_ml_provider_is_aix) {
                     cpp_ml_overrides.emplace("provider.model_file", cfg.model_path);
                     cpp_ml_overrides.emplace("provider.batchsize", static_cast<int64_t>(cfg.ml_batch_size));
-                } else if (cpp_ml_provider_is_phydll) {
+                    cpp_ml_overrides.emplace("provider.app_comm", static_cast<void*>(solver_comm));
+                }
+ else if (cpp_ml_provider_is_phydll) {
                     cpp_ml_overrides.emplace("provider.model_file", cfg.model_path);
                     cpp_ml_overrides.emplace("provider.backend", cfg.model_backend);
                     cpp_ml_overrides.emplace("provider.device", cfg.device);
