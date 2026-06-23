@@ -36,3 +36,12 @@ test_eval.sh
 output_*.txt
 train_models_old/
 
+# Scratch test artifacts
+a.out
+result.json
+test_output.txt
+test_smartsim.py
+test_sprintf.c
+test_exp/
+run_test.py
+
