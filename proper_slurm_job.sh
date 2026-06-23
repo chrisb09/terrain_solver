@@ -58,9 +58,9 @@ SOLVER_STEP_LOG="logs/mini_app_output_${SLURM_JOB_ID}.txt"
 
 ########## SmartSim Timout Envs ##########
 
-export SR_MODEL_TIMEOUT=300000
-export SR_CMD_TIMEOUT=300000
-export SR_SOCKET_TIMEOUT=300000
+export SR_MODEL_TIMEOUT=900000
+export SR_CMD_TIMEOUT=900000
+export SR_SOCKET_TIMEOUT=900000
 
 ########## SmartSim/ML Parameters ##########
 
@@ -401,7 +401,9 @@ echo "Using preliminary job name: ${JOB_NAME}"
 
 RANK_GRID_X=0               # 0 = auto
 RANK_GRID_Z=0               # 0 = auto
-OVERWRITE_OUTPUT=1          # 1 = pass --overwrite-output
+OVERWRITE_OUTPUT=0          # 1 = pass --overwrite-output
+CREATE_NEW_H5=0             # 1 = pass --create-new-h5
+RUN_SOLVER=1                # 1 = pass --run-solver
 
 COMPILE_OUTPUT_PATH="build"
 SKIP_COMPILE=0
@@ -1195,8 +1197,8 @@ except Exception:
   echo "Trajectory file exists. Last saved step: ${LAST_STEP_IN_TRAJ} (target: ${TOTAL_STEPS})"
 fi
 
-if [[ "${FORCE_FRESH_RUN_ENV:-0}" == "1" ]]; then
-  echo "FORCE_FRESH_RUN_ENV is set; ignoring existing trajectory and starting fresh."
+if [[ "${FORCE_FRESH_RUN_ENV:-0}" == "1" ]] || [[ "${OVERWRITE_OUTPUT}" -eq 1 ]]; then
+  echo "FORCE_FRESH_RUN_ENV or OVERWRITE_OUTPUT is set; ignoring existing trajectory and starting fresh."
   LAST_STEP_IN_TRAJ=-1
 fi
 
@@ -1513,6 +1515,7 @@ if [[ "${RUN_SOLVER}" -eq 1 ]]; then
       srun_solver_args="--export=ALL $(get_srun_het_flag "${SOLVER_HET_GROUP}") --nodes \"${_nodes:-1}\" --ntasks-per-node \"${_ntasks_per_node_num}\""
       srun_dl_args="--export=ALL $(get_srun_het_flag "${DB_HET_GROUP}") --nodes \"${PHYDLL_DL_NODES}\" --ntasks \"${PHYDLL_NP_DL}\" --ntasks-per-node 1 --cpus-per-task \"${ML_INFERENCE_CPU_CORES}\""
       
+      export LD_LIBRARY_PATH="${DL_LD_LIBRARY_PATH}"
       launch_cmd="srun ${srun_solver_args} \
         --cpus-per-task 1 \
         ${SRUN_DIST} \
@@ -1524,7 +1527,7 @@ if [[ "${RUN_SOLVER}" -eq 1 ]]; then
         --model-path \"${MODEL_PATH_FOR_SOLVER}\" \
         --model-backend \"${MODEL_BACKEND}\" \
         --model-io-layout \"${MODEL_IO_LAYOUT}\" \
-        \"${MODEL_IO_ARGS[@]}\" \
+        ${MODEL_IO_ARGS[@]} \
         --input-hdf5 \"${PREP_H5}\" \
         --output-hdf5 \"${TRAJ_H5}\" \
         --steps \"${TOTAL_STEPS}\" \
@@ -1535,11 +1538,11 @@ if [[ "${RUN_SOLVER}" -eq 1 ]]; then
         --io-mode \"${IO_MODE}\" \
         --mpi-sync-mode \"${MPI_SYNC_MODE}\" \
         --hdf5-xfer-mode \"${HDF5_XFER_MODE}\" \
-        \"${RANK_GRID_ARGS[@]}\" \
-        \"${OVERWRITE_ARG[@]}\" \
+        ${RANK_GRID_ARGS[@]} \
+        ${OVERWRITE_ARG[@]} \
         --write-surface \
         : ${srun_dl_args} \
-        /bin/zsh -lc \"export LD_LIBRARY_PATH='${DL_LD_LIBRARY_PATH}'; exec ${DL_CLIENT_CMD[*]}\""
+        ${DL_CLIENT_CMD[*]}"
     fi
 
     echo "Launching PhyDLL with NP_PHY=${NP_PHY}, NP_DL=${PHYDLL_NP_DL}, PHYDLL_DL_FIELD_COUNT=${PHYDLL_DL_FIELD_COUNT}"

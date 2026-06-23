@@ -64,7 +64,9 @@ echo "Using preliminary job name: ${JOB_NAME}"
 
 RANK_GRID_X=0               # 0 = auto
 RANK_GRID_Z=0               # 0 = auto
-OVERWRITE_OUTPUT=1          # 1 = pass --overwrite-output
+OVERWRITE_OUTPUT=0          # 1 = pass --overwrite-output
+CREATE_NEW_H5=0             # 1 = pass --create-new-h5
+RUN_SOLVER=1                # 1 = pass --run-solver
 
 SKIP_COMPILE=0
 SKIP_RENDERING=0
@@ -295,6 +297,10 @@ except Exception:
     print(-1)
 " 2>/dev/null || echo "-1")
   echo "Trajectory file exists. Last saved step: ${LAST_STEP_IN_TRAJ} (target: ${TOTAL_STEPS})"
+fi
+if [[ "${OVERWRITE_OUTPUT}" -eq 1 ]]; then
+  echo "OVERWRITE_OUTPUT is set to 1; ignoring existing trajectory and starting fresh."
+  LAST_STEP_IN_TRAJ=-1
 fi
 
 SOLVE_DURATION=0
