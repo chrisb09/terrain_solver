@@ -5,7 +5,7 @@ if [ "${SKIP_COMPILE:-0}" -ne 0 ]; then
     echo "Skipping compilation as SKIP_COMPILE_ENV is set to 1"
 else
     echo "Compiling the application..."
-    ./build.sh
+    ./slurm_build.sh
     if [ $? -ne 0 ]; then
         echo "Compilation failed. Exiting."
         exit 1
@@ -48,16 +48,19 @@ submit_sequential() {
 PREFIX="GPU"
 
 # 1. Direct SmartSim
-submit_sequential "SMARTSIM_${PREFIX}_terrain_solver" "USE_SMARTSIM=1,SKIP_COMPILE_ENV=1"
+##submit_sequential "SMARTSIM_${PREFIX}_terrain_solver" "USE_SMARTSIM=1,SKIP_COMPILE_ENV=1,OVERWRITE_OUTPUT_ENV=1"
 
 # 2. SmartSim via CPP-ML-Interface
-submit_sequential "CMI_smartsim_${PREFIX}_terrain_solver" "USE_SMARTSIM=0,SKIP_COMPILE_ENV=1"
+##submit_sequential "CMI_smartsim_${PREFIX}_terrain_solver" "USE_SMARTSIM=0,SKIP_COMPILE_ENV=1,OVERWRITE_OUTPUT_ENV=1"
 
 # 3. SmartSim with Force Terrain Upload
-submit_sequential "CMI_smartsim_${PREFIX}_force_terrain" "ALL,USE_SMARTSIM=0,FORCE_TERRAIN_UPLOAD_EACH_STEP_ENV=1,SKIP_COMPILE_ENV=1"
+##submit_sequential "CMI_smartsim_${PREFIX}_force_terrain" "ALL,USE_SMARTSIM=0,FORCE_TERRAIN_UPLOAD_EACH_STEP_ENV=1,SKIP_COMPILE_ENV=1,OVERWRITE_OUTPUT_ENV=1"
 
 # 4. AIX via CPP-ML-Interface
-submit_sequential "CMI_aix_${PREFIX}_terrain_solver" "USE_SMARTSIM=0,CPP_ML_INTERFACE_PROVIDER_ENV=AIX,SKIP_COMPILE_ENV=1"
+##submit_sequential "CMI_aix_${PREFIX}_terrain_solver" "USE_SMARTSIM=0,CPP_ML_INTERFACE_PROVIDER_ENV=AIX,SKIP_COMPILE_ENV=1,OVERWRITE_OUTPUT_ENV=1"
 
-# 5. PhyDLL via CPP-ML-Interface
-submit_sequential "CMI_phydll_${PREFIX}_terrain_solver" "USE_SMARTSIM=0,CPP_ML_INTERFACE_PROVIDER_ENV=PHYDLL,SKIP_COMPILE_ENV=1"
+# 5. PhyDLL via CPP-ML-Interface (C++ DL Client)
+submit_sequential "CMI_phydll_${PREFIX}_terrain_solver" "USE_SMARTSIM=0,CPP_ML_INTERFACE_PROVIDER_ENV=PHYDLL,SKIP_COMPILE_ENV=1,OVERWRITE_OUTPUT_ENV=1"
+
+# 6. PhyDLL via CPP-ML-Interface (Python DL Client)
+submit_sequential "CMI_phydll_py_${PREFIX}_terrain_solver" "USE_SMARTSIM=0,CPP_ML_INTERFACE_PROVIDER_ENV=PHYDLL,USE_PYTHON_DL_CLIENT=1,SKIP_COMPILE_ENV=1,OVERWRITE_OUTPUT_ENV=1"
