@@ -40,9 +40,15 @@ echo "Build started at: $build_start_date"
 cd "solver_cpp/${custom_build_dir}" || { echo "Failed to change directory to solver_cpp/${custom_build_dir}"; cd "$current_dir"; exit 1; }
 
 
+pushd /hpcwork/ro092286/smartsim > /dev/null
+source ./install.sh cuda-12
+popd > /dev/null
+
 #rm ./* -r || { echo "Build failed"; cd "$current_dir"; exit 1; }
 cmake -S .. -DCMAKE_BUILD_TYPE=Release -DUSE_CPP_ML_INTERFACE=${USE_CPP_ML_INTERFACE} || { echo "Build failed"; cd "$current_dir"; exit 1; }
-cmake --build . || { echo "Build failed"; cd "$current_dir"; exit 1; }
+build_jobs="${SLURM_CPUS_ON_NODE:-4}"
+echo "Building with -j${build_jobs} parallel jobs..."
+cmake --build . -j ${build_jobs} || { echo "Build failed"; cd "$current_dir"; exit 1; }
 echo "Build completed successfully"
 
 # Get the build timestamp from the binary
