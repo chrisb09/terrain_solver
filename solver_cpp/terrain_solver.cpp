@@ -1652,16 +1652,19 @@ static double compute_local_step_ml_cpp(MLCoupling<float, float>& ml_coupling,
     auto start = std::chrono::high_resolution_clock::now();
     double moved = 0.0;
 
-    const std::size_t chunk_cap_eff = std::min<std::size_t>(batch_size, chunk_cap);
-
-    for (std::size_t chunk_begin = 0, chunk_id = 0; chunk_begin < batch_size;
-         chunk_begin += chunk_cap_eff, ++chunk_id) {
-        const std::size_t chunk_count = std::min<std::size_t>(chunk_cap_eff, batch_size - chunk_begin);
-        log_memory_usage(decomp.world_rank, "cpp_ml_chunk_begin", step, static_cast<long long>(chunk_id));
+    const std::size_t chunk_cap_eff = ml_buffers.chunk_cap;
+    const std::size_t chunk_begin = 0;
+    const std::size_t chunk_count = batch_size;
+    const long long chunk_id = 0;
+        
+    if (chunk_count > 0) {
+        log_memory_usage(decomp.world_rank, "cpp_ml_chunk_begin", step, chunk_id);
         add_ml_traffic(ml_buffers.use_flat_layout, true, chunk_count);
+    }
 
-        const auto chunk_start = std::chrono::high_resolution_clock::now();
+    const auto chunk_start = std::chrono::high_resolution_clock::now();
 
+    if (chunk_count > 0) {
         if (ml_buffers.use_flat_layout) {
             fill_flat_input_chunk(current, terrain, decomp, chunk_begin, chunk_count, chunk_cap_eff, ml_buffers.flat_input);
         } else {
@@ -1684,24 +1687,30 @@ static double compute_local_step_ml_cpp(MLCoupling<float, float>& ml_coupling,
                                                      ml_buffers.terrain_rows,
                                                      ml_buffers.pad_rows.data());
         }
+    }
 
-        const auto data_prepared_time = std::chrono::high_resolution_clock::now();
-        log_memory_usage(decomp.world_rank, "cpp_ml_after_prepare_data", step, static_cast<long long>(chunk_id));
+    const auto data_prepared_time = std::chrono::high_resolution_clock::now();
+    if (chunk_count > 0) log_memory_usage(decomp.world_rank, "cpp_ml_after_prepare_data", step, chunk_id);
 
-        std::fill(ml_buffers.output.begin(), ml_buffers.output.end(), 0.0F);
-        log_memory_usage(decomp.world_rank, "cpp_ml_before_ml_step", step, static_cast<long long>(chunk_id));
-        ml_coupling.ml_step();
-        log_memory_usage(decomp.world_rank, "cpp_ml_after_ml_step", step, static_cast<long long>(chunk_id));
+    std::fill(ml_buffers.output.begin(), ml_buffers.output.end(), 0.0F);
+    if (chunk_count > 0) log_memory_usage(decomp.world_rank, "cpp_ml_before_ml_step", step, chunk_id);
+    
+    ml_coupling.ml_step();
+    
+    if (chunk_count > 0) log_memory_usage(decomp.world_rank, "cpp_ml_after_ml_step", step, chunk_id);
 
-        const auto model_ran_time = std::chrono::high_resolution_clock::now();
+    const auto model_ran_time = std::chrono::high_resolution_clock::now();
 
+    if (chunk_count > 0) {
         std::copy(ml_buffers.output.begin(),
                   ml_buffers.output.begin() + static_cast<std::ptrdiff_t>(chunk_count),
                   tile_output.begin() + static_cast<std::ptrdiff_t>(chunk_begin));
+    }
 
-        const auto unpacked_time = std::chrono::high_resolution_clock::now();
-        log_memory_usage(decomp.world_rank, "cpp_ml_after_copy_output", step, static_cast<long long>(chunk_id));
+    const auto unpacked_time = std::chrono::high_resolution_clock::now();
+    if (chunk_count > 0) log_memory_usage(decomp.world_rank, "cpp_ml_after_copy_output", step, chunk_id);
 
+    if (chunk_count > 0) {
         prepare_data_time += std::chrono::duration_cast<std::chrono::microseconds>(data_prepared_time - chunk_start).count();
         run_model_time += std::chrono::duration_cast<std::chrono::microseconds>(model_ran_time - data_prepared_time).count();
         unpack_time += std::chrono::duration_cast<std::chrono::microseconds>(unpacked_time - model_ran_time).count();
@@ -3239,10 +3248,8 @@ int main(int argc, char** argv) {
                     throw std::runtime_error("AIx provider requires --model-io-layout flat_contiguous.");
                 }
 
-                const std::size_t batch_size = static_cast<std::size_t>(decomp.local_nz) * static_cast<std::size_t>(decomp.local_nx);
-                const std::size_t chunk_cap = std::min<std::size_t>(batch_size, static_cast<std::size_t>(cfg.ml_batch_size));
-                require(chunk_cap > 0, "ML batch size must be > 0.");
-                require(chunk_cap <= static_cast<std::size_t>(std::numeric_limits<int>::max()), "ML batch size exceeds int range.");
+                const std::size_t batch_size = static_cast<std::size_t>(decomp.local_nx) * static_cast<std::size_t>(decomp.local_nz);
+                const std::size_t chunk_cap = std::max<std::size_t>(1, batch_size);
 
                 cpp_ml_buffers.chunk_cap = chunk_cap;
                 cpp_ml_buffers.use_flat_layout = use_flat_model_io;
@@ -3304,7 +3311,7 @@ int main(int argc, char** argv) {
                 if (cpp_ml_provider_is_aix) {
                     cpp_ml_overrides.emplace("provider.model_file", cfg.model_path);
                     cpp_ml_overrides.emplace("provider.batchsize", static_cast<int64_t>(cfg.ml_batch_size));
-                    cpp_ml_overrides.emplace("provider.app_comm", static_cast<void*>(solver_comm));
+                    cpp_ml_overrides.emplace("provider.app_comm", static_cast<void*>(MPI_COMM_WORLD));
                 }
  else if (cpp_ml_provider_is_phydll) {
                     cpp_ml_overrides.emplace("provider.model_file", cfg.model_path);
@@ -3316,7 +3323,7 @@ int main(int argc, char** argv) {
                     cpp_ml_overrides.emplace("provider.model_path", cfg.model_path);
                     cpp_ml_overrides.emplace("provider.model_name", provider_model_name);
                     cpp_ml_overrides.emplace("provider.num_gpus", static_cast<int64_t>(cfg.gpus_per_node));
-                    cpp_ml_overrides.emplace("provider.batch_size", static_cast<int64_t>(cfg.ml_batch_size));
+                    cpp_ml_overrides.emplace("provider.batch_size", static_cast<int64_t>(0)); // 0 disables the max batch limit
                 }
                 if (cpp_ml_provider_is_smartsim &&
                     cfg.ml_nodes > 0) {
@@ -3731,6 +3738,15 @@ int main(int argc, char** argv) {
         if (solver_app_comm != MPI_COMM_NULL) {
             MPI_Comm_free(&solver_app_comm);
         }
+        
+#ifdef USE_CPP_ML_INTERFACE
+        ml_coupling.reset();
+#endif
+        if (client != nullptr) {
+            delete client;
+            client = nullptr;
+        }
+
         MPI_Finalize();
         return 0;
     } catch (const std::exception& ex) {
