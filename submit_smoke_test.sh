@@ -49,6 +49,9 @@ TEMP_JOB_SCRIPT=".smoke_test_$(date +%s).sh"
   echo "export TOTAL_STEPS_ENV=${TOTAL_STEPS_ENV}"
   echo "export FORCE_FRESH_RUN_ENV=${FORCE_FRESH_RUN_ENV}"
   echo "export OVERWRITE_OUTPUT=${OVERWRITE_OUTPUT}"
+  if [[ "${CPP_ML_INTERFACE_PROVIDER_ENV}" == "SMARTSIM" ]]; then
+    echo "export SLURM_JOB_NUM_NODES_HET_GROUP_0=1"
+  fi
   if [[ "${USE_SCOREP_ENV}" == "1" ]]; then
     echo "export USE_SCOREP=1"
     echo "export SCOREP_METRIC_PAPI=\"\""
