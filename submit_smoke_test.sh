@@ -16,7 +16,10 @@ PARTITION="devel"
 ACCOUNT="default"
 TIME="01:00:00"
 MEM_PER_CPU="10000M"
-NODES=1
+NODES=${NODES_ENV:-1}
+if [[ "${CPP_ML_INTERFACE_PROVIDER_ENV}" == "SMARTSIM" ]]; then
+  NODES=${NODES_ENV:-2}
+fi
 TOTAL_TASKS=16
 
 echo "Submitting smoke test to devel partition (Single Allocation Mode)..."
