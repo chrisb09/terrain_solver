@@ -70,6 +70,7 @@ TEMP_JOB_SCRIPT=".smoke_test_$(date +%s).sh"
   --time=${TIME} \
   --nodes=${NODES} \
   --ntasks=${TOTAL_TASKS} \
+  --ntasks-per-node=16 \
   --cpus-per-task=1 \
   --mem-per-cpu=${MEM_PER_CPU} \
   --gres=none \
