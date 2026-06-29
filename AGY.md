@@ -5,11 +5,9 @@
 - [Instrumentation Progress](file:///home/ro092286/.gemini/antigravity-cli/brain/90ac1304-b1f7-4ab9-b97a-d4916b87fe28/instrumentation_progress.md)
 
 ## Current Plan Status
-We have successfully completed **Step 3 — PhyDLL provider instrumentation + deadlock resolution + validation**! The validation job `1470871` ran to completion on the `devel` partition using the `default` account (`Solving time: 47 seconds`).
+We are currently at **Step 4 — PhyDLL DL side (C++ + Python)**. We have resolved the python context manager/nesting conflict by launching Python with `--noinstrumenter`, and resolved PATH isolation issues inside `mpirun` using `env`. The validation job `1473539` has been submitted and is currently pending/running on the `devel` partition (using the `default` account).
 
-We validated the resulting `profile.cubex` in `scorep_PHYDLL_1470871_rank_0/` and verified the following profile metrics:
-* **Total measured time:** 4.61s
-* **User Regions (`USR`):** 3.92s (85.0%)
+* **Previous Step (Step 3):** Completed successfully. Validated `profile.cubex` in `scorep_PHYDLL_1470871_rank_0/`.
   * `phydll_recv`: 2.10s (45.6%) — waiting for Python DL inference execution
   * `solver_setup`: 1.22s (26.6%)
   * `phydll_send`: 0.30s (6.5%)
