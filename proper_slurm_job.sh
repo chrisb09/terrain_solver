@@ -863,6 +863,12 @@ fi
 if [[ -f "${PY_ENV}/bin/activate" ]]; then
   # shellcheck disable=SC1090
   source "${PY_ENV}/bin/activate" || { echo "Failed to activate Python environment at ${PY_ENV}"; exit 1; }
+  if [[ -n "${USE_SCOREP:-}" ]]; then
+    if ! python3 -c "import scorep" 2>/dev/null; then
+      echo "Installing python scorep package..."
+      python3 -m pip install scorep
+    fi
+  fi
 else
   echo "Python environment not found at ${PY_ENV}"
   exit 1
@@ -1488,8 +1494,11 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
     PHYDLL_REBUILD_DL_CLIENT=${PHYDLL_REBUILD_DL_CLIENT:-1}
     DL_CLIENT_CMD=()
     if [[ "${USE_PYTHON_DL_CLIENT}" == "1" ]]; then
-      # We do NOT run the Python DL client under Score-P, as it conflicts with MPI/mpi4py initialization and causes deadlocks.
-      DL_CLIENT_CMD=("${PY_ENV}/bin/python3" "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/phydll_dl_client.py")
+      if [[ -n "${USE_SCOREP:-}" ]]; then
+        DL_CLIENT_CMD=("scorep-python" "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/phydll_dl_client.py")
+      else
+        DL_CLIENT_CMD=("${PY_ENV}/bin/python3" "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/phydll_dl_client.py")
+      fi
       PHYDLL_REBUILD_DL_CLIENT=0
     else
       PHYDLL_DL_CLIENT="${PHYDLL_DL_CLIENT:-${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/build/phydll_dl_client}"
