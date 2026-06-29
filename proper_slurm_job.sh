@@ -1548,12 +1548,14 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
     PHYDLL_LIB_DIR="$(realpath "${MINI_APP_DIR}/../CPP-ML-Interface/extern/phydll/build/lib")"
     DL_LD_LIBRARY_PATH="${PHYDLL_LIB_DIR}:${LD_LIBRARY_PATH:-}"
 
+    SOLVER_EXE="./solver_cpp/${COMPILE_OUTPUT_PATH}/terrain_solver"
     if [[ -n "${USE_SCOREP:-}" ]]; then
         export SCOREP_ENABLE_PROFILING=true
         export SCOREP_ENABLE_TRACING=false
         export SCOREP_TOTAL_MEMORY=16000K
         # PAPI metrics are commented out for now since they failed to initialize in CMake, preventing build.
         export SCOREP_METRIC_PAPI=""
+        SOLVER_EXE="./solver_wrapper.sh"
     fi
 
     if [[ "${DB_HET_GROUP}" -eq "${SOLVER_HET_GROUP}" ]]; then
@@ -1593,7 +1595,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
       launch_cmd="srun ${srun_solver_args} \
         --cpus-per-task 1 \
         ${SRUN_DIST} \
-        ./solver_cpp/${COMPILE_OUTPUT_PATH}/terrain_solver \
+        ${SOLVER_EXE} \
         --device \"${device}\" \
         --gpus-per-node \"${GPUS_PER_NODE}\" \
         --ml-nodes \"${DB_NODES}\" \
@@ -1635,7 +1637,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
     srun_cmd="srun --export=ALL $(get_srun_het_flag "${SOLVER_HET_GROUP}") --ntasks-per-node "${_ntasks_per_node_num}" \
         --cpus-per-task 1 \
         ${SRUN_DIST} \
-        ./solver_cpp/${COMPILE_OUTPUT_PATH}/terrain_solver \
+        ${SOLVER_EXE} \
         --device "${device}" \
         --gpus-per-node "${GPUS_PER_NODE}" \
         --ml-nodes "${DB_NODES}" \
@@ -1662,7 +1664,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
         echo "Launching AIX with MPMD: Solver on CPU nodes (het-group ${SOLVER_HET_GROUP}) and GPU node (het-group ${DB_HET_GROUP})"
         srun_cmd="${srun_cmd} : --export=ALL $(get_srun_het_flag "${DB_HET_GROUP}") --nodes "${DB_NODES}" --ntasks "${DB_NODES}" --ntasks-per-node 1 \
         --cpus-per-task "${ML_INFERENCE_CPU_CORES}" \
-        ./solver_cpp/${COMPILE_OUTPUT_PATH}/terrain_solver \
+        ${SOLVER_EXE} \
         --device "${device}" \
         --gpus-per-node "${GPUS_PER_NODE}" \
         --ml-nodes "${DB_NODES}" \
@@ -1692,7 +1694,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
       srun --export=ALL $(get_srun_het_flag "${SOLVER_HET_GROUP}") --ntasks-per-node "${_ntasks_per_node_num}" \
         --cpus-per-task 1 \
         ${SRUN_DIST} \
-        ./solver_cpp/${COMPILE_OUTPUT_PATH}/terrain_solver \
+        ${SOLVER_EXE} \
         --device "${device}" \
         --gpus-per-node "${GPUS_PER_NODE}" \
         --ml-nodes "${DB_NODES}" \
