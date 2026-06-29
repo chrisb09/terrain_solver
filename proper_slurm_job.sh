@@ -1495,7 +1495,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
     DL_CLIENT_CMD=()
     if [[ "${USE_PYTHON_DL_CLIENT}" == "1" ]]; then
       if [[ -n "${USE_SCOREP:-}" ]]; then
-        DL_CLIENT_CMD=("scorep-python" "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/phydll_dl_client.py")
+        DL_CLIENT_CMD=("${PY_ENV}/bin/python3" "-m" "scorep" "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/phydll_dl_client.py")
       else
         DL_CLIENT_CMD=("${PY_ENV}/bin/python3" "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/phydll_dl_client.py")
       fi
