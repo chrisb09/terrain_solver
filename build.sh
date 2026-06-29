@@ -51,7 +51,7 @@ export PATH="$CUDA_ROOT/bin:$PATH"
 
 if [[ "${USE_SCOREP}" == "1" ]]; then
     echo "USE_SCOREP=1 detected, using scorep-mpicxx compiler for CMake"
-    SCOREP_FLAGS="-DCMAKE_CXX_COMPILER=scorep-mpicxx -DCMAKE_C_COMPILER=scorep-mpicc"
+    SCOREP_FLAGS="-DCMAKE_CXX_COMPILER=scorep-mpicxx -DCMAKE_C_COMPILER=scorep-mpicc -DWITH_SCOREP=ON"
     unset CC
     unset CXX
 else
