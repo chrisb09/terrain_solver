@@ -358,6 +358,12 @@ _solver_ntasks_var="SLURM_NTASKS_HET_GROUP_${SOLVER_HET_GROUP}"
 _solver_ntasks_per_node_var="SLURM_NTASKS_PER_NODE_HET_GROUP_${SOLVER_HET_GROUP}"
 
 _nodes="${(P)_solver_nodes_var:-${SLURM_JOB_NUM_NODES:-1}}"
+if [[ -z "${SLURM_HET_SIZE:-}" ]] && [[ "${USE_SMARTSIM:-0}" -eq 1 || ( "${USE_CPP_ML_INTERFACE:-0}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:-}" == "SMARTSIM" ) ]]; then
+  _nodes=$(( _nodes - DB_NODES ))
+  if [[ "${_nodes}" -lt 1 ]]; then
+    _nodes=1
+  fi
+fi
 _ntasks_per_node_raw="${(P)_solver_ntasks_per_node_var:-${SLURM_NTASKS_PER_NODE:-}}"
 _cpus_per_task="${SLURM_CPUS_PER_TASK:-1}"
 
@@ -1634,7 +1640,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
     fi
 
     if [[ "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:u}" == "AIX" ]]; then
-    srun_cmd="srun --export=ALL $(get_srun_het_flag "${SOLVER_HET_GROUP}") --ntasks-per-node "${_ntasks_per_node_num}" \
+    srun_cmd="srun --export=ALL $(get_srun_het_flag "${SOLVER_HET_GROUP}") --nodes \"${_nodes:-1}\" --ntasks-per-node \"${_ntasks_per_node_num}\" \
         --cpus-per-task 1 \
         ${SRUN_DIST} \
         ${SOLVER_EXE} \
@@ -1691,7 +1697,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
     fi
     eval "${srun_cmd}"
     else
-      srun --export=ALL $(get_srun_het_flag "${SOLVER_HET_GROUP}") --ntasks-per-node "${_ntasks_per_node_num}" \
+      srun --export=ALL $(get_srun_het_flag "${SOLVER_HET_GROUP}") --nodes "${_nodes:-1}" --ntasks-per-node "${_ntasks_per_node_num}" \
         --cpus-per-task 1 \
         ${SRUN_DIST} \
         ${SOLVER_EXE} \
