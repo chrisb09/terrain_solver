@@ -1489,6 +1489,16 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
   export OMP_NUM_THREADS=1
   export TORCH_NUM_THREADS=1
 
+  SOLVER_EXE="./solver_cpp/${COMPILE_OUTPUT_PATH}/terrain_solver"
+  if [[ -n "${USE_SCOREP:-}" ]]; then
+      export SCOREP_ENABLE_PROFILING=true
+      export SCOREP_ENABLE_TRACING=false
+      export SCOREP_TOTAL_MEMORY=16000K
+      # PAPI metrics are commented out for now since they failed to initialize in CMake, preventing build.
+      export SCOREP_METRIC_PAPI=""
+      SOLVER_EXE="./solver_wrapper.sh"
+  fi
+
   if [[ "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:u}" == "PHYDLL" ]]; then
     USE_PYTHON_DL_CLIENT=${USE_PYTHON_DL_CLIENT:-0}
     PHYDLL_REBUILD_DL_CLIENT=${PHYDLL_REBUILD_DL_CLIENT:-1}
@@ -1547,16 +1557,6 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
 
     PHYDLL_LIB_DIR="$(realpath "${MINI_APP_DIR}/../CPP-ML-Interface/extern/phydll/build/lib")"
     DL_LD_LIBRARY_PATH="${PHYDLL_LIB_DIR}:${LD_LIBRARY_PATH:-}"
-
-    SOLVER_EXE="./solver_cpp/${COMPILE_OUTPUT_PATH}/terrain_solver"
-    if [[ -n "${USE_SCOREP:-}" ]]; then
-        export SCOREP_ENABLE_PROFILING=true
-        export SCOREP_ENABLE_TRACING=false
-        export SCOREP_TOTAL_MEMORY=16000K
-        # PAPI metrics are commented out for now since they failed to initialize in CMake, preventing build.
-        export SCOREP_METRIC_PAPI=""
-        SOLVER_EXE="./solver_wrapper.sh"
-    fi
 
     if [[ "${DB_HET_GROUP}" -eq "${SOLVER_HET_GROUP}" ]]; then
       # Single allocation mode: use mpirun instead of srun to avoid duplicate het group errors
