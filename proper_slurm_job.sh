@@ -380,6 +380,17 @@ else
   MPI_RANKS=$(( _nodes * ${_tmp_ntasks_per_node:-1} ))
 fi
 
+SOLVER_SRUN_EXTRA_ARGS=""
+if [[ -z "${SLURM_HET_SIZE:-}" ]] && [[ "${USE_SMARTSIM:-0}" -eq 1 || ( "${USE_CPP_ML_INTERFACE:-0}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:-}" == "SMARTSIM" ) ]]; then
+  if [[ -n "${SLURM_JOB_NODELIST:-}" ]]; then
+    hosts=("${(@f)$(scontrol show hostnames "${SLURM_JOB_NODELIST}")}")
+    if [[ "${#hosts[@]}" -ge 2 ]]; then
+      SOLVER_SRUN_EXTRA_ARGS="--nodelist=${hosts[2]}"
+      echo "SmartSim active on ${#hosts[@]} nodes. Pinning solver srun to node: ${hosts[2]}"
+    fi
+  fi
+fi
+
 # Ensure _ntasks_per_node is populated for the job name template
 if [[ -z "${_ntasks_per_node_raw}" ]]; then
   _ntasks_per_node=$(( MPI_RANKS / _nodes ))
@@ -1640,7 +1651,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
     fi
 
     if [[ "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:u}" == "AIX" ]]; then
-    srun_cmd="srun --export=ALL $(get_srun_het_flag "${SOLVER_HET_GROUP}") --nodes \"${_nodes:-1}\" --ntasks-per-node \"${_ntasks_per_node_num}\" \
+    srun_cmd="srun --export=ALL $(get_srun_het_flag "${SOLVER_HET_GROUP}") --nodes \"${_nodes:-1}\" --ntasks-per-node \"${_ntasks_per_node_num}\" ${SOLVER_SRUN_EXTRA_ARGS} \
         --cpus-per-task 1 \
         ${SRUN_DIST} \
         ${SOLVER_EXE} \
@@ -1697,7 +1708,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
     fi
     eval "${srun_cmd}"
     else
-      srun --export=ALL $(get_srun_het_flag "${SOLVER_HET_GROUP}") --nodes "${_nodes:-1}" --ntasks-per-node "${_ntasks_per_node_num}" \
+      srun --export=ALL $(get_srun_het_flag "${SOLVER_HET_GROUP}") --nodes "${_nodes:-1}" --ntasks-per-node "${_ntasks_per_node_num}" ${SOLVER_SRUN_EXTRA_ARGS} \
         --cpus-per-task 1 \
         ${SRUN_DIST} \
         ${SOLVER_EXE} \
