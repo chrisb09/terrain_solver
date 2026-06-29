@@ -213,7 +213,7 @@ _db_gpus_on_node_var="SLURM_GPUS_ON_NODE_HET_GROUP_${DB_HET_GROUP}"
 _db_tres_per_task_var="SLURM_TRES_PER_TASK_HET_GROUP_${DB_HET_GROUP}"
 _db_tres_per_node_var="SLURM_TRES_PER_NODE_HET_GROUP_${DB_HET_GROUP}"
 
-DB_NODES="${(P)_db_nodes_var:-${SLURM_JOB_NUM_NODES:-1}}"
+DB_NODES="${DB_NODES_ENV:-${(P)_db_nodes_var:-${SLURM_JOB_NUM_NODES:-1}}}"
 ML_INFERENCE_CPU_CORES="${(P)_db_cpus_per_task_var:-${SLURM_CPUS_PER_TASK:-1}}"
 
 _gpus_per_node_raw="${(P)_db_gpus_per_node_var:-${SLURM_GPUS_PER_NODE:-}}"
