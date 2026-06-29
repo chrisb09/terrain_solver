@@ -9,6 +9,7 @@ export MPI_RANKS_ENV=${MPI_RANKS_ENV:-16}
 export TOTAL_STEPS_ENV=${TOTAL_STEPS_ENV:-10}
 export FORCE_FRESH_RUN_ENV=${FORCE_FRESH_RUN_ENV:-1}
 export USE_SCOREP_ENV=${USE_SCOREP_ENV:-0}
+export OVERWRITE_OUTPUT=1
 
 # Resource configuration for devel partition
 PARTITION="devel"
@@ -44,6 +45,7 @@ TEMP_JOB_SCRIPT=".smoke_test_$(date +%s).sh"
   echo "export MPI_RANKS_ENV=${MPI_RANKS_ENV}"
   echo "export TOTAL_STEPS_ENV=${TOTAL_STEPS_ENV}"
   echo "export FORCE_FRESH_RUN_ENV=${FORCE_FRESH_RUN_ENV}"
+  echo "export OVERWRITE_OUTPUT=${OVERWRITE_OUTPUT}"
   if [[ "${USE_SCOREP_ENV}" == "1" ]]; then
     echo "export USE_SCOREP=1"
     echo "export SCOREP_METRIC_PAPI=\"\""
