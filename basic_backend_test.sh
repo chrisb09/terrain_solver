@@ -5,6 +5,9 @@ if [ "${SKIP_COMPILE:-0}" -ne 0 ]; then
     echo "Skipping compilation as SKIP_COMPILE_ENV is set to 1"
 else
     echo "Compiling the application..."
+    if [[ "${USE_SCOREP_ENV}" == "1" ]]; then
+        export USE_SCOREP=1
+    fi
     ./slurm_build.sh
     if [ $? -ne 0 ]; then
         echo "Compilation failed. Exiting."
@@ -21,6 +24,9 @@ PREV_JID=""
 submit_sequential() {
     local job_name="$1"
     local export_vars="$2"
+    if [[ "${USE_SCOREP_ENV}" == "1" ]]; then
+        export_vars="${export_vars},USE_SCOREP_ENV=1"
+    fi
     local further_sbatch_args="${@:3}"  # Capture any additional arguments
     local sbatch_cmd="sbatch --parsable --job-name=${job_name} --export=${export_vars},MODEL_NAME_ENV=${MODEL} ${further_sbatch_args}"
     
