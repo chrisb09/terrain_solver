@@ -44,8 +44,21 @@ pushd /hpcwork/ro092286/smartsim > /dev/null
 source ./install.sh cuda-12
 popd > /dev/null
 
-#rm ./* -r || { echo "Build failed"; cd "$current_dir"; exit 1; }
-cmake -S .. -DCMAKE_BUILD_TYPE=Release -DUSE_CPP_ML_INTERFACE=${USE_CPP_ML_INTERFACE} || { echo "Build failed"; cd "$current_dir"; exit 1; }
+CUDA_ROOT="/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/CUDA/12.4.0"
+export LD_LIBRARY_PATH="$CUDA_ROOT/extras/CUPTI/lib64:$CUDA_ROOT/lib64:$CUDA_ROOT/targets/x86_64-linux/lib/stubs:$LD_LIBRARY_PATH"
+export LIBRARY_PATH="$CUDA_ROOT/extras/CUPTI/lib64:$CUDA_ROOT/lib64:$CUDA_ROOT/targets/x86_64-linux/lib/stubs:$LIBRARY_PATH"
+export PATH="$CUDA_ROOT/bin:$PATH"
+
+if [[ "${USE_SCOREP}" == "1" ]]; then
+    echo "USE_SCOREP=1 detected, using scorep-mpicxx compiler for CMake"
+    SCOREP_FLAGS="-DCMAKE_CXX_COMPILER=scorep-mpicxx -DCMAKE_C_COMPILER=scorep-mpicc"
+    unset CC
+    unset CXX
+else
+    SCOREP_FLAGS=""
+fi
+
+cmake -S .. -DCMAKE_BUILD_TYPE=Release -DUSE_CPP_ML_INTERFACE=${USE_CPP_ML_INTERFACE} $SCOREP_FLAGS || { echo "Build failed"; cd "$current_dir"; exit 1; }
 build_jobs="${SLURM_CPUS_ON_NODE:-4}"
 echo "Building with -j${build_jobs} parallel jobs..."
 cmake --build . -j ${build_jobs} || { echo "Build failed"; cd "$current_dir"; exit 1; }

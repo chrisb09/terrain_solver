@@ -31,10 +31,20 @@ if(USE_CPP_ML_INTERFACE)
     message(STATUS "Using CPP-ML-Interface in the mini-app")
 endif()
 
-
 ## CMake configuration for the terrain_solver mini-app
 cmake_minimum_required(VERSION 3.14)
-project(${PROJECT_NAME} LANGUAGES CXX)
+
+if(DEFINED ENV{USE_SCOREP} AND NOT "$ENV{USE_SCOREP}" STREQUAL "")
+    set(CMAKE_CXX_COMPILER scorep-mpicxx)
+    set(CMAKE_C_COMPILER scorep-mpicc)
+endif()
+
+project(${PROJECT_NAME} LANGUAGES CXX C)
+
+if(DEFINED ENV{USE_SCOREP} AND NOT "$ENV{USE_SCOREP}" STREQUAL "")
+    add_definitions(-DUSE_SCOREP)
+    message(STATUS "Using Score-P compiler wrapper for solver (USE_SCOREP=$ENV{USE_SCOREP})")
+endif()
 
 if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
@@ -110,6 +120,15 @@ target_link_libraries(${PROJECT_NAME} PRIVATE smartredis)
 
 # Link against the CPP-ML-Interface headers and library
 target_link_libraries(${PROJECT_NAME} PRIVATE cpp_ml_interface_headers cpp_ml_interface_library)
+
+if(DEFINED ENV{USE_SCOREP} AND NOT "$ENV{USE_SCOREP}" STREQUAL "")
+    # Find ScoreP if we are using it so we can instrument the target properly
+    list(APPEND CMAKE_MODULE_PATH "${CPPML_DIR}/extern/AIxeleratorService/cmake")
+    find_package(Scorep REQUIRED)
+    if(SCOREP_FOUND)
+        set_target_properties(${PROJECT_NAME} PROPERTIES SCOREP_MPP_SYSTEM "mpi")
+    endif()
+endif()
 
 # Add Intel compiler libraries path for SmartRedis dependencies
 target_link_directories(${PROJECT_NAME} PRIVATE ${CUSTOM_CORE_DEPENDENCIES_DIR}/imkl/2024.2.0/compiler/2024.2/lib)

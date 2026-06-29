@@ -675,6 +675,22 @@ export SR_LOG_LEVEL="debug"
 
 module -t list
 
+if [[ -n "${USE_SCOREP:-}" ]]; then
+  module load Score-P/8.4 PAPI/7.0.0
+  if (( USE_GPU == 1 )); then
+    # On GPU nodes, NVML is natively available in system paths, so no need to add stub path.
+    # Just use default LD_LIBRARY_PATH.
+    :
+  else
+    # On CPU nodes, NVML is not available, so we add the CUDA stub path to satisfy the dynamic linker.
+    # We append it to LD_LIBRARY_PATH without prepending system paths to avoid shadowing module libraries.
+    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/CUDA/12.4.0/lib/stubs"
+  fi
+  export PATH="/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/Score-P/8.4-gompi-2022a/bin:$PATH"
+  export SCOREP_EXPERIMENT_DIRECTORY="scorep_${CPP_ML_INTERFACE_PROVIDER}_${SLURM_JOB_ID}"
+  export SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY=true
+fi
+
 # TensorFlow GPU backend in RedisAI may require an explicit CUDA data dir for XLA JIT
 # (e.g. Rsqrt JIT failures when libdevice is not found).
 _backend_req_upper="${MODEL_BACKEND:u}"
@@ -1262,8 +1278,7 @@ fi
 
 
 if [[ "${RUN_SOLVER}" -eq 1 ]]; then
-
-  if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
+if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
     echo "Skipping compilation as requested."
     COMPILE_DURATION=0
   else
@@ -1286,14 +1301,34 @@ if [[ "${RUN_SOLVER}" -eq 1 ]]; then
       fi
     fi
 
+    if [[ -n "${USE_SCOREP:-}" ]]; then
+      # Need to provide rpath-link to libtorch/lib so that ld can resolve libcudnn.so etc. inside libtorch_cuda.so during Score-P wrapper linking
+      # Also add --allow-shlib-undefined so we don't fail if libnvidia-ml.so.1 isn't found at link time for AIxeleratorService
+      LIBTORCH_LIB_DIR="$(realpath "${MINI_APP_DIR}/../CPP-ML-Interface/extern/libtorch/lib")"
+      COMPILE_ARGS+=("-DWITH_SCOREP=ON" "-DFORCE_AIX_REBUILD=ON" "-DTORCH_VERSION=2.4.0" "-DAIXELERATOR_CMAKE_ARGS=-DWITH_TORCH=ON -DWITH_SCOREP=ON -DBUILD_TESTS=OFF" "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-rpath-link,${LIBTORCH_LIB_DIR} -Wl,-rpath-link,/usr/lib64 -Wl,-rpath-link,/lib64 -Wl,-rpath,/usr/lib64 -Wl,-rpath,/lib64 -Wl,-rpath,/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/CUDA/12.4.0/lib/stubs -Wl,--allow-shlib-undefined" "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,-rpath-link,${LIBTORCH_LIB_DIR} -Wl,-rpath-link,/usr/lib64 -Wl,-rpath-link,/lib64 -Wl,-rpath,/usr/lib64 -Wl,-rpath,/lib64 -Wl,-rpath,/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/CUDA/12.4.0/lib/stubs -Wl,--allow-shlib-undefined")
+      export SCOREP_WRAPPER_INSTRUMENTER_FLAGS="--nocompiler --user --mpp=none --io=none --memory=malloc --thread=none --nocuda"
+      SCOREP_BIN_DIR="/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/Score-P/8.4-gompi-2022a/bin"
+      export CXX="${SCOREP_BIN_DIR}/scorep-mpicxx"
+      export CC="${SCOREP_BIN_DIR}/scorep-mpicc"
+      echo "Using SCOREP compilers: CC=${CC} CXX=${CXX}"
+    fi
+
     # by default, COMPILE_OUTPUT_PATH is "build", but if COMPILE_OUTPUT_SUBDIR is set it overrides it
     # check if the solver_cpp/build directory exists, if it does, remove it to ensure a clean build
     if [[ -d "solver_cpp/${COMPILE_OUTPUT_PATH}" ]]; then
       rm -rf "solver_cpp/${COMPILE_OUTPUT_PATH}"
     fi
     mkdir -p "solver_cpp/${COMPILE_OUTPUT_PATH}"
+    # Unset SCOREP_METRIC_PAPI during build because Score-P instrumented CMake test binaries might crash on nodes where PAPI fails to init.
+    _SAVED_SCOREP_METRIC_PAPI="${SCOREP_METRIC_PAPI:-}"
+    unset SCOREP_METRIC_PAPI
+
     cmake -S solver_cpp -B solver_cpp/${COMPILE_OUTPUT_PATH} "${COMPILE_ARGS[@]}"
     cmake --build solver_cpp/${COMPILE_OUTPUT_PATH} -j
+
+    if [[ -n "${_SAVED_SCOREP_METRIC_PAPI}" ]]; then
+      export SCOREP_METRIC_PAPI="${_SAVED_SCOREP_METRIC_PAPI}"
+    fi
 
     COMPILE_END_TIME=$(date +%s)
     COMPILE_DURATION=$((COMPILE_END_TIME - COMPILE_START_TIME))
@@ -1338,6 +1373,13 @@ if [[ "${RUN_SOLVER}" -eq 1 ]]; then
       export SR_DB_TYPE="Standalone"
     fi
   
+    if [[ -n "${USE_SCOREP:-}" ]]; then
+      mkdir -p "${SCOREP_EXPERIMENT_DIRECTORY}"
+      srun $(get_srun_het_flag "${DB_HET_GROUP}") --nodes=1 --ntasks=1 \
+          nvidia-smi dmon -s mu -d 1 -o TD > "${SCOREP_EXPERIMENT_DIRECTORY}/redis_gpu.log" 2>/dev/null &
+      NV_DMON_PID=$!
+    fi
+
     # pipe the output of the SmartSim controller to a log file for debugging
     python_path="${PY_ENV}/bin/python3"
     echo "Using Python interpreter at ${python_path} for SmartSim controller"
@@ -1402,7 +1444,7 @@ if [[ "${RUN_SOLVER}" -eq 1 ]]; then
   fi
 
   OVERWRITE_ARG=()
-  if [[ "${OVERWRITE_OUTPUT}" -eq 1 ]] && [[ "${CREATE_NEW_H5}" -eq 1 ]]; then
+  if [[ "${OVERWRITE_OUTPUT}" -eq 1 || "${FORCE_FRESH_RUN_ENV:-0}" == "1" ]] && [[ "${CREATE_NEW_H5}" -eq 1 ]]; then
     OVERWRITE_ARG+=(--overwrite-output)
   fi
 
@@ -1446,6 +1488,7 @@ if [[ "${RUN_SOLVER}" -eq 1 ]]; then
     PHYDLL_REBUILD_DL_CLIENT=${PHYDLL_REBUILD_DL_CLIENT:-1}
     DL_CLIENT_CMD=()
     if [[ "${USE_PYTHON_DL_CLIENT}" == "1" ]]; then
+      # We do NOT run the Python DL client under Score-P, as it conflicts with MPI/mpi4py initialization and causes deadlocks.
       DL_CLIENT_CMD=("${PY_ENV}/bin/python3" "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/phydll_dl_client.py")
       PHYDLL_REBUILD_DL_CLIENT=0
     else
@@ -1455,7 +1498,21 @@ if [[ "${RUN_SOLVER}" -eq 1 ]]; then
 
     if [[ "${USE_PYTHON_DL_CLIENT}" == "0" ]]; then
       if [[ "${PHYDLL_REBUILD_DL_CLIENT}" == "1" || ! -x "${PHYDLL_DL_CLIENT}" ]]; then
-        cmake -S "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients" -B "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/build"
+        local DL_CMAKE_ARGS=()
+        if [[ -n "${USE_SCOREP:-}" ]]; then
+          SCOREP_BIN_DIR="/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/Score-P/8.4-gompi-2022a/bin"
+          export CXX="${SCOREP_BIN_DIR}/scorep-mpicxx"
+          export CC="${SCOREP_BIN_DIR}/scorep-mpicc"
+          export SCOREP_WRAPPER_INSTRUMENTER_FLAGS="--nocompiler --user --mpp=none --io=none --memory=malloc --thread=none --nocuda"
+          DL_CMAKE_ARGS+=("-DWITH_SCOREP=ON")
+        else
+          export CC=gcc
+          export CXX=g++
+          DL_CMAKE_ARGS+=("-DWITH_SCOREP=OFF")
+        fi
+        # Remove build dir if it exists to ensure CMake re-detects the new compiler wrappers
+        rm -rf "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/build"
+        cmake -S "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients" -B "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/build" "${DL_CMAKE_ARGS[@]}"
         cmake --build "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/build" -j
       fi
       if [[ ! -x "${PHYDLL_DL_CLIENT}" ]]; then
@@ -1482,11 +1539,19 @@ if [[ "${RUN_SOLVER}" -eq 1 ]]; then
     PHYDLL_LIB_DIR="$(realpath "${MINI_APP_DIR}/../CPP-ML-Interface/extern/phydll/build/lib")"
     DL_LD_LIBRARY_PATH="${PHYDLL_LIB_DIR}:${LD_LIBRARY_PATH:-}"
 
+    if [[ -n "${USE_SCOREP:-}" ]]; then
+        export SCOREP_ENABLE_PROFILING=true
+        export SCOREP_ENABLE_TRACING=false
+        export SCOREP_TOTAL_MEMORY=16000K
+        # PAPI metrics are commented out for now since they failed to initialize in CMake, preventing build.
+        export SCOREP_METRIC_PAPI=""
+    fi
+
     if [[ "${DB_HET_GROUP}" -eq "${SOLVER_HET_GROUP}" ]]; then
       # Single allocation mode: use mpirun instead of srun to avoid duplicate het group errors
       NP_PHY=$(( SLURM_NTASKS - PHYDLL_NP_DL ))
       launch_cmd="mpirun -n ${NP_PHY} \
-        ./solver_cpp/${COMPILE_OUTPUT_PATH}/terrain_solver \
+        ./solver_wrapper.sh \
         --device \"${device}\" \
         --gpus-per-node \"${GPUS_PER_NODE}\" \
         --ml-nodes \"${DB_NODES}\" \
@@ -1508,8 +1573,8 @@ if [[ "${RUN_SOLVER}" -eq 1 ]]; then
         ${RANK_GRID_ARGS[@]} \
         ${OVERWRITE_ARG[@]} \
         --write-surface \
-        : -n ${PHYDLL_NP_DL} -x LD_LIBRARY_PATH=\"${DL_LD_LIBRARY_PATH}\" \
-        ${DL_CLIENT_CMD[*]}"
+         : -n ${PHYDLL_NP_DL} -x LD_LIBRARY_PATH=\"${DL_LD_LIBRARY_PATH}\" -x PATH \
+         ${DL_CLIENT_CMD[*]}"
     else
       # HetJob mode: use srun
       srun_solver_args="--export=ALL $(get_srun_het_flag "${SOLVER_HET_GROUP}") --nodes \"${_nodes:-1}\" --ntasks-per-node \"${_ntasks_per_node_num}\""
@@ -1665,21 +1730,23 @@ if [[ "${USE_SMARTSIM}" -eq 1 || ( "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_
   echo "Done" > "close_driver_${SLURM_JOB_ID}.txt"
   echo "Waiting 10s before killing driver to allow for graceful shutdown..."
   sleep 10
-  if [[ -z "${DRIVER_PID:-}" ]]; then
-    echo "SmartSim controller PID is not set (controller may not have started in this run). Skipping controller termination."
-  else
-  # check if process is still running before attempting to kill
-  if ps -p "${DRIVER_PID}" > /dev/null 2>&1; then
-    echo "Driver process with PID ${DRIVER_PID} is still running, attempting to terminate..."
-    if kill -0 "${DRIVER_PID}" 2>/dev/null; then
-      echo "Terminating SmartSim controller with PID ${DRIVER_PID}"
-      kill "${DRIVER_PID}"
+  if [[ -n "${DRIVER_PID:-}" ]]; then
+    # check if process is still running before attempting to kill
+    if ps -p "${DRIVER_PID}" > /dev/null 2>&1; then
+      echo "Driver process with PID ${DRIVER_PID} is still running, attempting to terminate..."
+      if kill -0 "${DRIVER_PID}" 2>/dev/null; then
+        echo "Terminating SmartSim controller with PID ${DRIVER_PID}"
+        kill "${DRIVER_PID}"
+      else
+        echo "SmartSim controller process with PID ${DRIVER_PID} is not running."
+      fi
     else
-      echo "SmartSim controller process with PID ${DRIVER_PID} is not running."
+      echo "Driver process with PID ${DRIVER_PID} has already exited."
     fi
-  else
-  echo "Driver process with PID ${DRIVER_PID} has already exited."
   fi
+  if [[ -n "${NV_DMON_PID:-}" ]]; then
+    echo "Terminating nvidia-smi dmon sidecar with PID ${NV_DMON_PID}"
+    kill "${NV_DMON_PID}" 2>/dev/null || true
   fi
 fi
 

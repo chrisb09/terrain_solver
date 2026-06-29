@@ -4,6 +4,7 @@
 
 // project-specific headers
 #include "client.h"
+#include "scorep_regions.hpp"
 #ifdef USE_CPP_ML_INTERFACE
 #include "ml_coupling.hpp"
 #endif
@@ -2942,6 +2943,13 @@ static GlobalStats reduce_global_stats(
 
 int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
+    SCOREP_USER_REGION_DEFINE(handle_solver_setup)
+    SCOREP_USER_REGION_DEFINE(handle_solver_main_loop)
+    SCOREP_USER_REGION_DEFINE(handle_solver_step_ml)
+    SCOREP_USER_REGION_DEFINE(handle_solver_step_compute)
+    SCOREP_USER_REGION_DEFINE(handle_solver_teardown)
+
+    SCOREP_USER_REGION_BEGIN(handle_solver_setup, "solver_setup", SCOREP_USER_REGION_TYPE_COMMON)
 
     int world_rank = 0;
     int world_size = 1;
@@ -3523,6 +3531,8 @@ int main(int argc, char** argv) {
             const auto report_max_silence = std::chrono::minutes(5);
             int next_triangular_save_step = cfg.triangular_scale;
             int triangular_k = 2;
+            SCOREP_USER_REGION_END(handle_solver_setup)
+            SCOREP_USER_REGION_BEGIN(handle_solver_main_loop, "solver_main_loop", SCOREP_USER_REGION_TYPE_COMMON)
 
             for (int step = 1; step <= cfg.steps; ++step) {
                 log_memory_usage(world_rank, "step_begin", step);
@@ -3535,6 +3545,7 @@ int main(int argc, char** argv) {
                 const bool use_ml_step = ((step % 2) == 0) && use_ml_interface;
                 
                 if (use_ml_step) {
+                    SCOREP_USER_REGION_BEGIN(handle_solver_step_ml, "solver_step_ml", SCOREP_USER_REGION_TYPE_COMMON)
                     #ifdef USE_CPP_ML_INTERFACE
                         if (use_smartsim) {
                             moved_this_step_local = compute_local_step_ml_smartsim(
@@ -3571,10 +3582,11 @@ int main(int argc, char** argv) {
                             cfg,
                             ml_tile_output);
                         #endif
+                    SCOREP_USER_REGION_END(handle_solver_step_ml)
 
                 } else {
 
-
+                    SCOREP_USER_REGION_BEGIN(handle_solver_step_compute, "solver_step_compute", SCOREP_USER_REGION_TYPE_COMMON)
                     moved_this_step_local = compute_local_step(
                         terrain,
                         water,
@@ -3582,6 +3594,7 @@ int main(int argc, char** argv) {
                         decomp,
                         cfg.clamp_epsilon,
                         step_scratch);
+                    SCOREP_USER_REGION_END(handle_solver_step_compute)
 
                 }
                 log_memory_usage(world_rank, use_ml_step ? "after_ml_solver_step" : "after_regular_solver_step", step);
@@ -3710,7 +3723,10 @@ int main(int argc, char** argv) {
                 if (cfg.mpi_sync_mode == SyncMode::Step) {
                     MPI_Barrier(decomp.cart_comm);
                 }
-            }
+            } // end step loop
+
+            SCOREP_USER_REGION_END(handle_solver_main_loop)
+            SCOREP_USER_REGION_BEGIN(handle_solver_teardown, "solver_teardown", SCOREP_USER_REGION_TYPE_COMMON)
 
             if (world_rank == 0) {
                 std::cout << "[shutdown] starting trajectory writer close" << std::endl;
@@ -3746,6 +3762,8 @@ int main(int argc, char** argv) {
             delete client;
             client = nullptr;
         }
+
+        SCOREP_USER_REGION_END(handle_solver_teardown)
 
         MPI_Finalize();
         return 0;

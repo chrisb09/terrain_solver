@@ -12,7 +12,12 @@
 set -euo pipefail
 
 # Get directories
-MINI_APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export USE_SCOREP=1
+if [ -n "${SLURM_SUBMIT_DIR:-}" ]; then
+    MINI_APP_DIR="${SLURM_SUBMIT_DIR}"
+else
+    MINI_APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+fi
 CPP_ML_DIR="$(realpath "${MINI_APP_DIR}/../CPP-ML-Interface")"
 ABS_SCRIPT="${MINI_APP_DIR}/$(basename "${BASH_SOURCE[0]}")"
 
@@ -34,7 +39,17 @@ cd "${CPP_ML_DIR}"
 echo "Sourcing environment and runtime from CPP-ML-Interface/install.sh cuda-12..."
 source ./install.sh cuda-12
 
-# 3. go back to the original dir and run the build.sh
+# 3. Handle Score-P gating
+if [[ -n "${USE_SCOREP:-}" ]]; then
+    echo "USE_SCOREP is set. Loading Score-P and PAPI modules..."
+    module load Score-P/8.4
+    module load PAPI/7.0.0
+    export CXX=scorep-mpicxx
+    export CC=scorep-mpicc
+    export SCOREP_WRAPPER_INSTRUMENTER_FLAGS="--nocompiler --user --mpp=mpi --io=none --memory=malloc --thread=none --nocuda"
+fi
+
+# 4. go back to the original dir and run the build.sh
 cd "${MINI_APP_DIR}"
 echo "Running build.sh in ${MINI_APP_DIR}..."
 ./build.sh "$@"
