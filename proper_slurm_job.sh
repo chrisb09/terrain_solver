@@ -542,6 +542,10 @@ if [[ -n "${SKIP_COMPILE_ENV:-}" ]]; then
   SKIP_COMPILE="${SKIP_COMPILE_ENV}"
   echo "Using SKIP_COMPILE from environment variable: ${SKIP_COMPILE}"
 fi
+if [[ -n "${USE_SCOREP_ENV:-}" ]]; then
+  USE_SCOREP="${USE_SCOREP_ENV}"
+  echo "Using USE_SCOREP from environment variable: ${USE_SCOREP}"
+fi
 if [[ -n "${COMPILE_OUTPUT_PATH_ENV:-}" ]]; then
   COMPILE_OUTPUT_PATH="${COMPILE_OUTPUT_PATH_ENV}"
   echo "Using COMPILE_OUTPUT_PATH from environment variable: ${COMPILE_OUTPUT_PATH}"
