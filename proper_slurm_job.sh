@@ -545,6 +545,9 @@ fi
 if [[ -n "${COMPILE_OUTPUT_PATH_ENV:-}" ]]; then
   COMPILE_OUTPUT_PATH="${COMPILE_OUTPUT_PATH_ENV}"
   echo "Using COMPILE_OUTPUT_PATH from environment variable: ${COMPILE_OUTPUT_PATH}"
+elif [[ -n "${USE_SCOREP:-}" ]]; then
+  COMPILE_OUTPUT_PATH="build_scorep"
+  echo "USE_SCOREP is set; defaulting COMPILE_OUTPUT_PATH to '${COMPILE_OUTPUT_PATH}' to preserve clean build/"
 fi
 if [[ "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:u}" == "PHYDLL" ]]; then
   _phydll_cache="solver_cpp/${COMPILE_OUTPUT_PATH}/CMakeCache.txt"
@@ -1507,6 +1510,14 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
   export TORCH_NUM_THREADS=1
 
   SOLVER_EXE="./solver_cpp/${COMPILE_OUTPUT_PATH}/terrain_solver"
+  # When running a Score-P instrumented binary, libpapi.so has a transitive dependency on
+  # libnvidia-ml.so.1 (PAPI CUDA support). CPU-only solver nodes don't have the real driver
+  # library, so we inject the CUDA stub library path to satisfy the dynamic linker.
+  if [[ -n "${USE_SCOREP:-}" ]]; then
+    _CUDA_STUBS="/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/CUDA/12.4.0/lib/stubs"
+    export LD_LIBRARY_PATH="${_CUDA_STUBS}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    echo "Score-P run: prepended CUDA stubs to LD_LIBRARY_PATH for libnvidia-ml.so.1 stub on CPU nodes."
+  fi
   if [[ -n "${USE_SCOREP:-}" ]]; then
       export SCOREP_ENABLE_PROFILING=true
       export SCOREP_ENABLE_TRACING=false
