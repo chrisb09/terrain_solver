@@ -1526,6 +1526,8 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
       export SCOREP_ENABLE_PROFILING=true
       export SCOREP_ENABLE_TRACING=false
       export SCOREP_TOTAL_MEMORY=16000K
+      # Enable MPI profiling groups: point-to-point, collective, and one-sided communication
+      export SCOREP_MPI_ENABLE_GROUPS="p2p,coll,one_sided"
       # PAPI metrics are commented out for now since they failed to initialize in CMake, preventing build.
       export SCOREP_METRIC_PAPI=""
       SOLVER_EXE="./solver_wrapper.sh"
