@@ -361,6 +361,12 @@ else
   MPI_RANKS=$(( _nodes * ${_tmp_ntasks_per_node:-1} ))
 fi
 
+if [[ -z "${SLURM_HET_SIZE:-}" ]] && [[ "${USE_SMARTSIM:-0}" -eq 1 || ( "${USE_CPP_ML_INTERFACE:-0}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:-}" == "SMARTSIM" ) ]]; then
+  # Reserve 4 cores for SmartSim database
+  MPI_RANKS=$(( MPI_RANKS - 4 ))
+  echo "Single Node SmartSim: Reserving 4 cores for DB. Solver ranks reduced to ${MPI_RANKS}."
+fi
+
 SOLVER_SRUN_EXTRA_ARGS=""
 if [[ -z "${SLURM_HET_SIZE:-}" ]] && [[ "${USE_SMARTSIM:-0}" -eq 1 || ( "${USE_CPP_ML_INTERFACE:-0}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:-}" == "SMARTSIM" ) ]]; then
   if [[ -n "${SLURM_JOB_NODELIST:-}" ]]; then
@@ -373,7 +379,7 @@ if [[ -z "${SLURM_HET_SIZE:-}" ]] && [[ "${USE_SMARTSIM:-0}" -eq 1 || ( "${USE_C
 fi
 
 # Ensure _ntasks_per_node is populated for the job name template
-if [[ -z "${_ntasks_per_node_raw}" ]]; then
+if [[ -z "${_ntasks_per_node_raw}" ]] || [[ -z "${SLURM_HET_SIZE:-}" && ( "${USE_SMARTSIM:-0}" -eq 1 || "${CPP_ML_INTERFACE_PROVIDER:-}" == "SMARTSIM" ) ]]; then
   _ntasks_per_node=$(( MPI_RANKS / _nodes ))
 else
   _ntasks_per_node="${_ntasks_per_node_raw}"
