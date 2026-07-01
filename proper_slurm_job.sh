@@ -1336,7 +1336,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
       # Also add --allow-shlib-undefined so we don't fail if libnvidia-ml.so.1 isn't found at link time for AIxeleratorService
       LIBTORCH_LIB_DIR="$(realpath "${MINI_APP_DIR}/../CPP-ML-Interface/extern/libtorch/lib")"
       COMPILE_ARGS+=("-DWITH_SCOREP=ON" "-DFORCE_AIX_REBUILD=ON" "-DTORCH_VERSION=2.4.0" "-DAIXELERATOR_CMAKE_ARGS=-DWITH_TORCH=ON -DWITH_SCOREP=ON -DBUILD_TESTS=OFF" "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-rpath-link,${LIBTORCH_LIB_DIR} -Wl,-rpath-link,/usr/lib64 -Wl,-rpath-link,/lib64 -Wl,-rpath,/usr/lib64 -Wl,-rpath,/lib64 -Wl,-rpath,/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/CUDA/12.4.0/lib/stubs -Wl,--allow-shlib-undefined" "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,-rpath-link,${LIBTORCH_LIB_DIR} -Wl,-rpath-link,/usr/lib64 -Wl,-rpath-link,/lib64 -Wl,-rpath,/usr/lib64 -Wl,-rpath,/lib64 -Wl,-rpath,/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/CUDA/12.4.0/lib/stubs -Wl,--allow-shlib-undefined")
-      export SCOREP_WRAPPER_INSTRUMENTER_FLAGS="--nocompiler --user --mpp=none --io=none --memory=malloc --thread=none --nocuda"
+      export SCOREP_WRAPPER_INSTRUMENTER_FLAGS="--nocompiler --user --mpp=mpi --io=none --memory=malloc --thread=none --nocuda"
       SCOREP_BIN_DIR="/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/Score-P/8.4-gompi-2022a/bin"
       export CXX="${SCOREP_BIN_DIR}/scorep-mpicxx"
       export CC="${SCOREP_BIN_DIR}/scorep-mpicc"
@@ -1554,7 +1554,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
           SCOREP_BIN_DIR="/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/Score-P/8.4-gompi-2022a/bin"
           export CXX="${SCOREP_BIN_DIR}/scorep-mpicxx"
           export CC="${SCOREP_BIN_DIR}/scorep-mpicc"
-          export SCOREP_WRAPPER_INSTRUMENTER_FLAGS="--nocompiler --user --mpp=none --io=none --memory=malloc --thread=none --nocuda"
+          export SCOREP_WRAPPER_INSTRUMENTER_FLAGS="--nocompiler --user --mpp=mpi --io=none --memory=malloc --thread=none --nocuda"
           DL_CMAKE_ARGS+=("-DWITH_SCOREP=ON")
         else
           export CC=gcc
