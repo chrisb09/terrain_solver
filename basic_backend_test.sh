@@ -54,6 +54,9 @@ submit_sequential() {
 
 # We deactivate some jobs by adding ### to their line
 PREFIX="GPU"
+if [[ "${USE_SCOREP_ENV}" == "1" ]]; then
+    PREFIX="${PREFIX}_SCOREP"
+fi
 
 # 1. Direct SmartSim
 submit_sequential "SMARTSIM_${PREFIX}_terrain_solver" "USE_SMARTSIM=1,FORCE_TERRAIN_UPLOAD_EACH_STEP_ENV=0,SKIP_COMPILE_ENV=1,OVERWRITE_OUTPUT_ENV=1"
