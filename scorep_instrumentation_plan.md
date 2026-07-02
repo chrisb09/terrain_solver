@@ -5,8 +5,28 @@
 Detailed per-phase performance characterization of mini_app coupling across all five backends
 (AIX, PhyDLL C++ DL, PhyDLL Python DL, SmartSim-CMI, direct-SmartSim-from-solver) using
 **Score-P 8.4 manual instrumentation**, profiling mode (CUBE4), with **nvml-in-process +
-nvidia-smi sidecar** for GPU memory, **PAPI infiniband + net counters** for per-region IB
-byte traffic, and **Score-P Python adapter** for `phydll_dl_client.py`.
+nvidia-smi sidecar** for GPU memory, Score-P **user-metric byte counters** for per-region
+IB/logical-vs-actual byte traffic (PAPI is loaded but disabled — see D6), and the
+**Score-P Python adapter** for `phydll_dl_client.py`.
+
+## Status
+
+| Step | State | Evidence |
+|------|-------|----------|
+| 1 — AIx fork rebuild | ✅ Complete | `scorep_AIX_1481578/profile.cubex` (job 1481578, devel); region tree verified with nonzero visit counts. |
+| 2 — CMI library instrumentation | ✅ Complete | `cppml_*` regions present in CMI-SmartSim + CMI-PhyDLL-C++ profiles. |
+| 3 — Solver instrumentation | ✅ Complete | `scorep_SMARTSIM_1482514/profile.cubex` (job 1482514, devel) — `solver_setup`/`solver_step`/`ml_step_wall`/`input_prep`/`ml_send`/`ml_inference`/`ml_recv`/`ml_unpack_postprocess` all populated. 16 per-rank dirs. |
+| 4 — PhyDLL DL side | ✅ Complete | Job 1477188 validated C++ `dl_recv`/`dl_torch_forward`/`dl_send_output` and Python `py_recv`/`py_inference`/`py_send` regions in separate scorep dirs (see `AGY.md` metrics table). |
+| 5 — nvidia-smi + notebook | 🔄 In progress | nvidia-smi sidecar wired in `proper_slurm_job.sh:1408`; `analysis.ipynb` has phase-breakdown, logical-vs-actual, GPU log parsing cells. PAPI dropped (D6). Remaining: clean up single-allocation GPU jobs (1486581+ failed with `libnvidia-ml.so.1` missing), validate GPU runs, finalise notebook charts. |
+
+Completed jobs (devel partition, CPU-only SMARTSIM at 1920×1080, 10 steps, `perfect_model`):
+- **1481578** — AIX provider, 16 ranks.
+- **1477188** — PhyDLL C++ + Python DL side.
+- **1482514** — SMARTSIM provider (direct SmartSim-from-solver), 16 ranks, solver 52s on r23m0124.
+
+Known residuals to address before final multi-variant run:
+- Jobs 1486581–1486597 (GPU partition `c23g` + CPU partner `c23mm_low`) FAILED: `terrain_solver: error while loading shared libraries: libnvidia-ml.so.1: cannot open shared object file`. The CUDA-stubs `LD_LIBRARY_PATH` fix in `proper_slurm_job.sh` (commit `61eb609`) resolved this for CPU devel nodes but the GPU-partition path still misses `libnvidia-ml.so.1`.
+- Step .4 model staging on the secondary node fails consistently (exit 2) and falls back to the shared filesystem; tolerable at 2 nodes, needs investigation before larger allocations.
 
 ## Decisions (locked in)
 
@@ -17,7 +37,7 @@ byte traffic, and **Score-P Python adapter** for `phydll_dl_client.py`.
 | D3 | Output mode | **Profile only (CUBE4)** for now. One trace run later if needed after `scorep-score` buffer sizing. |
 | D4 | Adapters enabled | `--nocompiler --user --mpp=mpi --io=none --memory=malloc --thread=none --nocuda` |
 | D5 | GPU timing/memory | **nvmlDeviceGetMemoryInfo() in-process** for AIx server rank + PhyDLL C++ DL (we own these). **nvidia-smi dmon sidecar** for the Redis process (external, we don't own it). |
-| D6 | IB traffic | **PAPI infiniband + net counters** (`SCOREP_METRIC_PAPI`). Exact event tokens TBD via `papi_avail -a` on a compute node. |
+| D6 | IB traffic | **PAPI not usable** — `perf_event_paranoid` blocks counter access on our nodes, so `SCOREP_METRIC_PAPI=""` (PAPI stays loaded as a Score-P dependency but emits no metrics). Per-region IB/net byte traffic is sourced instead from the solver's existing `/proc/net/dev` parsing (`ib0`/`lo` rx/tx GiB in `ML_TRAFFIC` / `NET_USAGE` logs) and the `bytes_*_logical` / `bytes_*_actual` Score-P user metrics. |
 | D7 | Python DL timing | **Score-P Python adapter** (`pip install scorep` in smartsim_cuda-12 venv, launch via `scorep python`). |
 | D8 | Toolchain | **Keep production gompi/2022a** (GCC 11.3 + OpenMPI 4.1.4 + CUDA 12.4 + cuDNN + HDF5 1.12.2). No migration. |
 | D9 | Build gating | **Env-gated** by `USE_SCOREP=1`. Default (unset) behaviour unchanged. |
@@ -28,7 +48,7 @@ byte traffic, and **Score-P Python adapter** for `phydll_dl_client.py`.
 
 ```
 Score-P/8.4              → CUDA-less, PMIx 4.1.2-aligned, built against gompi/2022a
-PAPI/7.0.0               → infiniband (98 native events), net (320 counters), perf_event, appio, coretemp
+PAPI/7.0.0               → loaded as Score-P dependency; counters DISABLED on our nodes (perf_event_paranoid). `SCOREP_METRIC_PAPI=""`.
 CubeLib/4.9.1             → cube4 / CubeGUI for reading .cubex profiles
 Vampir/10.5.0             → timeline viewer (future trace run)
 VampirServer/10.5.0       → server-side OTF2 reader
@@ -54,7 +74,7 @@ SCOREP_ENABLE_PROFILING=true
 SCOREP_ENABLE_TRACING=false
 SCOREP_TOTAL_MEMORY=16000K          # bump after scorep-score sizing
 SCOREP_EXPERIMENT_DIRECTORY="scorep_${backend}_${run_idx}"
-SCOREP_METRIC_PAPI='infiniband:::port_xmit_bytes,infiniband:::port_rcv_bytes,net:::rx_bytes,net:::tx_bytes'
+SCOREP_METRIC_PAPI=''                    # PAPI DISABLED (perf_event_paranoid blocks counters). IB/net bytes come from solver /proc/net/dev parsing + Score-P user-metric byte counters.
 ```
 
 Compiler: swap `CXX` → `scorep-mpicxx` in CMake configure.
@@ -330,7 +350,7 @@ full-node effect, 1h max, 238 GB mem, default account):
 | 2 | CMI library build | After adding all CMI regions, re-smoke AIX + CMI-SmartSim + CMI-PhyDLL-C++. Profile shows `cppml_prepare_input`, `cppml_static_inference` (nesting `aix_inference`/`phydll_prepack`/...), `cppml_finalize_output` nested inside `ml_step_wall`. |
 | 3 | Solver build | After adding solver regions, all five backend variants show `solver_step` ⟶ `ml_step_wall` ⟶ `input_prep` ⟶ `ml_send`/`ml_inference`/`ml_recv` ⟶ `ml_unpack_postprocess`. |
 | 4 | PhyDLL DL side | C++ DL produces a separate scorep dir with `dl_recv`/`dl_torch_forward`/`dl_send_output` regions. Python DL (via `scorep python`) produces a third scorep dir with `py_recv`/`py_inference`/`py_send`. Timestamps align. |
-| 5 | PAPI + nvidia-smi | `SCOREP_METRIC_PAPI` produces non-zero IB/net byte counters in the profile. `nvidia-smi dmon` log has per-step GPU memory rows. |
+| 5 | nvidia-smi (PAPI dropped) | ~~`SCOREP_METRIC_PAPI` produces non-zero IB/net byte counters~~ — PAPI unusable (D6). `nvidia-smi dmon` log has per-step GPU memory rows. IB/net bytes come from solver `/proc/net/dev` + user-metric byte counters. |
 
 ---
 
@@ -338,48 +358,54 @@ full-node effect, 1h max, 238 GB mem, default account):
 
 After all instrumentation is stable, extend the notebook to:
 
-1. Read CUBE4 profiles via `pycube` / `cube4 --export -o output_file` for each backend.
+1. Read CUBE4 profiles via `pycube` / `cube4 --export -o output_file` / `scorep-score -r` for each backend.
 2. Extract per-phase wall times from the region tree for use in bar charts.
 3. Plot per-backend breakdown bars (input_prep, send, inference, recv, unpack).
 4. Plot bytes-logical-f32 vs bytes-actual-f64 per backend (the PhyDLL overhead quantification).
-5. Plot PAPI IB/net per-region byte counters as a grouped bar alongside the analytic ML_TRAFFIC.
+5. Plot IB/net byte traffic from the solver's existing `/proc/net/dev` (`ib0`/`lo` rx/tx GiB) and the `bytes_*_logical` / `bytes_*_actual` Score-P user metrics as a grouped bar alongside the analytic `ML_TRAFFIC`. (PAPI counters unavailable — see D6.)
 6. Parse `nvidia-smi dmon` logs for Redis GPU memory vs step time.
 
 ---
 
 ## Implementation sequence (step-by-step with validation)
 
-### Step 1 — Pre-flight clean + AIx fork rebuild + devel smoke validate
-- Remove stale build dirs.
-- Wipe INSTALL-SCOREP, rebuild AIxeleratorService with `WITH_SCOREP=ON`.
-- Add new `#ifdef SCOREP` regions to `torchInference.cpp` + `aixeleratorService.cpp`.
-- Submit devel smoke for AIX variant: confirm `scorep_aix_*/profile.cubex` region tree.
-- **Gate:** profile opens in cube4 with expected region hierarchy + nonzero visit counts.
+### Step 1 — Pre-flight clean + AIx fork rebuild + devel smoke validate ✅
+- Removed stale build dirs.
+- Wiped INSTALL-SCOREP, rebuilt AIxeleratorService with `WITH_SCOREP=ON`.
+- Added new `#ifdef SCOREP` regions to `torchInference.cpp` + `aixeleratorService.cpp`.
+- Submitted devel smoke for AIX variant: `scorep_AIX_1481578/profile.cubex` confirmed.
+- **Gate met:** profile opens in cube4 with expected region hierarchy + nonzero visit counts.
 
-### Step 2 — CMI library instrumentation + build wiring
-- Add top-level `WITH_SCOREP` option, `find_package(Scorep)`, `scorep_instrument_target`.
-- Add all `#ifdef USE_SCOREP` regions and user-metric byte counters in provider/data/application headers.
-- Rebuild, re-smoke AIX + CMI-SmartSim + CMI-PhyDLL-C++.
-- **Gate:** profile shows `cppml_*` top dispatch nesting per-provider sub-regions.
+### Step 2 — CMI library instrumentation + build wiring ✅
+- Added top-level `WITH_SCOREP` option, `find_package(Scorep)`, `scorep_instrument_target`.
+- Added all `#ifdef USE_SCOREP` regions and user-metric byte counters in provider/data/application headers.
+- Resolved CMake double-instrumentation (`SCOREP_MPP_SYSTEM` conflict) by setting the target property directly instead of calling `scorep_instrument_target` on executables.
+- Rebuilt, re-smoked AIX + CMI-SmartSim + CMI-PhyDLL-C++.
+- **Gate met:** profile shows `cppml_*` top dispatch nesting per-provider sub-regions.
 
-### Step 3 — Solver instrumentation + direct-SmartSim path
-- Add `solver_cpp/scorep_regions.hpp` + regions in `terrain_solver.cpp`.
+### Step 3 — Solver instrumentation + direct-SmartSim path ✅
+- Added `solver_cpp/scorep_regions.hpp` + regions in `terrain_solver.cpp`.
 - CMake `USE_SCOREP` wiring in `solver_cpp/CMakeLists.txt`.
-- Rebuild, re-smoke all 5 backend variants.
-- **Gate:** profile shows `solver_step` ⟶ full nested hierarchy for every variant.
+- Fixed HDF5 runtime mismatch (commit series) — CUDA stubs only on CPU nodes, removed global `/usr/lib64` prepend.
+- Fixed Score-P PAPI init crash — `SCOREP_METRIC_PAPI=""` (now formalised in D6).
+- Fixed single-allocation SMARTSIM node-pinning (`SOLVER_SRUN_EXTRA_ARGS`, `DB_NODES=1`).
+- Re-smoked all variants — `scorep_SMARTSIM_1482514` is the clean CPU run.
+- **Gate met:** profile shows `solver_step` ⟶ full nested hierarchy for SMARTSIM variant.
 
-### Step 4 — PhyDLL DL side (C++ + Python)
-- Region-wrap `dl_client.cpp` + `phydll_dl_runtime.cpp`.
-- Install `scorep` pip package; wrap `phydll_dl_client.py` with `scorep.user_region`.
-- Build the C++ DL under `scorep-mpicxx`; launch Python DL via `scorep python`.
-- Devel smoke the PhyDLL C++ and Python variants.
-- **Gate:** separate scorep dirs per MPMD component, regions visible, timestamps plausible.
+### Step 4 — PhyDLL DL side (C++ + Python) ✅
+- Region-wrapped `dl_client.cpp` + `phydll_dl_runtime.cpp`.
+- Installed `scorep` pip package; wrapped `phydll_dl_client.py` with `scorep.user_region`.
+- Built the C++ DL under `scorep-mpicxx`; launched Python DL via `scorep python`.
+- Devel smoke validated in job 1477188 (see `AGY.md` metrics table).
+- **Gate met:** separate scorep dirs per MPMD component, regions visible, timestamps plausible.
 
-### Step 5 — PAPI + nvidia-smi + notebook
-- Enumerate PAPI IB/net event tokens on a compute node (`papi_avail -a`).
-- Wire nvidia-smi sidecar into `proper_slurm_job.sh`.
-- Full multi-variant Score-P run.
-- Extend notebook with per-phase bars + byte-count logical-vs-actual + PAPI IB + GPU memory.
+### Step 5 — nvidia-smi + notebook (PAPI dropped per D6) 🔄
+- ~~Enumerate PAPI IB/net event tokens~~ — dropped, PAPI unusable (D6).
+- ✅ Wire nvidia-smi sidecar into `proper_slurm_job.sh` (line 1408).
+- 🔲 **Fix GPU-partition `libnvidia-ml.so.1` load failure** (jobs 1486581–1486597): the CUDA-stubs `LD_LIBRARY_PATH` fix that resolved CPU devel nodes does not cover the `c23g` GPU partition. Either point to the real `libnvidia-ml.so.1` on GPU nodes or load the CUDA runtime module before `srun`.
+- 🔲 Validate a GPU Score-P run on `c23g` for at least SMARTSIM + CMI_SMARTSIM variants.
+- 🔲 Extend notebook: per-phase bars, bytes-logical-f32 vs bytes-actual-f64, GPU memory vs step time. (CUBE4 reading via `scorep-score -r` already wired in `analysis.ipynb`.)
+- 🔲 Final multi-variant Score-P run across all 5 backends (CPU: AIX/PhyDLL-C++/PhyDLL-Py/SmartSim already validated; GPU: pending the libnvidia-ml fix).
 
 ---
 
