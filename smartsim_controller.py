@@ -68,6 +68,19 @@ if use_gpu:
 
 from smartsim.experiment import Experiment
 
+# Strip Score-P environment variables before creating the experiment.
+# The srun command uses `--export ALL` which propagates the full environment;
+# Score-P vars in the propagated env can interfere with Slurm step launch.
+for key in list(env.keys()):
+    if key.startswith("SCOREP_"):
+        del env[key]
+
+# Remove Score-P wrapper binaries from PATH so srun's environment is clean.
+_scorep_bin = "/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/Score-P/8.4-gompi-2022a/bin"
+_current_path = env.get("PATH", "")
+if _scorep_bin in _current_path:
+    env["PATH"] = ":".join(p for p in _current_path.split(":") if p != _scorep_bin)
+
 
 exp_dir = "smartsim_experiments/" + env.get("SLURM_JOB_ID", "local")
 if os.path.exists(exp_dir):
@@ -89,14 +102,60 @@ db = exp.create_database(port=6780,
                          )
 
 db.set_run_arg("export", "ALL")
+db.set_run_arg("ntasks", str(args.db_nodes))
+db.set_run_arg("ntasks-per-node", "1")
 # Only apply het-group if we are actually in a heterogeneous job allocation.
 if args.het_group is not None and (env.get("SLURM_HET_SIZE") or env.get("SLURM_JOB_NUM_NODES_HET_GROUP_0")):
     db.set_run_arg("het-group", args.het_group)
-    
-if not use_gpu:
-    db.set_cpus(args.cpu_cores_per_node)
 
-exp.start(db, block=False, summary=True)
+db.set_cpus(max(1, args.cpu_cores_per_node))
+
+import traceback
+
+# DEBUG: print the env we're launching with (excluding too-large values)
+print("=== DEBUG: controller environment (key vars) ===", flush=True)
+for k in sorted(env.keys()):
+    if k.startswith("SLURM_") or k in ("LD_LIBRARY_PATH", "PATH", "PYTHONPATH"):
+        v = env[k]
+        if len(v) > 500:
+            v = v[:500] + "... [truncated]"
+        print(f"  {k}={v}", flush=True)
+
+try:
+    exp.start(db, block=False, summary=True)
+except Exception:
+    print("=== DEBUG: exp.start failed ===", flush=True)
+    traceback.print_exc()
+    # Try sacct to see what steps are registered
+    try:
+        job_id = env.get("SLURM_JOB_ID", "")
+        result = subprocess.run(
+            ["sacct", "--noheader", "-p", "--format=jobname,jobid,state,exitcode"],
+            capture_output=True, text=True, timeout=15
+        )
+        print(f"sacct (all) stdout:\n{result.stdout}", flush=True)
+        print(f"sacct (all) stderr: {result.stderr}", flush=True)
+        if job_id:
+            result2 = subprocess.run(
+                ["sacct", "-j", job_id, "--format=jobname,jobid,state,exitcode"],
+                capture_output=True, text=True, timeout=15
+            )
+            print(f"sacct (-j {job_id}) stdout:\n{result2.stdout}", flush=True)
+            print(f"sacct (-j {job_id}) stderr: {result2.stderr}", flush=True)
+    except Exception as sacct_err:
+        print(f"sacct diagnostics failed: {sacct_err}", flush=True)
+    # Try to run a simple srun to see if srun works at all
+    try:
+        result3 = subprocess.run(
+            ["srun", "--het-group=1", "--cpus-per-task=1", "hostname"],
+            capture_output=True, text=True, timeout=15
+        )
+        print(f"srun hostname stdout: {result3.stdout}", flush=True)
+        print(f"srun hostname stderr: {result3.stderr}", flush=True)
+        print(f"srun hostname returncode: {result3.returncode}", flush=True)
+    except Exception as srun_err:
+        print(f"srun diagnostic failed: {srun_err}", flush=True)
+    raise
 
 if args.db_nodes > 1:
     # Clustered Redis can temporarily mark peers as failed while TF backend/model

@@ -15,7 +15,7 @@ else
     fi
 fi
 
-MODEL="benchmark_giant_mlp"
+MODEL="perfect_model"
 
 # Dependency tracking
 PREV_JID=""

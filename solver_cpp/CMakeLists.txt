@@ -126,7 +126,9 @@ if(DEFINED ENV{USE_SCOREP} AND NOT "$ENV{USE_SCOREP}" STREQUAL "")
     list(APPEND CMAKE_MODULE_PATH "${CPPML_DIR}/extern/AIxeleratorService/cmake")
     find_package(Scorep REQUIRED)
     if(SCOREP_FOUND)
-        set_target_properties(${PROJECT_NAME} PROPERTIES SCOREP_MPP_SYSTEM "mpi")
+        set_target_properties(${PROJECT_NAME} PROPERTIES
+            SCOREP_MPP_SYSTEM "mpi"
+            INTERFACE_SCOREP_MPP_SYSTEM "mpi")
     endif()
 endif()
 

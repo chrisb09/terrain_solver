@@ -6,7 +6,7 @@
 ############################
 #SBATCH --job-name=terrain_solver_coupled
 #SBATCH --account=thes2181
-#SBATCH --time=02:00:00
+#SBATCH --time=00:30:00
 ##SBATCH --exclusive
 #SBATCH --output=logs/mini_app_output_%j.txt
 
@@ -1519,17 +1519,18 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
   # library, so we inject the CUDA stub library path to satisfy the dynamic linker.
   if [[ -n "${USE_SCOREP:-}" ]]; then
     _CUDA_STUBS="/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/CUDA/12.4.0/lib/stubs"
-    export LD_LIBRARY_PATH="${_CUDA_STUBS}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-    echo "Score-P run: prepended CUDA stubs to LD_LIBRARY_PATH for libnvidia-ml.so.1 stub on CPU nodes."
+    export _CUDA_STUBS
+    echo "Score-P run: CUDA stubs will be applied by solver wrapper on CPU nodes."
   fi
   if [[ -n "${USE_SCOREP:-}" ]]; then
       export SCOREP_ENABLE_PROFILING=true
       export SCOREP_ENABLE_TRACING=false
       export SCOREP_TOTAL_MEMORY=16000K
-      # Enable MPI profiling groups: point-to-point, collective, and one-sided communication
-      export SCOREP_MPI_ENABLE_GROUPS="p2p,coll,one_sided"
+      # Enable MPI profiling groups: point-to-point, collective, and one-sided (RMA) communication
+      export SCOREP_MPI_ENABLE_GROUPS="p2p,coll,rma"
       # PAPI metrics are commented out for now since they failed to initialize in CMake, preventing build.
       export SCOREP_METRIC_PAPI=""
+      export _SOLVER_BINARY="${SOLVER_EXE}"
       SOLVER_EXE="./solver_wrapper.sh"
   fi
 
