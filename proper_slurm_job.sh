@@ -2038,21 +2038,10 @@ if [[ "${USE_SMARTSIM}" -eq 1 || ( "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_
   rm -f "${DB_HOSTNAME_FILE}"
   echo "Creating 'close_driver_${RUN_ID}.txt' file to signal SmartSim controller to shut down..."
   echo "Done" > "close_driver_${RUN_ID}.txt"
-  echo "Waiting 10s before killing driver to allow for graceful shutdown..."
-  sleep 10
+  echo "Waiting for SmartSim controller to shut down..."
   if [[ -n "${DRIVER_PID:-}" ]]; then
-    # check if process is still running before attempting to kill
-    if ps -p "${DRIVER_PID}" > /dev/null 2>&1; then
-      echo "Driver process with PID ${DRIVER_PID} is still running, attempting to terminate..."
-      if kill -0 "${DRIVER_PID}" 2>/dev/null; then
-        echo "Terminating SmartSim controller with PID ${DRIVER_PID}"
-        kill "${DRIVER_PID}"
-      else
-        echo "SmartSim controller process with PID ${DRIVER_PID} is not running."
-      fi
-    else
-      echo "Driver process with PID ${DRIVER_PID} has already exited."
-    fi
+    wait "${DRIVER_PID}" 2>/dev/null || true
+    echo "SmartSim controller (PID ${DRIVER_PID}) shut down completed."
   fi
   if [[ -n "${NV_DMON_PID:-}" ]]; then
     echo "Terminating nvidia-smi dmon sidecar with PID ${NV_DMON_PID}"

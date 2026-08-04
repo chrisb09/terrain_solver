@@ -247,7 +247,8 @@ print(f"Wrote database hostname to file: {args.hostname_file}", flush=True)
 
 
 # Wait until there's a file indicating the solver is done, then stop the database and clean up the experiment.
-done_file = "close_driver_" + env.get("SLURM_JOB_ID", "local") + ".txt"
+run_id = env.get("RUN_ID_ENV") or env.get("SLURM_JOB_ID", "local")
+done_file = f"close_driver_{run_id}.txt"
 
 print(f"Waiting for solver to finish (looking for file: {done_file})...", flush=True)
 while not os.path.exists(done_file):
