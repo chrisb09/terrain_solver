@@ -40,12 +40,19 @@ echo "Sourcing environment and runtime from CPP-ML-Interface/install.sh cuda-12.
 source ./install.sh cuda-12
 
 # 3. Handle Score-P gating
-if [[ -n "${USE_SCOREP:-}" ]]; then
-    echo "USE_SCOREP is set. Loading Score-P and PAPI modules..."
-    module load Score-P/8.4
-    module load PAPI/7.0.0
-    export CXX=scorep-mpicxx
-    export CC=scorep-mpicc
+if [[ "${USE_SCOREP}" == "1" ]]; then
+    export SMARTSIM_PAPI_ROOT="${CPP_ML_DIR}/tmp/opencode/papi-7.2.0-install"
+    export SMARTSIM_SCOREP_ROOT="${CPP_ML_DIR}/tmp/opencode/scorep-8.4-papi72-install"
+    if [ -f "${CPP_ML_DIR}/env_scorep.sh" ]; then
+        source "${CPP_ML_DIR}/env_scorep.sh"
+    fi
+    if ! command -v scorep-config >/dev/null 2>&1 || ! command -v scorep-mpicxx >/dev/null 2>&1; then
+        echo "USE_SCOREP=1 but local Score-P tools are unavailable on PATH." >&2
+        exit 1
+    fi
+    SCOREP_BIN_DIR="$(dirname "$(command -v scorep-config)")"
+    export CXX="${SCOREP_BIN_DIR}/scorep-mpicxx"
+    export CC="${SCOREP_BIN_DIR}/scorep-mpicc"
     export SCOREP_WRAPPER_INSTRUMENTER_FLAGS="--nocompiler --user --mpp=mpi --io=none --memory=malloc --thread=none --nocuda"
 fi
 

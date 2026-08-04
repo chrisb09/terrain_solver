@@ -48,30 +48,42 @@ Specifically:
     *   Commented out the redundant `scorep_instrument_target` calls in `dl_clients/CMakeLists.txt` since the `scorep-mpicxx` compiler wrapper automatically instruments all compiled sources.
     *   **Result:** The C++ DL client compiles, links, and runs completely successfully with Score-P wrappers active!
 
+### Issue D: Python PhyDLL with Score-P Needs the Wrapper
+*   **The Error:** Importing the Score-P-linked Python PhyDLL extension directly failed with:
+    ```
+    libscorep_measurement.so.11: undefined symbol: scorep_subsystems
+    ```
+*   **Why it failed:** The Score-P-linked `libphydll.so` expects the Score-P runtime to be initialized around the Python process. A plain `python phydll_dl_client.py` launch does not provide that runtime context.
+*   **The Remedy:** Launch the Python DL client through the Score-P wrapper, gated by `PHYDLL_PY_SCOREP_WRAPPER=1` in the launcher.
+    ```bash
+    python -m scorep --keep-files --instrumenter-type=dummy --noinstrumenter --mpp=none phydll_dl_client.py
+    ```
+    This keeps the Python client on the Score-P-linked PhyDLL build while supplying the runtime symbols it needs.
+
 ---
 
-## 3. The Asymmetric Instrumentation Deadlock (Current Status)
+## 3. Current Status
 
 ### What works
 *   Compiling and running the **C++ DL client** with Score-P wrapper compilers (`scorep-mpicxx`) and linking against the shared runtime compiles and links 100% successfully.
 *   The C++ solver and C++ DL client execute to completion without hangs, resolving the communicator split issue via `phydll_get_local_mpi_comm()`.
 *   Compiling and running the **Python DL client** without Score-P wrappers (using standard `g++`/`gcc`) compiles, links, and runs completely successfully, fully validating our Python local communicator split via `dll.get_local_mpi_comm()`.
+*   Compiling and running the **Python DL client with Score-P** works when launched through the Python Score-P wrapper (`PHYDLL_PY_SCOREP_WRAPPER=1`).
 
 ### What doesn't
-*   Running the **Python DL client** MPMD execution while the C++ solver is compiled with Score-P (`--mpp=mpi`) hangs indefinitely at `MPI_Init` due to the asymmetric instrumentation deadlock described below. This is an inherent limitation of Score-P MPI profiling when non-C++ processes run in the same `MPI_COMM_WORLD`.
+*   Running the **Python DL client** with the Score-P-linked PhyDLL build via plain Python import still fails, because the Score-P runtime symbols are missing unless the wrapper is used.
 
 ### The Cause
-1.  The C++ solver is compiled with `--mpp=mpi` (meaning Score-P MPI profiling wrappers are active).
-2.  At startup inside `MPI_Init`, the Score-P runtime attempts internal synchronization/collectives across all ranks in `MPI_COMM_WORLD`.
-3.  The Python DL client is run via the standard Python interpreter (not instrumented by C++ Score-P wrappers).
-4.  The Python rank returns from `MPI_Init` immediately and never participates in Score-P's internal initialization collectives, deadlocking the solver ranks inside `MPI_Init`.
+1.  The Score-P-linked PhyDLL library depends on Score-P runtime symbols being present when Python imports the extension.
+2.  A plain Python launch does not provide those symbols.
+3.  Launching through the Score-P wrapper initializes the runtime correctly, so the Python client can import the Score-P-linked PhyDLL build and proceed normally.
 
 ---
 
 ## 4. Proposed Remedies
 
 1.  **For C++ DL Client runs:** No changes needed. Both solver and client are instrumented, allowing them to cooperate.
-2.  **For Python DL Client runs:** 
-    *   **Option A:** Run the solver with `SCOREP_MPI_ENABLE_GROUPS=none` at runtime (to see if it disables the `MPI_Init` collective handshake).
-    *   **Option B (Recommended):** Build a separate non-Score-P binary for Python runs, or default back to `--mpp=none` if we need a single binary that supports both C++ and Python DL run modes without deadlocks.
-
+2.  **For Python DL Client runs:**
+    *   `USE_SCOREP=0` uses the plain Python client and the non-Score-P PhyDLL build.
+    *   `USE_SCOREP=1` should use `PHYDLL_PY_SCOREP_WRAPPER=1` so the Python process is launched through Score-P.
+    *   Keep the MPI split ordering identical to the C++ client: do the MPMD split before `dll.init("dl")`, then query `dll.get_local_mpi_comm()` only after `dll.define_dl()`.

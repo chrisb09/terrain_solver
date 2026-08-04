@@ -1,0 +1,5 @@
+1 direct balanced_control 2617210 tpq=24 intra=1
+3 direct balanced_control 2617211 tpq=8 intra=3
+4 direct balanced_control 2617212 tpq=6 intra=4
+5 direct balanced_control 2617213 tpq=4 intra=6
+6 direct balanced_control 2617214 tpq=4 intra=6

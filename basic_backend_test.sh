@@ -15,7 +15,27 @@ else
     fi
 fi
 
-MODEL="perfect_model"
+MODEL="watercnn"
+
+# Default to a smaller shared allocation for rapid backend validation. Set to 0
+# to submit the full 8640x4320, 96-rank benchmark configuration unchanged.
+BASIC_BACKEND_FAST_VALIDATION="${BASIC_BACKEND_FAST_VALIDATION:-1}"
+JOB_SCRIPT="./proper_slurm_job.sh"
+PROFILE_EXPORTS=""
+
+if [[ "${BASIC_BACKEND_FAST_VALIDATION}" == "1" ]]; then
+    JOB_SCRIPT="$(mktemp .basic_backend_fast_XXXXXX.sh)"
+    sed \
+        -e 's/^#SBATCH --time=.*/#SBATCH --time=00:10:00/' \
+        -e 's/^#SBATCH --ntasks-per-node=96$/#SBATCH --ntasks-per-node=16/' \
+        proper_slurm_job.sh > "${JOB_SCRIPT}"
+    trap 'rm -f "${JOB_SCRIPT}"' EXIT
+    PROFILE_EXPORTS="TARGET_WIDTH_ENV=2160,TARGET_HEIGHT_ENV=1080"
+    echo "Using fast validation profile: 2160x1080, 16 CPU solver tasks, 10 minutes, shared allocation."
+elif [[ "${BASIC_BACKEND_FAST_VALIDATION}" != "0" ]]; then
+    echo "BASIC_BACKEND_FAST_VALIDATION must be 0 or 1." >&2
+    exit 1
+fi
 
 # Dependency tracking
 PREV_JID=""
@@ -24,27 +44,30 @@ PREV_JID=""
 submit_sequential() {
     local job_name="$1"
     local export_vars="$2"
+    if [[ -n "${PROFILE_EXPORTS}" ]]; then
+        export_vars="${export_vars},${PROFILE_EXPORTS}"
+    fi
     if [[ "${USE_SCOREP_ENV}" == "1" ]]; then
         export_vars="${export_vars},USE_SCOREP_ENV=1"
     fi
     local further_sbatch_args="${@:3}"  # Capture any additional arguments
     local sbatch_cmd="sbatch --parsable --job-name=${job_name} --export=${export_vars},MODEL_NAME_ENV=${MODEL} ${further_sbatch_args}"
-    
+
     if [ -n "$PREV_JID" ]; then
         sbatch_cmd="${sbatch_cmd} --dependency=afterany:${PREV_JID}"
     fi
     
     # Run sbatch and capture ID
     local jid
-    jid=$(eval ${sbatch_cmd} ./proper_slurm_job.sh)
+    jid=$(eval ${sbatch_cmd} "${JOB_SCRIPT}")
     
     if [ $? -eq 0 ]; then
         echo "Submitted ${job_name}: ${jid}"
         if [ -n "$PREV_JID" ]; then echo "  (Depends on ${PREV_JID})"; fi
-        
+
         # Register the watcher for this job
         ~/scripts/swatch --jobid "${jid}"
-        
+
         # Update dependency for next job
         PREV_JID="${jid}"
     else
@@ -71,7 +94,7 @@ submit_sequential "CMI_smartsim_${PREFIX}_terrain_solver" "USE_SMARTSIM=0,SKIP_C
 submit_sequential "CMI_aix_${PREFIX}_terrain_solver" "USE_SMARTSIM=0,CPP_ML_INTERFACE_PROVIDER_ENV=AIX,SKIP_COMPILE_ENV=1,OVERWRITE_OUTPUT_ENV=1"
 
 # 5. PhyDLL via CPP-ML-Interface (C++ DL Client)
-submit_sequential "CMI_phydll_${PREFIX}_terrain_solver" "USE_SMARTSIM=0,CPP_ML_INTERFACE_PROVIDER_ENV=PHYDLL,SKIP_COMPILE_ENV=1,OVERWRITE_OUTPUT_ENV=1"
+submit_sequential "CMI_phydll_${PREFIX}_terrain_solver" "USE_SMARTSIM=0,CPP_ML_INTERFACE_PROVIDER_ENV=PHYDLL,SCOREP_MPP_ENV=none,SKIP_COMPILE_ENV=1,OVERWRITE_OUTPUT_ENV=1"
 
 # 6. PhyDLL via CPP-ML-Interface (Python DL Client)
-submit_sequential "CMI_phydll_py_${PREFIX}_terrain_solver" "USE_SMARTSIM=0,CPP_ML_INTERFACE_PROVIDER_ENV=PHYDLL,USE_PYTHON_DL_CLIENT=1,SKIP_COMPILE_ENV=1,OVERWRITE_OUTPUT_ENV=1"
+submit_sequential "CMI_phydll_py_${PREFIX}_terrain_solver" "USE_SMARTSIM=0,CPP_ML_INTERFACE_PROVIDER_ENV=PHYDLL,USE_PYTHON_DL_CLIENT=1,SCOREP_MPP_ENV=none,SKIP_COMPILE_ENV=1,OVERWRITE_OUTPUT_ENV=1"

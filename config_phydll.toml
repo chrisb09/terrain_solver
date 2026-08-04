@@ -4,7 +4,7 @@ error_separate = false
 
 [provider]
 class = "Phydll"
-model_file = "./train_models/model_a/best_model_benchmark_giant_mlp.pt"
+model_file = "./train_models/model_a/perfect_cuda.pt"
 backend = "TORCH"
 device = "GPU"
 batch_size = 500000

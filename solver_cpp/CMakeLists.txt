@@ -10,6 +10,7 @@ set(CPPML_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../CPP-ML-Interface")
 
 option(WITH_PHYDLL "Enable PhyDLL provider support through CPP-ML-Interface" ON)
 
+set(CPPML_DISABLE_REGISTRY_GEN ON CACHE BOOL "Disable CPP-ML-Interface standalone registry generation" FORCE)
 add_subdirectory("${CPPML_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/cpp-ml-interface-build" EXCLUDE_FROM_ALL)
 
 
@@ -41,9 +42,9 @@ endif()
 
 project(${PROJECT_NAME} LANGUAGES CXX C)
 
-if(DEFINED ENV{USE_SCOREP} AND NOT "$ENV{USE_SCOREP}" STREQUAL "")
+if(WITH_SCOREP OR (DEFINED ENV{USE_SCOREP} AND NOT "$ENV{USE_SCOREP}" STREQUAL "" AND NOT "$ENV{USE_SCOREP}" STREQUAL "0"))
     add_definitions(-DUSE_SCOREP)
-    message(STATUS "Using Score-P compiler wrapper for solver (USE_SCOREP=$ENV{USE_SCOREP})")
+    message(STATUS "Score-P support enabled for solver")
 endif()
 
 if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
@@ -84,6 +85,7 @@ if(USE_CPP_ML_INTERFACE)
     endif()
 
     set(CPPML_GENERATED_REGISTRY "${CMAKE_CURRENT_BINARY_DIR}/generated_registry.hpp")
+    set(CPPML_LIBRARY_GENERATED_REGISTRY "${CMAKE_CURRENT_BINARY_DIR}/cpp-ml-interface-build/generated_registry.hpp")
     set(TEMP_GENERATED_REGISTRY "${CMAKE_CURRENT_BINARY_DIR}/generated_registry.tmp.hpp")
 
     file(GLOB_RECURSE CPPML_HEADERS "${CPPML_DIR}/include/**/*.hpp")
@@ -95,21 +97,29 @@ if(USE_CPP_ML_INTERFACE)
     set(CLANG_ARGS "-std=c++17 -I${CPPML_DIR}/include -I${CMAKE_CURRENT_SOURCE_DIR}/include -I${SMARTREDIS_DIR}/include -I${SMARTREDIS_DIR}/install/include -xc++")
 
     add_custom_command(
-        OUTPUT "${CPPML_GENERATED_REGISTRY}"
+        OUTPUT "${CPPML_GENERATED_REGISTRY}" "${CPPML_LIBRARY_GENERATED_REGISTRY}"
         COMMAND ${CMAKE_COMMAND} -E env "CLANG_ARGS=${CLANG_ARGS}"
                 "${SMARTSIM_PYTHON}" "${CPPML_DIR}/scripts/generate_registry.py"
                 "${TEMP_GENERATED_REGISTRY}" "${BASE_CLASSES}" ${ALL_HEADERS}
         COMMAND ${CMAKE_COMMAND} -E copy_if_different "${TEMP_GENERATED_REGISTRY}" "${CPPML_GENERATED_REGISTRY}"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${TEMP_GENERATED_REGISTRY}" "${CPPML_LIBRARY_GENERATED_REGISTRY}"
         DEPENDS ${ALL_HEADERS} "${CPPML_DIR}/scripts/generate_registry.py"
         WORKING_DIRECTORY "${CPPML_DIR}"
         COMMENT "Generating merged registry (CPP-ML-Interface + terrain_solver headers)..."
     )
 
-    add_custom_target(terrain_solver_registry DEPENDS "${CPPML_GENERATED_REGISTRY}")
+    add_custom_target(terrain_solver_registry DEPENDS "${CPPML_GENERATED_REGISTRY}" "${CPPML_LIBRARY_GENERATED_REGISTRY}")
     add_dependencies(${PROJECT_NAME} terrain_solver_registry)
+    # The interface library includes this generated header as well.  Make its
+    # compilation wait for registry generation when building from a clean tree.
+    add_dependencies(cpp_ml_interface_library terrain_solver_registry)
+    target_include_directories(cpp_ml_interface_library PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/include"
+        "${CMAKE_CURRENT_BINARY_DIR}")
     target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_BINARY_DIR}")
 endif()
 target_include_directories(${PROJECT_NAME} PRIVATE ${HDF5_INCLUDE_DIRS})
+target_include_directories(${PROJECT_NAME} PRIVATE "${CPPML_DIR}/include")
 target_link_libraries(${PROJECT_NAME} PRIVATE MPI::MPI_CXX ${HDF5_LIBRARIES})
 
 # Manually set SmartRedis include and library paths
@@ -118,17 +128,22 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${SMARTREDIS_DIR}/install/inc
 target_link_directories(${PROJECT_NAME} PRIVATE ${SMARTREDIS_DIR}/install/lib64)
 target_link_libraries(${PROJECT_NAME} PRIVATE smartredis)
 
-# Link against the CPP-ML-Interface headers and library
-target_link_libraries(${PROJECT_NAME} PRIVATE cpp_ml_interface_headers cpp_ml_interface_library)
+# The interface library requires the generated coupling registry.  It is not
+# needed for No-ML or direct SmartSim runs, which do not enable this interface.
+if(USE_CPP_ML_INTERFACE)
+    target_link_libraries(${PROJECT_NAME} PRIVATE cpp_ml_interface_headers cpp_ml_interface_library)
+endif()
 
-if(DEFINED ENV{USE_SCOREP} AND NOT "$ENV{USE_SCOREP}" STREQUAL "")
-    # Find ScoreP if we are using it so we can instrument the target properly
+if(WITH_SCOREP OR (DEFINED ENV{USE_SCOREP} AND NOT "$ENV{USE_SCOREP}" STREQUAL "" AND NOT "$ENV{USE_SCOREP}" STREQUAL "0"))
+    # Set Score-P MPP properties so target properties match cpp_ml_interface_headers requirement
     list(APPEND CMAKE_MODULE_PATH "${CPPML_DIR}/extern/AIxeleratorService/cmake")
     find_package(Scorep REQUIRED)
     if(SCOREP_FOUND)
         set_target_properties(${PROJECT_NAME} PROPERTIES
-            SCOREP_MPP_SYSTEM "mpi"
-            INTERFACE_SCOREP_MPP_SYSTEM "mpi")
+            SCOREP_ENABLE_COMPILER OFF
+            SCOREP_ENABLE_USER ON
+            SCOREP_MPP_SYSTEM "${CPPML_SCOREP_MPP}"
+            INTERFACE_SCOREP_MPP_SYSTEM "${CPPML_SCOREP_MPP}")
     endif()
 endif()
 

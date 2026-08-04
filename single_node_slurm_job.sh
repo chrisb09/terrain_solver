@@ -15,18 +15,18 @@
 ############################
 #SBATCH --partition=c23g
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=96
+#SBATCH --ntasks-per-node=32
 #SBATCH --cpus-per-task=1
-#SBATCH --gres=gpu:4
-#SBATCH --mem-per-cpu=5G
+#SBATCH --gres=gpu:2
+#SBATCH --mem-per-cpu=10G
 
 
 
 ############################
 # Email notifications (optional, adjust as needed)
 ############################
-#SBATCH --mail-user=christian.brinkmann@rwth-aachen.de
-#SBATCH --mail-type=END,FAIL
+##SBATCH --mail-user=christian.brinkmann@rwth-aachen.de
+##SBATCH --mail-type=END,FAIL
 
 
 
@@ -42,12 +42,13 @@ SOLVER_STEP_LOG="logs/mini_app_output_${SLURM_JOB_ID}.txt"
 export SR_MODEL_TIMEOUT=900000
 export SR_CMD_TIMEOUT=900000
 export SR_SOCKET_TIMEOUT=900000
+export SMARTSIM_WLM_TRIALS=60
 
 ########## SmartSim/ML Parameters ##########
 
 USE_SMARTSIM=${USE_SMARTSIM:-0} # directly use SmartSim for model management and inference
 # inverse ${USE_SMARTSIM} so that if USE_SMARTSIM is 0, we use the C++ ML interface instead of SmartSim
-USE_CPP_ML_INTERFACE=$(( ! USE_SMARTSIM ))
+USE_CPP_ML_INTERFACE=${USE_CPP_ML_INTERFACE:-$(( ! USE_SMARTSIM ))}
 CPP_ML_INTERFACE_PROVIDER="SMARTSIM" # SMARTSIM, AIX, PHYDLL
 CPP_ML_INTERFACE_LOG_LEVEL="info" # debug, info, warning, error
 # Detect if we are running in a heterogeneous job allocation.
@@ -116,14 +117,14 @@ fi
 
 #MODEL_NAME="perfect_model"
 #MODEL_NAME="transformer_mlp"
-#MODEL_NAME="watercnn_a"
+#MODEL_NAME="watercnn"
 MODEL_NAME="${MODEL_NAME_ENV:-benchmark_giant_mlp}"
 
 if [[ "${MODEL_NAME}" == "perfect_model" ]]; then
   MODEL_ARTIFACT_MANIFEST="train_models/model_a/artifact_manifest_perfect_split.json"
 elif [[ "${MODEL_NAME}" == "transformer_mlp" ]]; then
   MODEL_ARTIFACT_MANIFEST="train_models/model_a/artifact_manifest_transformer_split.json"
-elif [[ "${MODEL_NAME}" == "watercnn_a" ]]; then
+elif [[ "${MODEL_NAME}" == "watercnn" ]]; then
   MODEL_ARTIFACT_MANIFEST="train_models/model_a/artifact_manifest_watercnn_split.json"
 elif [[ "${MODEL_NAME}" == "benchmark_giant_mlp" ]]; then
   MODEL_ARTIFACT_MANIFEST="train_models/model_a/artifact_manifest_giant_split.json"
@@ -391,6 +392,11 @@ _ntasks_per_node_num="${_ntasks_per_node%%\(*}"
 _ntasks_per_node_num="${_ntasks_per_node_num%%,*}"
 _ntasks_per_node_num="${_ntasks_per_node_num:-1}"
 
+if [[ -n "${RANK_GRID_X_ENV:-}" ]] && [[ -n "${RANK_GRID_Z_ENV:-}" ]]; then
+  _ntasks_per_node_num=$(( RANK_GRID_X_ENV * RANK_GRID_Z_ENV ))
+  MPI_RANKS="${_ntasks_per_node_num}"
+fi
+
 echo "Calculated MPI_RANKS=${MPI_RANKS} from _nodes=${_nodes}, _ntasks_per_node=${_ntasks_per_node}, SLURM_NTASKS=${SLURM_NTASKS}, and _solver_ntasks_var=${(P)_solver_ntasks_var:-}"
 IO_MODE="rank0_gather"     # parallel_hdf5, rank0_gather
 MPI_SYNC_MODE="none"        # none, step, report
@@ -533,12 +539,38 @@ if [[ -n "${USE_SCOREP_ENV:-}" ]]; then
   USE_SCOREP="${USE_SCOREP_ENV}"
   echo "Using USE_SCOREP from environment variable: ${USE_SCOREP}"
 fi
+if [[ -n "${SCOREP_MPP_ENV:-}" ]]; then
+  SCOREP_MPP="${SCOREP_MPP_ENV}"
+  echo "Using SCOREP_MPP from environment variable: ${SCOREP_MPP}"
+fi
+SCOREP_MPP="${SCOREP_MPP:-mpi}"
+export SCOREP_MPP
 if [[ -n "${COMPILE_OUTPUT_PATH_ENV:-}" ]]; then
   COMPILE_OUTPUT_PATH="${COMPILE_OUTPUT_PATH_ENV}"
   echo "Using COMPILE_OUTPUT_PATH from environment variable: ${COMPILE_OUTPUT_PATH}"
 elif [[ -n "${USE_SCOREP:-}" ]]; then
-  COMPILE_OUTPUT_PATH="build_scorep"
+  if [[ "${SCOREP_MPP}" == "mpi" ]]; then
+    COMPILE_OUTPUT_PATH="build_scorep"
+  else
+    COMPILE_OUTPUT_PATH="build_scorep_${SCOREP_MPP}"
+  fi
   echo "USE_SCOREP is set; defaulting COMPILE_OUTPUT_PATH to '${COMPILE_OUTPUT_PATH}' to preserve clean build/"
+fi
+if [[ "${PROFILE_VALIDATION_ENV:-0}" == "1" ]]; then
+  _profile_provider="${PROFILE_PROVIDER_ENV:-${CPP_ML_INTERFACE_PROVIDER}}"
+  if [[ "${CPP_ML_INTERFACE_PROVIDER:u}" != "${_profile_provider:u}" ]]; then
+    echo "Error: profiling validation requested provider '${_profile_provider}', but selected '${CPP_ML_INTERFACE_PROVIDER}'." >&2
+    exit 1
+  fi
+  if [[ "${USE_SCOREP}" != "1" ]]; then
+    echo "Error: profiling validation requires USE_SCOREP_ENV=1." >&2
+    exit 1
+  fi
+  if [[ "${FORCE_FRESH_RUN_ENV:-0}" != "1" && "${OVERWRITE_OUTPUT}" != "1" ]]; then
+    echo "Error: profiling validation requires FORCE_FRESH_RUN_ENV=1 or OVERWRITE_OUTPUT_ENV=1." >&2
+    exit 1
+  fi
+  echo "PROFILE_VALIDATION provider=${CPP_ML_INTERFACE_PROVIDER} scorep=${USE_SCOREP} fresh=true"
 fi
 if [[ "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:u}" == "PHYDLL" ]]; then
   _phydll_cache="solver_cpp/${COMPILE_OUTPUT_PATH}/CMakeCache.txt"
@@ -663,6 +695,8 @@ set -euo pipefail
 
 cd /hpcwork/ro092286/smartsim/ || exit
 
+MINI_APP_DIR="/hpcwork/ro092286/smartsim/mini_app"
+
 export SMARTSIM_RUNTIME_ROOT
 
 if (( USE_GPU == 1 )); then
@@ -674,6 +708,10 @@ fi
 
 # Suppress OpenMPI PMI s1/s2 component probe warnings on systems without libpmi/libpmi2.
 export OMPI_MCA_pmix="^s1,s2"
+# Force node-local shared memory segment backing directories to prevent network filesystem warnings
+export TMPDIR="/tmp"
+export TEMP="/tmp"
+export TMP="/tmp"
 # Work around OpenMPI OMPIO collective I/O instability seen with parallel HDF5 at high rank counts.
 # Force ROMIO backend for MPI-IO instead of OMPIO (stack traces showed mca_io_ompio/mca_fcoll_dynamic_gen2).
 export OMPI_MCA_io="romio321"
@@ -687,7 +725,17 @@ export SR_LOG_LEVEL="debug"
 module -t list
 
 if [[ -n "${USE_SCOREP:-}" ]]; then
-  module load Score-P/8.4 PAPI/7.0.0
+  CMI_DIR="$(realpath "${MINI_APP_DIR}/../CPP-ML-Interface")"
+  export SMARTSIM_PAPI_ROOT="${CMI_DIR}/tmp/opencode/papi-7.2.0-install"
+  export SMARTSIM_SCOREP_ROOT="${CMI_DIR}/tmp/opencode/scorep-8.4-papi72-install"
+  if [[ -f "${MINI_APP_DIR}/../CPP-ML-Interface/env_scorep.sh" ]]; then
+    source "${CMI_DIR}/env_scorep.sh"
+  fi
+  if ! command -v scorep-config >/dev/null 2>&1 || ! command -v scorep-mpicxx >/dev/null 2>&1; then
+    echo "USE_SCOREP=1 but local Score-P tools are unavailable on PATH." >&2
+    exit 1
+  fi
+  SCOREP_BIN_DIR="$(dirname "$(command -v scorep-config)")"
   if (( USE_GPU == 1 )); then
     # On GPU nodes, NVML is natively available in system paths, so no need to add stub path.
     # Just use default LD_LIBRARY_PATH.
@@ -697,9 +745,12 @@ if [[ -n "${USE_SCOREP:-}" ]]; then
     # We append it to LD_LIBRARY_PATH without prepending system paths to avoid shadowing module libraries.
     export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/CUDA/12.4.0/lib/stubs"
   fi
-  export PATH="/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/Score-P/8.4-gompi-2022a/bin:$PATH"
-  export SCOREP_EXPERIMENT_DIRECTORY="scorep_${CPP_ML_INTERFACE_PROVIDER}_${SLURM_JOB_ID}"
-  export SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY=true
+  export PATH="${SCOREP_BIN_DIR}:$PATH"
+  _scorep_job_name="${SLURM_JOB_NAME:-scorep_job}"
+  _scorep_job_name="${_scorep_job_name//[^A-Za-z0-9_.-]/_}"
+  export SCOREP_EXPERIMENT_DIRECTORY="${SCOREP_EXPERIMENT_DIRECTORY:-scorep_runs/${_scorep_job_name}_${SLURM_JOB_ID:-$$}}"
+  export SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY="${SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY:-true}"
+  mkdir -p "${SCOREP_EXPERIMENT_DIRECTORY}"
 fi
 
 # TensorFlow GPU backend in RedisAI may require an explicit CUDA data dir for XLA JIT
@@ -743,7 +794,6 @@ fi
 #########  Input and Output Paths ############
 
 
-MINI_APP_DIR="/hpcwork/ro092286/smartsim/mini_app"
 if (( USE_GPU == 1 )); then
   RUNTIME_DEVICE="smartsim_cuda-12"
   PY_ENV="${SMARTSIM_RUNTIME_ROOT}/${RUNTIME_DEVICE}"
@@ -780,6 +830,9 @@ if [[ ( "${USE_SMARTSIM}" -eq 1 || ( "${USE_CPP_ML_INTERFACE}" -eq 1 && ( "${CPP
   LOCAL_RUNTIME_TAR="/tmp/${USER}_${SLURM_JOB_ID}_${RUNTIME_DEVICE}.tar"
   LOCAL_RUNTIME_ENV="${LOCAL_RUNTIME_BASE}/${RUNTIME_DEVICE}"
   RUNTIME_STAGE_LOG="logs/runtime_stage_${SLURM_JOB_ID}.log"
+  # --mem-per-cpu applies to each srun step. Reserve four CPUs so staging is
+  # not constrained to the 10G cgroup assigned to a one-CPU tar process.
+  RUNTIME_STAGE_CPUS="${RUNTIME_STAGE_CPUS_ENV:-4}"
 
   if [[ ! -f "${RUNTIME_TAR_PATH}" ]]; then
     echo "Error: Runtime tarball not found at ${RUNTIME_TAR_PATH}. Run install.sh first to create it."
@@ -799,7 +852,7 @@ if [[ ( "${USE_SMARTSIM}" -eq 1 || ( "${USE_CPP_ML_INTERFACE}" -eq 1 && ( "${CPP
     local cp_rc
 
     setopt pipefail
-    srun --export=ALL $(get_srun_het_flag "${het_group}") --nodes "${node_count}" --ntasks-per-node 1 --cpus-per-task 1 \
+    srun --export=ALL $(get_srun_het_flag "${het_group}") --nodes "${node_count}" --ntasks-per-node 1 --cpus-per-task "${RUNTIME_STAGE_CPUS}" \
       $([[ "${node_count}" -gt 1 ]] && echo "--distribution=block") \
       /bin/zsh -lc "set -euo pipefail; cp -f '${RUNTIME_TAR_PATH}' '${LOCAL_RUNTIME_TAR}'; test -s '${LOCAL_RUNTIME_TAR}'; echo RUNTIME_TAR_COPY_PER_NODE label=${label} het_group=${het_group} host=\$(hostname) tar='${LOCAL_RUNTIME_TAR}'" \
       2>&1 | tee -a "${RUNTIME_STAGE_LOG}"
@@ -843,9 +896,9 @@ if [[ ( "${USE_SMARTSIM}" -eq 1 || ( "${USE_CPP_ML_INTERFACE}" -eq 1 && ( "${CPP
     local stage_rc
 
     setopt pipefail
-    srun --export=ALL $(get_srun_het_flag "${het_group}") --nodes "${node_count}" --ntasks-per-node 1 --cpus-per-task 1 \
+    srun --export=ALL $(get_srun_het_flag "${het_group}") --nodes "${node_count}" --ntasks-per-node 1 --cpus-per-task "${RUNTIME_STAGE_CPUS}" \
       $([[ "${node_count}" -gt 1 ]] && echo "--distribution=block") \
-      /bin/zsh -lc "set -euo pipefail; df -h /tmp; mkdir -p '${LOCAL_RUNTIME_BASE}'; tar -xf '${LOCAL_RUNTIME_TAR}' -C '${LOCAL_RUNTIME_BASE}'; test -x '${LOCAL_RUNTIME_ENV}/bin/python3'; echo RUNTIME_STAGE_PER_NODE label=${label} het_group=${het_group} host=\$(hostname) runtime='${LOCAL_RUNTIME_ENV}'" \
+      /bin/zsh -lc "set -euo pipefail; df -h /tmp; mkdir -p '${LOCAL_RUNTIME_BASE}'; echo RUNTIME_STAGE_CGROUP label=${label} memory_current=\$(cat /sys/fs/cgroup/memory.current 2>/dev/null || true) memory_max=\$(cat /sys/fs/cgroup/memory.max 2>/dev/null || true); /usr/bin/time -v tar -xf '${LOCAL_RUNTIME_TAR}' -C '${LOCAL_RUNTIME_BASE}'; test -x '${LOCAL_RUNTIME_ENV}/bin/python3'; echo RUNTIME_STAGE_CGROUP_END label=${label} memory_current=\$(cat /sys/fs/cgroup/memory.current 2>/dev/null || true) memory_events=\"\$(tr '\\n' ' ' </sys/fs/cgroup/memory.events 2>/dev/null || true)\"; echo RUNTIME_STAGE_PER_NODE label=${label} het_group=${het_group} host=\$(hostname) runtime='${LOCAL_RUNTIME_ENV}'" \
       2>&1 | tee -a "${RUNTIME_STAGE_LOG}"
     stage_rc=${pipestatus[1]}
     unsetopt pipefail
@@ -1087,7 +1140,7 @@ if [[ "${USE_LOCAL_MODEL_CACHE}" -eq 1 ]]; then
     if [[ "${#group_nodes[@]}" -eq 0 ]]; then
       echo "Warning: Could not resolve explicit node list for het-group ${het_group}; falling back to single srun staging." | tee -a "${MODEL_STAGE_LOG}"
       setopt pipefail
-      srun --export=ALL $(get_srun_het_flag "${het_group}") --nodes "${node_count}" --ntasks-per-node 1 --cpus-per-task 1 \
+      srun --export=ALL $(get_srun_het_flag "${het_group}") --nodes "${node_count}" --ntasks-per-node 1 --cpus-per-task 4 \
         $([[ "${node_count}" -gt 1 ]] && echo "--distribution=block") \
         /bin/zsh -lc "set -euo pipefail; _t0=\$(date +%s); mkdir -p \"${MODEL_LOCAL_DIR}\"; cp -f \"${MODEL_PATH_SOURCE}\" \"${MODEL_LOCAL_PATH}\"; test -s \"${MODEL_LOCAL_PATH}\"; _t1=\$(date +%s); echo MODEL_STAGE_PER_NODE label=${label} het_group=${het_group} host=\$(hostname) duration_s=\$((_t1-_t0)) path=${MODEL_LOCAL_PATH}" \
         2>&1 | tee -a "${MODEL_STAGE_LOG}"
@@ -1105,7 +1158,7 @@ if [[ "${USE_LOCAL_MODEL_CACHE}" -eq 1 ]]; then
         node_ok=0
         for attempt in {1..${MODEL_STAGE_MAX_RETRIES}}; do
           set +e
-          srun --export=ALL $(get_srun_het_flag "${het_group}") --nodes 1 --ntasks 1 --cpus-per-task 1 --nodelist "${node}" \
+          srun --export=ALL $(get_srun_het_flag "${het_group}") --nodes 1 --ntasks 1 --cpus-per-task 4 --nodelist "${node}" \
             /bin/zsh -lc "set -euo pipefail; _t0=\$(date +%s); mkdir -p \"${MODEL_LOCAL_DIR}\"; cp -f \"${MODEL_PATH_SOURCE}\" \"${MODEL_LOCAL_PATH}\"; test -s \"${MODEL_LOCAL_PATH}\"; _t1=\$(date +%s); echo MODEL_STAGE_PER_NODE label=${label} het_group=${het_group} host=\$(hostname) duration_s=\$((_t1-_t0)) path=${MODEL_LOCAL_PATH}" \
             >> "${MODEL_STAGE_LOG}" 2>&1
           stage_rc=$?
@@ -1321,13 +1374,18 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
     if [[ -n "${USE_SCOREP:-}" ]]; then
       # Need to provide rpath-link to libtorch/lib so that ld can resolve libcudnn.so etc. inside libtorch_cuda.so during Score-P wrapper linking
       # Also add --allow-shlib-undefined so we don't fail if libnvidia-ml.so.1 isn't found at link time for AIxeleratorService
+      if [[ -f "${MINI_APP_DIR}/../CPP-ML-Interface/env_scorep.sh" ]]; then
+        source "${MINI_APP_DIR}/../CPP-ML-Interface/env_scorep.sh"
+      fi
       LIBTORCH_LIB_DIR="$(realpath "${MINI_APP_DIR}/../CPP-ML-Interface/extern/libtorch/lib")"
-      COMPILE_ARGS+=("-DWITH_SCOREP=ON" "-DFORCE_AIX_REBUILD=ON" "-DTORCH_VERSION=2.4.0" "-DAIXELERATOR_CMAKE_ARGS=-DWITH_TORCH=ON -DWITH_SCOREP=ON -DBUILD_TESTS=OFF" "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-rpath-link,${LIBTORCH_LIB_DIR} -Wl,-rpath-link,/usr/lib64 -Wl,-rpath-link,/lib64 -Wl,-rpath,/usr/lib64 -Wl,-rpath,/lib64 -Wl,-rpath,/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/CUDA/12.4.0/lib/stubs -Wl,--allow-shlib-undefined" "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,-rpath-link,${LIBTORCH_LIB_DIR} -Wl,-rpath-link,/usr/lib64 -Wl,-rpath-link,/lib64 -Wl,-rpath,/usr/lib64 -Wl,-rpath,/lib64 -Wl,-rpath,/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/CUDA/12.4.0/lib/stubs -Wl,--allow-shlib-undefined")
-      export SCOREP_WRAPPER_INSTRUMENTER_FLAGS="--nocompiler --user --mpp=mpi --io=none --memory=malloc --thread=none --nocuda"
-      SCOREP_BIN_DIR="/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/Score-P/8.4-gompi-2022a/bin"
+      export SCOREP_WRAPPER_INSTRUMENTER_FLAGS="--nocompiler --user --mpp=${SCOREP_MPP} --io=none --memory=malloc --thread=none --nocuda"
+      SCOREP_BIN_DIR="$(dirname "$(command -v scorep-config)")"
+      COMPILE_ARGS+=("-DWITH_SCOREP=ON" "-DCPPML_SCOREP_MPP=${SCOREP_MPP}" "-DPHYDLL_DL_WITH_TORCH=OFF" "-DSCOREP_ROOT_DIR=${SMARTSIM_SCOREP_ROOT}" "-DSCOREP_CONFIG_EXECUTABLE=${SCOREP_BIN_DIR}/scorep-config" "-DSCOREP_INFO_EXECUTABLE=${SCOREP_BIN_DIR}/scorep-info" "-DAIX_USE_PREBUILT=ON" "-DAIXELERATOR_PREBUILT_INSTALL_PREFIX=${MINI_APP_DIR}/../CPP-ML-Interface/extern/AIxeleratorService/INSTALL-SCOREP" "-DTORCH_VERSION=2.4.0" "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-rpath-link,${LIBTORCH_LIB_DIR} -Wl,-rpath-link,/usr/lib64 -Wl,-rpath-link,/lib64 -Wl,-rpath,/usr/lib64 -Wl,-rpath,/lib64 -Wl,-rpath,/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/CUDA/12.4.0/lib/stubs -Wl,--allow-shlib-undefined" "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,-rpath-link,${LIBTORCH_LIB_DIR} -Wl,-rpath-link,/usr/lib64 -Wl,-rpath-link,/lib64 -Wl,-rpath,/usr/lib64 -Wl,-rpath,/lib64 -Wl,-rpath,/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/CUDA/12.4.0/lib/stubs -Wl,--allow-shlib-undefined")
       export CXX="${SCOREP_BIN_DIR}/scorep-mpicxx"
       export CC="${SCOREP_BIN_DIR}/scorep-mpicc"
       echo "Using SCOREP compilers: CC=${CC} CXX=${CXX}"
+    else
+      COMPILE_ARGS+=("-DWITH_SCOREP=OFF" "-DAIX_USE_PREBUILT=ON" "-DAIXELERATOR_PREBUILT_INSTALL_PREFIX=${MINI_APP_DIR}/../CPP-ML-Interface/extern/AIxeleratorService/INSTALL")
     fi
 
     # by default, COMPILE_OUTPUT_PATH is "build", but if COMPILE_OUTPUT_SUBDIR is set it overrides it
@@ -1392,8 +1450,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
   
     if [[ -n "${USE_SCOREP:-}" ]]; then
       mkdir -p "${SCOREP_EXPERIMENT_DIRECTORY}"
-      srun $(get_srun_het_flag "${DB_HET_GROUP}") --nodes=1 --ntasks=1 \
-          nvidia-smi dmon -s mu -d 1 -o TD > "${SCOREP_EXPERIMENT_DIRECTORY}/redis_gpu.log" 2>/dev/null &
+      nvidia-smi dmon -s mu -d 1 -o TD > "${SCOREP_EXPERIMENT_DIRECTORY}/redis_gpu.log" 2>/dev/null &
       NV_DMON_PID=$!
     fi
 
@@ -1504,57 +1561,167 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
   # When running a Score-P instrumented binary, libpapi.so has a transitive dependency on
   # libnvidia-ml.so.1 (PAPI CUDA support). CPU-only solver nodes don't have the real driver
   # library, so we inject the CUDA stub library path to satisfy the dynamic linker.
-  if [[ -n "${USE_SCOREP:-}" ]]; then
-    _CUDA_STUBS="/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/CUDA/12.4.0/lib/stubs"
-    export _CUDA_STUBS
-    echo "Score-P run: CUDA stubs will be applied by solver wrapper on CPU nodes."
-  fi
+  _CUDA_STUBS="/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/CUDA/12.4.0/lib/stubs"
+  export _CUDA_STUBS
+  echo "CUDA stubs configured; will be applied by solver wrapper on CPU nodes if necessary."
+
+  _scorep_detect_ib_prefix() {
+    local _devdir _portdir _dev _port _state _fallback=""
+    if [[ -d /sys/class/infiniband ]]; then
+      for _devdir in /sys/class/infiniband/*; do
+        [[ -d "${_devdir}" ]] || continue
+        _dev="${_devdir##*/}"
+        for _portdir in "${_devdir}"/ports/*; do
+          [[ -d "${_portdir}" ]] || continue
+          _port="${_portdir##*/}"
+          if [[ -r "${_portdir}/state" ]]; then
+            read -r _state < "${_portdir}/state"
+            if [[ "${_state}" == *ACTIVE* ]]; then
+              printf '%s_%s\n' "${_dev}" "${_port}"
+              return 0
+            fi
+          fi
+          if [[ -z "${_fallback}" ]]; then
+            _fallback="${_dev}_${_port}"
+          fi
+        done
+      done
+    fi
+    if [[ -n "${_fallback}" ]]; then
+      printf '%s\n' "${_fallback}"
+      return 0
+    fi
+    return 1
+  }
+
+  _scorep_detect_net_iface() {
+    local _netdir _iface
+    if [[ -d /sys/class/net/ib0 ]]; then
+      printf 'ib0\n'
+      return 0
+    fi
+    if [[ -d /sys/class/net ]]; then
+      for _netdir in /sys/class/net/ib*; do
+        [[ -e "${_netdir}" ]] || continue
+        _iface="${_netdir##*/}"
+        [[ "${_iface}" != "lo" ]] || continue
+        printf '%s\n' "${_iface}"
+        return 0
+      done
+      for _netdir in /sys/class/net/*; do
+        [[ -e "${_netdir}" ]] || continue
+        _iface="${_netdir##*/}"
+        [[ "${_iface}" != "lo" ]] || continue
+        printf '%s\n' "${_iface}"
+        return 0
+      done
+    fi
+    return 1
+  }
+
+  _scorep_detect_default_papi_metrics() {
+    local _metrics=() _ib_prefix _net_iface _event
+    if ! command -v papi_native_avail >/dev/null 2>&1; then
+      return 1
+    fi
+
+    _ib_prefix="$(_scorep_detect_ib_prefix 2>/dev/null || true)"
+    if [[ -n "${_ib_prefix}" ]]; then
+      for _event in port_rcv_data port_xmit_data; do
+        if papi_native_avail 2>/dev/null | grep -q "infiniband:::${_ib_prefix}:${_event}"; then
+          _metrics+=("infiniband:::${_ib_prefix}:${_event}")
+        fi
+      done
+    fi
+
+    _net_iface="$(_scorep_detect_net_iface 2>/dev/null || true)"
+    if [[ -n "${_net_iface}" ]]; then
+      for _event in rx:bytes tx:bytes; do
+        if papi_native_avail 2>/dev/null | grep -q "net:::${_net_iface}:${_event}"; then
+          _metrics+=("net:::${_net_iface}:${_event}")
+        fi
+      done
+    fi
+
+    if ((${#_metrics[@]})); then
+      local IFS=,
+      printf '%s\n' "${_metrics[*]}"
+      return 0
+    fi
+
+    return 1
+  }
+
   if [[ -n "${USE_SCOREP:-}" ]]; then
       export SCOREP_ENABLE_PROFILING=true
       export SCOREP_ENABLE_TRACING=false
       export SCOREP_TOTAL_MEMORY=16000K
       # Enable MPI profiling groups: point-to-point, collective, and one-sided (RMA) communication
       export SCOREP_MPI_ENABLE_GROUPS="p2p,coll,rma"
-      # PAPI metrics are commented out for now since they failed to initialize in CMake, preventing build.
-      export SCOREP_METRIC_PAPI=""
-      export _SOLVER_BINARY="${SOLVER_EXE}"
-      SOLVER_EXE="./solver_wrapper.sh"
+      if [[ -z "${SCOREP_METRIC_PAPI:-}" ]]; then
+        _detected_scorep_metrics="$(_scorep_detect_default_papi_metrics 2>/dev/null || true)"
+        if [[ -n "${_detected_scorep_metrics}" ]]; then
+          export SCOREP_METRIC_PAPI="${_detected_scorep_metrics}"
+          echo "Score-P run: auto-detected PAPI metrics: ${SCOREP_METRIC_PAPI}"
+        else
+          echo "Score-P run: no default PAPI metrics detected; leaving SCOREP_METRIC_PAPI empty."
+        fi
+      fi
+      export SCOREP_METRIC_PAPI="${SCOREP_METRIC_PAPI:-}"
+      export SCOREP_METRIC_PAPI_SEP="${SCOREP_METRIC_PAPI_SEP:-,}"
   fi
+
+  # Always route solver execution through solver_wrapper.sh to apply CUDA stubs on CPU-only nodes
+  export _SOLVER_BINARY="${SOLVER_EXE}"
+  SOLVER_EXE="./solver_wrapper.sh"
 
   if [[ "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:u}" == "PHYDLL" ]]; then
     USE_PYTHON_DL_CLIENT=${USE_PYTHON_DL_CLIENT:-0}
+    PHYDLL_PY_SCOREP_WRAPPER=${PHYDLL_PY_SCOREP_WRAPPER:-0}
+    export PHYDLL_PY_SCOREP_WRAPPER
     PHYDLL_REBUILD_DL_CLIENT=${PHYDLL_REBUILD_DL_CLIENT:-1}
     DL_CLIENT_CMD=()
     if [[ "${USE_PYTHON_DL_CLIENT}" == "1" ]]; then
-      if [[ -n "${USE_SCOREP:-}" ]]; then
-        DL_CLIENT_CMD=("env" "PATH=/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/Score-P/8.4-gompi-2022a/bin:$PATH" "${PY_ENV}/bin/python3" "-m" "scorep" "--noinstrumenter" "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/phydll_dl_client.py")
+      if [[ -n "${USE_SCOREP:-}" && "${PHYDLL_PY_SCOREP_WRAPPER}" == "1" ]]; then
+        SCOREP_BIN_DIR="$(dirname "$(command -v scorep-config)")"
+        DL_CLIENT_CMD=("env" "SMARTSIM_PAPI_ROOT=${SMARTSIM_PAPI_ROOT}" "SMARTSIM_SCOREP_ROOT=${SMARTSIM_SCOREP_ROOT}" "PATH=${SCOREP_BIN_DIR}:$PATH" "${PY_ENV}/bin/python3" "-m" "scorep" "--keep-files" "--instrumenter-type=dummy" "--noinstrumenter" "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/phydll_dl_client.py")
       else
         DL_CLIENT_CMD=("${PY_ENV}/bin/python3" "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/phydll_dl_client.py")
       fi
       PHYDLL_REBUILD_DL_CLIENT=0
     else
-      PHYDLL_DL_CLIENT="${PHYDLL_DL_CLIENT:-${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/build/phydll_dl_client}"
+      if [[ -z "${PHYDLL_DL_BUILD_DIR:-}" ]]; then
+        if [[ "${USE_SCOREP:-0}" -eq 1 ]]; then
+          if [[ "${SCOREP_MPP}" == "mpi" ]]; then
+            PHYDLL_DL_BUILD_DIR="${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/build-miniapp-scorep"
+          else
+            PHYDLL_DL_BUILD_DIR="${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/build-miniapp-scorep-${SCOREP_MPP}"
+          fi
+        else
+          PHYDLL_DL_BUILD_DIR="${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/build-miniapp"
+        fi
+      fi
+      PHYDLL_DL_CLIENT="${PHYDLL_DL_CLIENT:-${PHYDLL_DL_BUILD_DIR}/phydll_dl_client}"
       DL_CLIENT_CMD=("${PHYDLL_DL_CLIENT}")
     fi
 
     if [[ "${USE_PYTHON_DL_CLIENT}" == "0" ]]; then
       if [[ "${PHYDLL_REBUILD_DL_CLIENT}" == "1" || ! -x "${PHYDLL_DL_CLIENT}" ]]; then
         local DL_CMAKE_ARGS=()
-        if [[ -n "${USE_SCOREP:-}" ]]; then
-          SCOREP_BIN_DIR="/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/Score-P/8.4-gompi-2022a/bin"
-          export CXX="${SCOREP_BIN_DIR}/scorep-mpicxx"
-          export CC="${SCOREP_BIN_DIR}/scorep-mpicc"
-          export SCOREP_WRAPPER_INSTRUMENTER_FLAGS="--nocompiler --user --mpp=mpi --io=none --memory=malloc --thread=none --nocuda"
-          DL_CMAKE_ARGS+=("-DWITH_SCOREP=ON")
+        if [[ "${USE_SCOREP:-0}" -eq 1 ]]; then
+          SCOREP_BIN_DIR="$(dirname "$(command -v scorep-config)")"
+          DL_CMAKE_ARGS+=("-DWITH_SCOREP=ON" "-DCPPML_SCOREP_MPP=${SCOREP_MPP}")
+          export CC=gcc
+          export CXX=g++
         else
           export CC=gcc
           export CXX=g++
           DL_CMAKE_ARGS+=("-DWITH_SCOREP=OFF")
         fi
         # Remove build dir if it exists to ensure CMake re-detects the new compiler wrappers
-        rm -rf "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/build"
-        cmake -S "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients" -B "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/build" "${DL_CMAKE_ARGS[@]}"
-        cmake --build "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/build" -j
+        rm -rf "${PHYDLL_DL_BUILD_DIR}"
+        cmake -S "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients" -B "${PHYDLL_DL_BUILD_DIR}" "${DL_CMAKE_ARGS[@]}"
+        cmake --build "${PHYDLL_DL_BUILD_DIR}" -j
       fi
       if [[ ! -x "${PHYDLL_DL_CLIENT}" ]]; then
         echo "PHYDLL_DL_CLIENT not executable: ${PHYDLL_DL_CLIENT}" >&2
@@ -1582,8 +1749,8 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
 
     if [[ "${DB_HET_GROUP}" -eq "${SOLVER_HET_GROUP}" ]]; then
       # Single allocation mode: use mpirun instead of srun to avoid duplicate het group errors
-      NP_PHY=$(( SLURM_NTASKS - PHYDLL_NP_DL ))
-      launch_cmd="mpirun -n ${NP_PHY} \
+      NP_PHY="${MPI_RANKS:-$(( SLURM_NTASKS - PHYDLL_NP_DL ))}"
+      launch_cmd="mpirun --bind-to none -x LD_LIBRARY_PATH=\"${PHYDLL_LIB_DIR}:${LD_LIBRARY_PATH:-}\" -n ${NP_PHY} \
         ./solver_wrapper.sh \
         --device \"${device}\" \
         --gpus-per-node \"${GPUS_PER_NODE}\" \
@@ -1607,7 +1774,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
         ${OVERWRITE_ARG[@]} \
         --write-surface \
          : -n ${PHYDLL_NP_DL} -x LD_LIBRARY_PATH=\"${DL_LD_LIBRARY_PATH}\" -x PATH \
-         ${DL_CLIENT_CMD[*]}"
+          ${DL_CLIENT_CMD[*]}"
     else
       # HetJob mode: use srun
       srun_solver_args="--export=ALL $(get_srun_het_flag "${SOLVER_HET_GROUP}") --nodes \"${_nodes:-1}\" --ntasks-per-node \"${_ntasks_per_node_num}\""
@@ -1656,7 +1823,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
     fi
 
     if [[ "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:u}" == "AIX" ]]; then
-    srun_cmd="srun --export=ALL $(get_srun_het_flag "${SOLVER_HET_GROUP}") --nodes \"${_nodes:-1}\" --ntasks-per-node \"${_ntasks_per_node_num}\" ${SOLVER_SRUN_EXTRA_ARGS} \
+    srun_cmd="srun --export=ALL $(get_srun_het_flag "${SOLVER_HET_GROUP}") --nodes \"${_nodes:-1}\" --ntasks \"${MPI_RANKS}\" ${SOLVER_SRUN_EXTRA_ARGS} \
         --cpus-per-task 1 \
         ${SRUN_DIST} \
         ${SOLVER_EXE} \
@@ -1713,7 +1880,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
     fi
     eval "${srun_cmd}"
     else
-      srun --export=ALL $(get_srun_het_flag "${SOLVER_HET_GROUP}") --nodes "${_nodes:-1}" --ntasks-per-node "${_ntasks_per_node_num}" ${SOLVER_SRUN_EXTRA_ARGS} \
+      srun --export=ALL --gres=none $(get_srun_het_flag "${SOLVER_HET_GROUP}") --nodes "${_nodes:-1}" --ntasks "${MPI_RANKS}" ${SOLVER_SRUN_EXTRA_ARGS} \
         --cpus-per-task 1 \
         ${SRUN_DIST} \
         ${SOLVER_EXE} \

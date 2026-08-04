@@ -24,12 +24,17 @@ stdout
 close_driver*
 
 solver_cpp/build
+solver_cpp/build_*/
 
 # Local/Runtime files
 core.*
 logs/
 job_plot.png
 phydll-*.log
+build-mini-app.*.out
+build-mini-app.*.err
+scorep_runs/
+scorep-*/
 q_monitor_last_data.txt
 test_appnum
 test_eval.sh
@@ -45,3 +50,7 @@ test_sprintf.c
 test_exp/
 run_test.py
 
+# Transient local artifacts
+screenlog.0
+mpi_test
+opencode-*.json

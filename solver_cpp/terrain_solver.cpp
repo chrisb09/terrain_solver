@@ -4,7 +4,8 @@
 
 // project-specific headers
 #include "client.h"
-#include "scorep_regions.hpp"
+#include "include/scorep_regions.hpp"
+#include "smartsim_key_balancing.hpp"
 #ifdef USE_CPP_ML_INTERFACE
 #include "ml_coupling.hpp"
 #endif
@@ -32,6 +33,14 @@
 #include <string>
 #include <thread>
 #include <vector>
+
+#ifdef USE_SCOREP
+SCOREP_USER_METRIC_GLOBAL(metric_smartsim_input_bytes)
+SCOREP_USER_METRIC_GLOBAL(metric_smartsim_output_bytes)
+SCOREP_USER_METRIC_GLOBAL(metric_smartsim_put_requests)
+SCOREP_USER_METRIC_GLOBAL(metric_smartsim_run_requests)
+SCOREP_USER_METRIC_GLOBAL(metric_smartsim_unpack_requests)
+#endif
 
 enum class IoMode {
     ParallelHdf5,
@@ -140,6 +149,17 @@ struct CppMlBuffers {
     std::array<float, 9> pad_tile{};
     std::array<float*, 3> pad_rows{};
 };
+
+static std::string to_lower_copy(std::string value);
+static double compute_local_step_ml_smartsim(
+    SmartRedis::Client* client,
+    const std::vector<float>& terrain,
+    const std::vector<float>& current,
+    std::vector<float>& next,
+    const Decomposition& decomp,
+    float epsilon,
+    const Config& cfg,
+    std::vector<float>& tile_output);
 
 static void usage() {
     std::cout
@@ -543,6 +563,13 @@ static std::string escape_binary_for_log(const std::string& value) {
     return oss.str();
 }
 
+static std::string to_lower_copy(std::string value) {
+    for (char& c : value) {
+        c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    }
+    return value;
+}
+
 #ifdef USE_CPP_ML_INTERFACE
 static std::string read_text_file(const std::string& path) {
     std::ifstream in(path);
@@ -552,13 +579,6 @@ static std::string read_text_file(const std::string& path) {
     std::ostringstream oss;
     oss << in.rdbuf();
     return oss.str();
-}
-
-static std::string to_lower_copy(std::string value) {
-    for (char& c : value) {
-        c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-    }
-    return value;
 }
 
 static std::string trim_copy(std::string value) {
@@ -827,6 +847,9 @@ static std::string parse_ml_interface(const std::string& value) {
     }
     if (equals_ignore_case(value, "smartsim")) {
         return "smartsim";
+    }
+    if (equals_ignore_case(value, "none")) {
+        return "none";
     }
     throw std::runtime_error("Unsupported --ml-interface: " + value);
 }
@@ -1367,7 +1390,6 @@ static void exchange_halo_1cell(std::vector<float>& field, const Decomposition& 
         send_west[static_cast<std::size_t>(i)] = field[local_index(i + 1, 1, pitch)];
         send_east[static_cast<std::size_t>(i)] = field[local_index(i + 1, local_nx, pitch)];
     }
-
     enum {
         TAG_TO_NORTH = 0,
         TAG_TO_SOUTH = 1,
@@ -1657,6 +1679,7 @@ static double compute_local_step_ml_cpp(MLCoupling<float, float>& ml_coupling,
     const std::size_t chunk_begin = 0;
     const std::size_t chunk_count = batch_size;
     const long long chunk_id = 0;
+    const bool profile_ml_details = step > 2;
         
     if (chunk_count > 0) {
         log_memory_usage(decomp.world_rank, "cpp_ml_chunk_begin", step, chunk_id);
@@ -1665,28 +1688,44 @@ static double compute_local_step_ml_cpp(MLCoupling<float, float>& ml_coupling,
 
     const auto chunk_start = std::chrono::high_resolution_clock::now();
 
-    if (chunk_count > 0) {
+    if (profile_ml_details) {
+        SCOREP_USER_REGION_DEFINE(handle_solver_ml_prepare_input)
+        SCOREP_USER_REGION_BEGIN(handle_solver_ml_prepare_input, "solver_ml_prepare_input", SCOREP_USER_REGION_TYPE_COMMON)
+        if (chunk_count > 0) {
+            if (ml_buffers.use_flat_layout) {
+                fill_flat_input_chunk(current, terrain, decomp, chunk_begin, chunk_count, chunk_cap_eff, ml_buffers.flat_input);
+            } else {
+                build_nested_view_for_field_chunk_padded(current,
+                                                         decomp,
+                                                         chunk_begin,
+                                                         chunk_count,
+                                                         chunk_cap_eff,
+                                                         ml_buffers.water_batch,
+                                                         ml_buffers.water_channels,
+                                                         ml_buffers.water_rows,
+                                                         ml_buffers.pad_rows.data());
+                build_nested_view_for_field_chunk_padded(terrain,
+                                                         decomp,
+                                                         chunk_begin,
+                                                         chunk_count,
+                                                         chunk_cap_eff,
+                                                         ml_buffers.terrain_batch,
+                                                         ml_buffers.terrain_channels,
+                                                         ml_buffers.terrain_rows,
+                                                         ml_buffers.pad_rows.data());
+            }
+        }
+        SCOREP_USER_REGION_END(handle_solver_ml_prepare_input)
+    } else if (chunk_count > 0) {
         if (ml_buffers.use_flat_layout) {
             fill_flat_input_chunk(current, terrain, decomp, chunk_begin, chunk_count, chunk_cap_eff, ml_buffers.flat_input);
         } else {
-            build_nested_view_for_field_chunk_padded(current,
-                                                     decomp,
-                                                     chunk_begin,
-                                                     chunk_count,
-                                                     chunk_cap_eff,
-                                                     ml_buffers.water_batch,
-                                                     ml_buffers.water_channels,
-                                                     ml_buffers.water_rows,
-                                                     ml_buffers.pad_rows.data());
-            build_nested_view_for_field_chunk_padded(terrain,
-                                                     decomp,
-                                                     chunk_begin,
-                                                     chunk_count,
-                                                     chunk_cap_eff,
-                                                     ml_buffers.terrain_batch,
-                                                     ml_buffers.terrain_channels,
-                                                     ml_buffers.terrain_rows,
-                                                     ml_buffers.pad_rows.data());
+            build_nested_view_for_field_chunk_padded(current, decomp, chunk_begin, chunk_count, chunk_cap_eff,
+                                                     ml_buffers.water_batch, ml_buffers.water_channels,
+                                                     ml_buffers.water_rows, ml_buffers.pad_rows.data());
+            build_nested_view_for_field_chunk_padded(terrain, decomp, chunk_begin, chunk_count, chunk_cap_eff,
+                                                     ml_buffers.terrain_batch, ml_buffers.terrain_channels,
+                                                     ml_buffers.terrain_rows, ml_buffers.pad_rows.data());
         }
     }
 
@@ -1695,14 +1734,31 @@ static double compute_local_step_ml_cpp(MLCoupling<float, float>& ml_coupling,
 
     std::fill(ml_buffers.output.begin(), ml_buffers.output.end(), 0.0F);
     if (chunk_count > 0) log_memory_usage(decomp.world_rank, "cpp_ml_before_ml_step", step, chunk_id);
-    
-    ml_coupling.ml_step();
-    
+
+    ml_coupling.set_scorep_detailed_regions_enabled(profile_ml_details);
+    if (profile_ml_details) {
+        SCOREP_USER_REGION_DEFINE(handle_solver_ml_provider_call)
+        SCOREP_USER_REGION_BEGIN(handle_solver_ml_provider_call, "solver_ml_provider_call", SCOREP_USER_REGION_TYPE_COMMON)
+        (void)ml_coupling.step();
+        SCOREP_USER_REGION_END(handle_solver_ml_provider_call)
+    } else {
+        (void)ml_coupling.step();
+    }
+
     if (chunk_count > 0) log_memory_usage(decomp.world_rank, "cpp_ml_after_ml_step", step, chunk_id);
 
     const auto model_ran_time = std::chrono::high_resolution_clock::now();
 
-    if (chunk_count > 0) {
+    if (profile_ml_details) {
+        SCOREP_USER_REGION_DEFINE(handle_solver_ml_output_copy)
+        SCOREP_USER_REGION_BEGIN(handle_solver_ml_output_copy, "solver_ml_output_copy", SCOREP_USER_REGION_TYPE_COMMON)
+        if (chunk_count > 0) {
+            std::copy(ml_buffers.output.begin(),
+                      ml_buffers.output.begin() + static_cast<std::ptrdiff_t>(chunk_count),
+                      tile_output.begin() + static_cast<std::ptrdiff_t>(chunk_begin));
+        }
+        SCOREP_USER_REGION_END(handle_solver_ml_output_copy)
+    } else if (chunk_count > 0) {
         std::copy(ml_buffers.output.begin(),
                   ml_buffers.output.begin() + static_cast<std::ptrdiff_t>(chunk_count),
                   tile_output.begin() + static_cast<std::ptrdiff_t>(chunk_begin));
@@ -1717,6 +1773,10 @@ static double compute_local_step_ml_cpp(MLCoupling<float, float>& ml_coupling,
         unpack_time += std::chrono::duration_cast<std::chrono::microseconds>(unpacked_time - model_ran_time).count();
     }
 
+    SCOREP_USER_REGION_DEFINE(handle_solver_ml_apply_output)
+    if (profile_ml_details) {
+        SCOREP_USER_REGION_BEGIN(handle_solver_ml_apply_output, "solver_ml_apply_output", SCOREP_USER_REGION_TYPE_COMMON)
+    }
     for (int i = 0; i < local_nz; ++i) {
         for (int j = 0; j < local_nx; ++j) {
             const std::size_t idx = static_cast<std::size_t>(i * local_nx + j);
@@ -1724,6 +1784,9 @@ static double compute_local_step_ml_cpp(MLCoupling<float, float>& ml_coupling,
             moved += std::max(static_cast<double>(tile_output[idx]) -
                               static_cast<double>(current[local_index(i + 1, j + 1, pitch)]), 0.0);
         }
+    }
+    if (profile_ml_details) {
+        SCOREP_USER_REGION_END(handle_solver_ml_apply_output)
     }
 
     total_prepare_data_time += prepare_data_time;
@@ -1747,6 +1810,8 @@ static double compute_local_step_ml_cpp(MLCoupling<float, float>& ml_coupling,
 
     return moved;
 }
+#endif // USE_CPP_ML_INTERFACE
+
 static double compute_local_step_ml_smartsim(SmartRedis::Client* client,
     const std::vector<float>& terrain,
     const std::vector<float>& current,
@@ -1764,6 +1829,24 @@ static double compute_local_step_ml_smartsim(SmartRedis::Client* client,
         long long run_model_time = 0;
         long long unpack_time = 0;
         long long cleanup_time = 0;
+        SCOREP_USER_REGION_DEFINE(handle_smartsim_prepare_input)
+        SCOREP_USER_REGION_DEFINE(handle_smartsim_put_tensor)
+        SCOREP_USER_REGION_DEFINE(handle_smartsim_run_model)
+        SCOREP_USER_REGION_DEFINE(handle_smartsim_unpack_tensor)
+        SCOREP_USER_REGION_DEFINE(handle_smartsim_library_static_step)
+        SCOREP_USER_REGION_DEFINE(handle_solver_ml_apply_output)
+
+#ifdef USE_SCOREP
+        static bool metrics_initialized = false;
+        if (!metrics_initialized) {
+            SCOREP_USER_METRIC_INIT(metric_smartsim_input_bytes, "smartsim_input_bytes", "bytes", SCOREP_USER_METRIC_TYPE_UINT64, SCOREP_USER_METRIC_CONTEXT_CALLPATH);
+            SCOREP_USER_METRIC_INIT(metric_smartsim_output_bytes, "smartsim_output_bytes", "bytes", SCOREP_USER_METRIC_TYPE_UINT64, SCOREP_USER_METRIC_CONTEXT_CALLPATH);
+            SCOREP_USER_METRIC_INIT(metric_smartsim_put_requests, "smartsim_put_requests", "requests", SCOREP_USER_METRIC_TYPE_UINT64, SCOREP_USER_METRIC_CONTEXT_CALLPATH);
+            SCOREP_USER_METRIC_INIT(metric_smartsim_run_requests, "smartsim_run_requests", "requests", SCOREP_USER_METRIC_TYPE_UINT64, SCOREP_USER_METRIC_CONTEXT_CALLPATH);
+            SCOREP_USER_METRIC_INIT(metric_smartsim_unpack_requests, "smartsim_unpack_requests", "requests", SCOREP_USER_METRIC_TYPE_UINT64, SCOREP_USER_METRIC_CONTEXT_CALLPATH);
+            metrics_initialized = true;
+        }
+#endif
 
         next = current;
 
@@ -1782,6 +1865,36 @@ static double compute_local_step_ml_smartsim(SmartRedis::Client* client,
                           (decomp.world_size > 1) && (cfg.gpus_per_node > 1);
         const int selected_gpu = use_multigpu_api ? (decomp.world_rank % cfg.gpus_per_node) : -1;
         const int max_model_run_attempts = 3;
+        const auto key_balancer =
+            mlcoupling::smartsim_key_balancing::RedisKeyBalancer::from_environment(
+                decomp.world_rank, cfg.gpus_per_node, cfg.ml_nodes);
+        if (key_balancer.enabled()) {
+            static bool logged_key_balance = false;
+            if (!logged_key_balance) {
+                if (decomp.world_rank == 0) {
+                    for (std::size_t shard = 0; shard < key_balancer.tags().size(); ++shard) {
+                        const std::string& tag = key_balancer.tags()[shard];
+                        std::cout << "SMARTSIM_KEY_BALANCE"
+                                  << " shard=" << shard
+                                  << " tag=" << tag
+                                  << " slot=" << mlcoupling::smartsim_key_balancing::redis_hash_slot(tag)
+                                  << " expected_slot_range=["
+                                  << mlcoupling::smartsim_key_balancing::RedisKeyBalancer::slot_first(
+                                         static_cast<int>(shard), cfg.ml_nodes)
+                                  << ","
+                                  << mlcoupling::smartsim_key_balancing::RedisKeyBalancer::slot_last(
+                                         static_cast<int>(shard), cfg.ml_nodes)
+                                  << "]" << std::endl;
+                    }
+                }
+                std::cout << "SMARTSIM_KEY_BALANCE_ASSIGNMENT"
+                          << " rank=" << decomp.world_rank
+                          << " target_shard=" << key_balancer.target_shard()
+                          << " gpu=" << (decomp.world_rank % std::max(1, cfg.gpus_per_node))
+                          << std::endl;
+                logged_key_balance = true;
+            }
+        }
 
         std::vector<float***> chunk_batch;
         std::vector<float**> chunk_channels;
@@ -1792,13 +1905,22 @@ static double compute_local_step_ml_smartsim(SmartRedis::Client* client,
             BATCH_SIZE,
             static_cast<std::size_t>(cfg.ml_batch_size));
 
+        SCOREP_USER_REGION_BEGIN(handle_smartsim_library_static_step, "smartsim_library_static_step", SCOREP_USER_REGION_TYPE_COMMON)
         for (std::size_t chunk_begin = 0, chunk_id = 0; chunk_begin < BATCH_SIZE;
              chunk_begin += chunk_cap, ++chunk_id) {
             const std::size_t chunk_count = std::min<std::size_t>(chunk_cap, BATCH_SIZE - chunk_begin);
             add_ml_traffic(use_flat_model_io, use_flat_model_io || force_terrain_upload, chunk_count);
+#ifdef USE_SCOREP
+            const std::size_t input_floats = use_flat_model_io ? 18 : (force_terrain_upload ? 18 : 9);
+            SCOREP_USER_METRIC_UINT64(metric_smartsim_input_bytes,
+                                      static_cast<uint64_t>(chunk_count * input_floats * sizeof(float)));
+            SCOREP_USER_METRIC_UINT64(metric_smartsim_output_bytes,
+                                      static_cast<uint64_t>(chunk_count * sizeof(float)));
+#endif
 
             const auto chunk_start = std::chrono::high_resolution_clock::now();
 
+            SCOREP_USER_REGION_BEGIN(handle_smartsim_prepare_input, "smartsim_prepare_input", SCOREP_USER_REGION_TYPE_COMMON)
             build_nested_view_for_field_chunk(
                 current,
                 decomp,
@@ -1808,16 +1930,58 @@ static double compute_local_step_ml_smartsim(SmartRedis::Client* client,
                 chunk_channels,
                 chunk_rows);
 
-            const auto data_prepared_time = std::chrono::high_resolution_clock::now();
-
-            const std::string key_suffix = "_" + std::to_string(decomp.world_rank) + "_" + std::to_string(chunk_id);
-            const std::string water_key = "water_tile" + key_suffix;
-            const std::string terrain_key = "terrain_tile" + key_suffix;
-            const std::string packed_key = "packed_tile" + key_suffix;
-            const std::string pred_key = "predicted_water_center" + key_suffix;
+             const std::string key_suffix = "_" + std::to_string(decomp.world_rank) + "_" + std::to_string(chunk_id);
+             const std::string water_key = key_balancer.prefix_key("water_tile" + key_suffix);
+             const std::string terrain_key = key_balancer.prefix_key("terrain_tile" + key_suffix);
+             const std::string packed_key = key_balancer.prefix_key("packed_tile" + key_suffix);
+             const std::string pred_key = key_balancer.prefix_key("predicted_water_center" + key_suffix);
 
             if (use_flat_model_io) {
-                build_flat_input_chunk(current, terrain, decomp, chunk_begin, chunk_count, flat_input_chunk);
+                 build_flat_input_chunk(current, terrain, decomp, chunk_begin, chunk_count, flat_input_chunk);
+             }
+             const auto data_prepared_time = std::chrono::high_resolution_clock::now();
+             SCOREP_USER_REGION_END(handle_smartsim_prepare_input)
+
+              // OPTIONAL/EXPERIMENTAL: Multi-chain MPI token passing for SmartSim put_tensor.
+              // Enabled via environment variable: SMARTSIM_MPI_SEQUENTIAL_PUT=C (where C >= 1 is number of chains).
+              //   - 0: Deactivated (default, all ranks put concurrently).
+              //   - 1: Single global chain (0 -> 1 -> 2 -> ... -> N-1).
+              //   - C >= 2: C interleaved chains (rank r receives from r-C and sends to r+C).
+              //
+              // Purpose:
+              //   Stagger network writes to RedisAI across C parallel chains of solver ranks
+              //   to control write concurrency and prevent socket buffer overflow / DB network congestion.
+              //
+              // Limitations / Nuances:
+              //   This token passing operates sequentially across MPI_COMM_WORLD (assumes a single shared DB).
+              //   In multi-database / sharded setups, token passing should ideally group ranks per DB node.
+              int num_chains = 0;
+              const char* env_chains = std::getenv("SMARTSIM_MPI_SEQUENTIAL_PUT");
+              if (env_chains) {
+                  std::string s(env_chains);
+                  if (s == "true" || s == "YES" || s == "1") {
+                      num_chains = 1;
+                  } else {
+                      try { num_chains = std::stoi(s); } catch (...) { num_chains = 0; }
+                  }
+              }
+
+#if defined(USE_MPI) || defined(MPI_FOUND) || defined(MLCOUPLING_PROVIDER_HAS_MPI)
+              int mpi_initialized = 0;
+              if (num_chains > 0) {
+                  MPI_Initialized(&mpi_initialized);
+                  if (mpi_initialized && decomp.world_size > 1 && decomp.world_rank >= num_chains) {
+                      int token = 0;
+                      MPI_Recv(&token, 1, MPI_INT, decomp.world_rank - num_chains, 9993, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                  }
+              }
+#endif
+
+              SCOREP_USER_REGION_BEGIN(handle_smartsim_put_tensor, "smartsim_put_tensor", SCOREP_USER_REGION_TYPE_COMMON)
+#ifdef USE_SCOREP
+             SCOREP_USER_METRIC_UINT64(metric_smartsim_put_requests, force_terrain_upload ? 2 : 1);
+#endif
+            if (use_flat_model_io) {
                 client->put_tensor(
                     packed_key,
                     flat_input_chunk.data(),
@@ -1853,9 +2017,21 @@ static double compute_local_step_ml_smartsim(SmartRedis::Client* client,
                     log_tensor_shard_location(client, decomp, terrain_key, "put_tensor");
                 }
             }
+            SCOREP_USER_REGION_END(handle_smartsim_put_tensor)
+
+#if defined(USE_MPI) || defined(MPI_FOUND) || defined(MLCOUPLING_PROVIDER_HAS_MPI)
+            if (num_chains > 0 && mpi_initialized && decomp.world_size > 1 && (decomp.world_rank + num_chains) < decomp.world_size) {
+                int token = 1;
+                MPI_Send(&token, 1, MPI_INT, decomp.world_rank + num_chains, 9993, MPI_COMM_WORLD);
+            }
+#endif
 
             auto put_time = std::chrono::high_resolution_clock::now();
 
+             SCOREP_USER_REGION_BEGIN(handle_smartsim_run_model, "smartsim_run_model", SCOREP_USER_REGION_TYPE_COMMON)
+#ifdef USE_SCOREP
+             SCOREP_USER_METRIC_UINT64(metric_smartsim_run_requests, 1);
+#endif
             for (int attempt = 1; attempt <= max_model_run_attempts; ++attempt) {
                 try {
                     if (use_multigpu_api) {
@@ -1918,6 +2094,7 @@ static double compute_local_step_ml_smartsim(SmartRedis::Client* client,
                     std::this_thread::sleep_for(std::chrono::seconds(2));
                 }
             }
+            SCOREP_USER_REGION_END(handle_smartsim_run_model)
 
             auto model_ran_time = std::chrono::high_resolution_clock::now();
 
@@ -1929,6 +2106,10 @@ static double compute_local_step_ml_smartsim(SmartRedis::Client* client,
             SRTensorType chunk_output_type = SRTensorType::SRTensorTypeFloat;
             SRMemoryLayout chunk_output_mem_layout = SRMemoryLayout::SRMemLayoutContiguous;
 
+             SCOREP_USER_REGION_BEGIN(handle_smartsim_unpack_tensor, "smartsim_unpack_tensor", SCOREP_USER_REGION_TYPE_COMMON)
+#ifdef USE_SCOREP
+             SCOREP_USER_METRIC_UINT64(metric_smartsim_unpack_requests, 1);
+#endif
             try {
                 client->unpack_tensor(
                     pred_key,
@@ -1948,6 +2129,7 @@ static double compute_local_step_ml_smartsim(SmartRedis::Client* client,
                     << " error=" << ex.what();
                 throw std::runtime_error(oss.str());
             }
+            SCOREP_USER_REGION_END(handle_smartsim_unpack_tensor)
 
             auto unpacked_time = std::chrono::high_resolution_clock::now();
 
@@ -1956,13 +2138,16 @@ static double compute_local_step_ml_smartsim(SmartRedis::Client* client,
             run_model_time += std::chrono::duration_cast<std::chrono::microseconds>(model_ran_time - put_time).count();
             unpack_time += std::chrono::duration_cast<std::chrono::microseconds>(unpacked_time - model_ran_time).count();
         }
+        SCOREP_USER_REGION_END(handle_smartsim_library_static_step)
 
+        SCOREP_USER_REGION_BEGIN(handle_solver_ml_apply_output, "solver_ml_apply_output", SCOREP_USER_REGION_TYPE_COMMON)
         for (int i = 0; i < decomp.local_nz; ++i) {
             for (int j = 0; j < decomp.local_nx; ++j) {
                 next[local_index(i + 1, j + 1, pitch)] = tile_output[static_cast<size_t>(i * local_nx + j)];
                 moved += std::max(static_cast<double>(tile_output[static_cast<size_t>(i * local_nx + j)]) - static_cast<double>(current[local_index(i + 1, j + 1, pitch)]), 0.0);
             }
         }
+        SCOREP_USER_REGION_END(handle_solver_ml_apply_output)
 
         if (decomp.world_rank == 0) {
             std::cout << " and got prediction " << tile_output[0] << " for cell (" << 0 << ", " << 0 << ")" << std::endl;
@@ -2005,7 +2190,6 @@ static double compute_local_step_ml_smartsim(SmartRedis::Client* client,
 
         return moved;
     }
-#endif
 
 static float compute_directional_outflow(
     const std::vector<float>& terrain,
@@ -2945,7 +3129,8 @@ int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
     SCOREP_USER_REGION_DEFINE(handle_solver_setup)
     SCOREP_USER_REGION_DEFINE(handle_solver_main_loop)
-    SCOREP_USER_REGION_DEFINE(handle_solver_step_ml)
+    SCOREP_USER_REGION_DEFINE(handle_solver_step_ml_warmup)
+    SCOREP_USER_REGION_DEFINE(handle_solver_step_ml_steady)
     SCOREP_USER_REGION_DEFINE(handle_solver_step_compute)
     SCOREP_USER_REGION_DEFINE(handle_solver_teardown)
 
@@ -2958,9 +3143,10 @@ int main(int argc, char** argv) {
     MPI_Comm solver_comm = MPI_COMM_WORLD;
     MPI_Comm solver_app_comm = MPI_COMM_NULL;
 
-    // We no longer rely on MPI_APPNUM, because Slurm srun with OpenMPI 5 assigns appnum 0 to both components!
-    // Since this binary is ALWAYS the solver, we unconditionally assign it color 0.
-    const int color = 0;
+    // Keep solver-only collectives separate from non-solver DL ranks (e.g. PhyDLL DL client) in an MPMD launch.
+    // For AIX, all ranks (CPU solver + GPU controller) participate in the solver communicator and grid decomposition.
+    const bool is_phydll_dl_client = (get_env_int("PHYDLL_DL_CLIENT", 0) == 1);
+    const int color = is_phydll_dl_client ? MPI_UNDEFINED : 0;
     MPI_Comm_split(MPI_COMM_WORLD, color, world_rank, &solver_app_comm);
     if (solver_app_comm != MPI_COMM_NULL) {
         solver_comm = solver_app_comm;
@@ -3036,6 +3222,9 @@ int main(int argc, char** argv) {
             require(ssdb_available, "SSDB not set. Cannot use SmartSim direct mode.");
             use_smartsim = true;
             use_ml_interface = true;
+        } else if (ml_interface == "none") {
+            use_smartsim = false;
+            use_ml_interface = false;
         } else {
 #ifdef USE_CPP_ML_INTERFACE
             use_smartsim = false;
@@ -3445,7 +3634,12 @@ int main(int argc, char** argv) {
                         chunk_channels,
                         chunk_rows);
 
-                    const std::string terrain_key = "terrain_tile_" + std::to_string(decomp.world_rank) + "_" + std::to_string(chunk_id);
+                    const auto key_balancer =
+                        mlcoupling::smartsim_key_balancing::RedisKeyBalancer::from_environment(
+                            decomp.world_rank, cfg.gpus_per_node, cfg.ml_nodes);
+                    const std::string terrain_key = key_balancer.prefix_key(
+                        "terrain_tile_" + std::to_string(decomp.world_rank) + "_" +
+                        std::to_string(chunk_id));
                     client->put_tensor(
                         terrain_key,
                         const_cast<float****>(chunk_batch.data()),
@@ -3545,7 +3739,11 @@ int main(int argc, char** argv) {
                 const bool use_ml_step = ((step % 2) == 0) && use_ml_interface;
                 
                 if (use_ml_step) {
-                    SCOREP_USER_REGION_BEGIN(handle_solver_step_ml, "solver_step_ml", SCOREP_USER_REGION_TYPE_COMMON)
+                    if (step == 2) {
+                        SCOREP_USER_REGION_BEGIN(handle_solver_step_ml_warmup, "solver_step_ml_warmup", SCOREP_USER_REGION_TYPE_COMMON)
+                    } else {
+                        SCOREP_USER_REGION_BEGIN(handle_solver_step_ml_steady, "solver_step_ml_steady", SCOREP_USER_REGION_TYPE_COMMON)
+                    }
                     #ifdef USE_CPP_ML_INTERFACE
                         if (use_smartsim) {
                             moved_this_step_local = compute_local_step_ml_smartsim(
@@ -3582,7 +3780,11 @@ int main(int argc, char** argv) {
                             cfg,
                             ml_tile_output);
                         #endif
-                    SCOREP_USER_REGION_END(handle_solver_step_ml)
+                    if (step == 2) {
+                        SCOREP_USER_REGION_END(handle_solver_step_ml_warmup)
+                    } else {
+                        SCOREP_USER_REGION_END(handle_solver_step_ml_steady)
+                    }
 
                 } else {
 
@@ -3748,19 +3950,28 @@ int main(int argc, char** argv) {
         report_ml_traffic(solver_comm, world_rank);
         report_interface_deltas(solver_comm, world_rank);
 
-        if (decomp.cart_comm != MPI_COMM_NULL) {
-            MPI_Comm_free(&decomp.cart_comm);
-        }
-        if (solver_app_comm != MPI_COMM_NULL) {
-            MPI_Comm_free(&solver_app_comm);
-        }
-        
 #ifdef USE_CPP_ML_INTERFACE
         ml_coupling.reset();
 #endif
         if (client != nullptr) {
             delete client;
             client = nullptr;
+        }
+
+        // The PhyDLL DL client is a separate MPMD rank. Keep it alive until
+        // every solver rank has destroyed its provider and reached teardown.
+        if (get_env_int("PHYDLL_MPMD_SHUTDOWN_BARRIER", 0) == 1) {
+            if (world_rank == 0) {
+                std::cout << "[shutdown] waiting for PhyDLL DL client" << std::endl;
+            }
+            MPI_Barrier(MPI_COMM_WORLD);
+        }
+
+        if (decomp.cart_comm != MPI_COMM_NULL) {
+            MPI_Comm_free(&decomp.cart_comm);
+        }
+        if (solver_app_comm != MPI_COMM_NULL) {
+            MPI_Comm_free(&solver_app_comm);
         }
 
         SCOREP_USER_REGION_END(handle_solver_teardown)

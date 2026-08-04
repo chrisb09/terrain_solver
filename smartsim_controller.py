@@ -27,10 +27,34 @@ print(f"  Hostname file: {args.hostname_file}")
 
 use_gpu = args.use_gpu
 
+
+def positive_env_int(name, default):
+    value = int(env.get(name, str(default)))
+    if value < 1:
+        raise ValueError(f"{name} must be positive, got {value}")
+    return value
+
 device = "GPU" if use_gpu else "CPU"
 queue = "c23g" if use_gpu else "c23ms"
+intra_op_threads = positive_env_int("SMARTSIM_INTRA_OP_THREADS", 8)
+inter_op_threads = positive_env_int("SMARTSIM_INTER_OP_THREADS", 1)
+threads_per_queue = positive_env_int(
+    "SMARTSIM_THREADS_PER_QUEUE",
+    min(8, args.cpu_cores_per_node // 8) if args.cpu_cores_per_node >= 8 else 1,
+)
 
 print(f"Using device: {'GPU' if use_gpu else 'CPU'} (device={device}, python_exe={sys.executable}, queue={queue})")
+print(
+    "Database model execution settings: "
+    f"intra_op_threads={intra_op_threads}, inter_op_threads={inter_op_threads}, "
+    f"threads_per_queue={threads_per_queue}"
+)
+db_nodelist = env.get("SMARTSIM_DB_NODELIST", "")
+db_exclude_node = env.get("SMARTSIM_DB_EXCLUDE_NODE", "")
+if db_nodelist:
+    print(f"Database node list: {db_nodelist}")
+if db_exclude_node:
+    print(f"Database excludes solver node: {db_exclude_node}")
 
 if use_gpu:
     env.setdefault("CUDA_LAUNCH_BLOCKING", "1")
@@ -66,6 +90,8 @@ if use_gpu:
     except Exception as exc:
         print(f"nvidia-smi diagnostics failed: {exc}")
 
+env["SMARTSIM_WLM_TRIALS"] = "60"
+
 from smartsim.experiment import Experiment
 
 # Strip Score-P environment variables before creating the experiment.
@@ -81,6 +107,12 @@ _current_path = env.get("PATH", "")
 if _scorep_bin in _current_path:
     env["PATH"] = ":".join(p for p in _current_path.split(":") if p != _scorep_bin)
 
+# Unset Slurm task-count environment variables that could confuse srun when
+# SmartSim launches the orchestrator step from within a batch job context.
+# SmartSim passes --ntasks=1 explicitly; these env vars must not override it.
+for _key in ("SLURM_NTASKS", "SLURM_NPROCS", "SLURM_NTASKS_PER_NODE",
+             "SLURM_TASKS_PER_NODE", "SLURM_NPROCS"):
+    env.pop(_key, None)
 
 exp_dir = "smartsim_experiments/" + env.get("SLURM_JOB_ID", "local")
 if os.path.exists(exp_dir):
@@ -96,14 +128,25 @@ db = exp.create_database(port=6780,
 #                         time="00:10:00",
                          single_cmd=False,
                          db_nodes=args.db_nodes,
-                         intra_op_threads=8, # Parallelism within a single model execution
-                         inter_op_threads=1, # Parallelism between independent ops (usually 1 is fine)
-                         threads_per_queue=min(8, args.cpu_cores_per_node // 8) if args.cpu_cores_per_node >= 8 else 1
+                          intra_op_threads=intra_op_threads,
+                          inter_op_threads=inter_op_threads,
+                          threads_per_queue=threads_per_queue
                          )
 
 db.set_run_arg("export", "ALL")
 db.set_run_arg("ntasks", str(args.db_nodes))
 db.set_run_arg("ntasks-per-node", "1")
+if db_nodelist and env.get("SMARTSIM_PIN_DB_NODELIST", "0") == "1":
+    db_hosts = db_nodelist.split(",")
+    db_settings = [entity.run_settings for entity in db.entities]
+    if len(db_hosts) != args.db_nodes or len(db_settings) != args.db_nodes:
+        raise RuntimeError(
+            f"cannot map {args.db_nodes} database shards to hosts={db_nodelist!r}"
+        )
+    for host, run_settings in zip(db_hosts, db_settings):
+        run_settings.run_args["nodelist"] = host
+if db_exclude_node and not (db_nodelist and env.get("SMARTSIM_PIN_DB_NODELIST", "0") == "1"):
+    db.set_run_arg("exclude", db_exclude_node)
 # Only apply het-group if we are actually in a heterogeneous job allocation.
 if args.het_group is not None and (env.get("SLURM_HET_SIZE") or env.get("SLURM_JOB_NUM_NODES_HET_GROUP_0")):
     db.set_run_arg("het-group", args.het_group)
@@ -146,10 +189,10 @@ except Exception:
         print(f"sacct diagnostics failed: {sacct_err}", flush=True)
     # Try to run a simple srun to see if srun works at all
     try:
-        result3 = subprocess.run(
-            ["srun", "--het-group=1", "--cpus-per-task=1", "hostname"],
-            capture_output=True, text=True, timeout=15
-        )
+        _srun_cmd = ["srun", "--ntasks=1", "--cpus-per-task=1", "hostname"]
+        if args.het_group is not None and env.get("SLURM_HET_SIZE"):
+            _srun_cmd = ["srun", f"--het-group={args.het_group}", "--ntasks=1", "--cpus-per-task=1", "hostname"]
+        result3 = subprocess.run(_srun_cmd, capture_output=True, text=True, timeout=15)
         print(f"srun hostname stdout: {result3.stdout}", flush=True)
         print(f"srun hostname stderr: {result3.stderr}", flush=True)
         print(f"srun hostname returncode: {result3.returncode}", flush=True)
