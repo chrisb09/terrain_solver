@@ -3281,6 +3281,8 @@ int main(int argc, char** argv) {
                     const auto model_load_start = std::chrono::steady_clock::now();
                     std::string model_load_last_error;
                     bool model_loaded = false;
+                    try { client->delete_model("water_step_model_gpu"); } catch (...) {}
+                    try { client->delete_model("water_step_model"); } catch (...) {}
                     for (int attempt = 1; attempt <= model_load_retries; ++attempt) {
                         try {
                             if (use_multigpu_api) {

@@ -9,8 +9,16 @@ from os import environ as env
 import time
 import subprocess
 
+job_id_raw = env.get("SLURM_JOB_ID", "0").split("+")[0]
+try:
+    job_id_num = int(job_id_raw)
+except ValueError:
+    job_id_num = 0
+default_port = 6700 + (job_id_num % 1000) if job_id_num > 0 else 6780
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--db_nodes", type=int, default=1)
+parser.add_argument("--port", type=int, default=default_port, help="Port to run the database on")
 parser.add_argument("--use_gpu", action="store_true", help="Use GPU for the experiment")
 parser.add_argument("--cpu_cores_per_node", type=int, default=1, help="Number of CPU cores per node to allocate for the database (only relevant if using slurm launcher)")
 parser.add_argument("--het_group", default=None, type=str, help="Heterogeneous group to run the database on (if using slurm launcher)")
@@ -122,7 +130,7 @@ if os.path.exists(exp_dir):
 exp = Experiment(name=exp_dir, launcher="slurm")
 
 
-db = exp.create_database(port=6780,
+db = exp.create_database(port=args.port,
                          interface="ib0",
                          batch=False,
 #                         time="00:10:00",

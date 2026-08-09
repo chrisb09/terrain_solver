@@ -27,93 +27,20 @@ def parse_log_file(log_path: Path):
 
 def analyze_scaling(jobs_info: list, csv_out: Path = None):
     """Analyze CPU scaling sweep across db_nodes = 1..8 and strategies."""
-    has_strat = any('strategy' in item or len(item.get('interface', '')) > 4 or item.get('variant') in ('dynamic', 'tpq_only', 'intra_only') for item in jobs_info)
-    
-    if has_strat:
-        # Group by (db_nodes, strategy)
-        results = {}  # (db_nodes, strategy) -> list of per-run medians
-        for item in jobs_info:
-            db_nodes = int(item['rep']) if str(item['rep']).isdigit() else int(item['interface'])
-            strat = item['variant']
-            job_id = item['job_id']
-            key = (db_nodes, strat)
-            if key not in results:
-                results[key] = []
-            
-            log_paths = [
-                Path(f"logs/mini_app_output_{job_id}.txt"),
-                Path(f"../mini_app/logs/mini_app_output_{job_id}.txt"),
-                Path(f"output_{job_id}.txt"),
-                Path(f"../mini_app/output_{job_id}.txt"),
-            ]
-            timings = []
-            for p in log_paths:
-                t = parse_log_file(p)
-                if t:
-                    timings = t
-                    break
-            if timings:
-                results[key].append({
-                    'job_id': job_id,
-                    'run_median': float(np.median(timings)),
-                    'tpq': item.get('tpq', '-'),
-                    'intra': item.get('intra', '-')
-                })
+    # Group by (db_nodes, strategy)
+    results = {}  # (db_nodes, strategy) -> list of per-run medians
+    for item in jobs_info:
+        try:
+            db_nodes = int(item['interface'])
+        except (ValueError, TypeError):
+            db_nodes = int(item['rep'])
 
-        print("\n" + "="*95)
-        print(" 96-CORE EXCLUSIVE CPU ML SCALING BENCHMARK (96 Solver Ranks, 1440x960, Perfect Tags)")
-        print("="*95)
-        print(f"{'DB Nodes':<10} | {'Strategy':<15} | {'Runs':<5} | {'Median ms':<12} | {'Mean ms':<12} | {'StdDev ms':<10} | {'Speedup vs 1N':<15}")
-        print("-" * 95)
-
-        baseline_median = None
-        if (1, 'dynamic') in results and results[(1, 'dynamic')]:
-            baseline_median = float(np.median([r['run_median'] for r in results[(1, 'dynamic')]]))
-
-        all_keys = sorted(results.keys(), key=lambda x: (x[0], x[1]))
-        csv_rows = ["db_nodes,strategy,count,median_ms,mean_ms,std_ms,speedup_vs_1node"]
-
-        for db_nodes, strat in all_keys:
-            runs = results[(db_nodes, strat)]
-            if not runs:
-                continue
-            medians = [r['run_median'] for r in runs]
-            med = float(np.median(medians))
-            mean_val = float(np.mean(medians))
-            std_val = float(np.std(medians, ddof=1)) if len(medians) > 1 else 0.0
-            speedup = (baseline_median / med) if (baseline_median and med > 0) else 1.0
-
-            print(f"{db_nodes:<10} | {strat:<15} | {len(medians):<5} | {med:<12.2f} | {mean_val:<12.2f} | {std_val:<10.2f} | {speedup:<15.2f}x")
-            csv_rows.append(f"{db_nodes},{strat},{len(medians)},{med:.2f},{mean_val:.2f},{std_val:.2f},{speedup:.2f}")
-
-        print("=" * 95)
-
-        if csv_out:
-            csv_out.write_text("\n".join(csv_rows) + "\n")
-            print(f"[+] Summary CSV written to {csv_out}")
-        return
-
-    # Standard simple scaling
-    has_tpq = any('tpq' in item for item in jobs_info)
-    print("\n" + "="*85)
-    if has_tpq:
-        print(" CPU DYNAMIC TPQ / INTRA-OP ML SCALING BENCHMARK (24 Ranks, 216x144, Perfect Tags)")
-        print("="*85)
-        print(f"{'DB Nodes':<10} | {'TPQ':<6} | {'Intra Threads':<13} | {'Job ID':<10} | {'Median ms':<12} | {'Speedup vs 1 Node':<20}")
-    else:
-        print(" CPU ML SCALING BENCHMARK (24 Solver Ranks, 216x144, Perfect {...} Tags)")
-        print("="*85)
-        print(f"{'DB Nodes':<10} | {'Job ID':<10} | {'Median ms':<12} | {'Mean ms':<12} | {'Speedup vs 1 Node':<20}")
-    print("-" * 85)
-
-    baseline_median = None
-
-    for item in sorted(jobs_info, key=lambda x: int(x['rep'])):
-        db_nodes = int(item['rep'])
+        strat = item['variant']
         job_id = item['job_id']
-        tpq_str = item.get('tpq', '-').replace('tpq=', '')
-        intra_str = item.get('intra', '-').replace('intra=', '')
-
+        key = (db_nodes, strat)
+        if key not in results:
+            results[key] = []
+        
         log_paths = [
             Path(f"logs/mini_app_output_{job_id}.txt"),
             Path(f"../mini_app/logs/mini_app_output_{job_id}.txt"),
@@ -126,25 +53,46 @@ def analyze_scaling(jobs_info: list, csv_out: Path = None):
             if t:
                 timings = t
                 break
-
         if timings:
-            med = float(np.median(timings))
-            mean_val = float(np.mean(timings))
-            if baseline_median is None:
-                baseline_median = med
-            speedup = (baseline_median / med) if (baseline_median and med > 0) else 1.0
-            
-            if has_tpq:
-                print(f"{db_nodes:<10} | {tpq_str:<6} | {intra_str:<13} | {job_id:<10} | {med:<12.2f} | {speedup:<20.2f}x")
-            else:
-                print(f"{db_nodes:<10} | {job_id:<10} | {med:<12.2f} | {mean_val:<12.2f} | {speedup:<20.2f}x")
-        else:
-            if has_tpq:
-                print(f"{db_nodes:<10} | {tpq_str:<6} | {intra_str:<13} | {job_id:<10} | {'Pending/No Log':<12} | {'-':<20}")
-            else:
-                print(f"{db_nodes:<10} | {job_id:<10} | {'Pending/No Log':<12} | {'-':<12} | {'-':<20}")
+            results[key].append({
+                'rep': item.get('rep', 1),
+                'job_id': job_id,
+                'run_median': float(np.median(timings)),
+                'tpq': item.get('tpq', '-'),
+                'intra': item.get('intra', '-')
+            })
 
-    print("=" * 85)
+    print("\n" + "="*95)
+    print(" 96-CORE EXCLUSIVE CPU ML SCALING BENCHMARK (96 Solver Ranks, 1440x960, Perfect Tags)")
+    print("="*95)
+    print(f"{'DB Nodes':<10} | {'Strategy':<15} | {'Runs':<5} | {'Median ms':<12} | {'Mean ms':<12} | {'StdDev ms':<10} | {'Speedup vs 1N':<15}")
+    print("-" * 95)
+
+    baseline_median = None
+    if (1, 'dynamic') in results and results[(1, 'dynamic')]:
+        baseline_median = float(np.median([r['run_median'] for r in results[(1, 'dynamic')]]))
+
+    all_keys = sorted(results.keys(), key=lambda x: (x[0], x[1]))
+    csv_rows = ["db_nodes,strategy,count,median_ms,mean_ms,std_ms,speedup_vs_1node"]
+
+    for db_nodes, strat in all_keys:
+        runs = results[(db_nodes, strat)]
+        if not runs:
+            continue
+        medians = [r['run_median'] for r in runs]
+        med = float(np.median(medians))
+        mean_val = float(np.mean(medians))
+        std_val = float(np.std(medians, ddof=1)) if len(medians) > 1 else 0.0
+        speedup = (baseline_median / med) if (baseline_median and med > 0) else 1.0
+
+        print(f"{db_nodes:<10} | {strat:<15} | {len(medians):<5} | {med:<12.2f} | {mean_val:<12.2f} | {std_val:<10.2f} | {speedup:<15.2f}x")
+        csv_rows.append(f"{db_nodes},{strat},{len(medians)},{med:.2f},{mean_val:.2f},{std_val:.2f},{speedup:.2f}")
+
+    print("=" * 95)
+
+    if csv_out:
+        csv_out.write_text("\n".join(csv_rows) + "\n")
+        print(f"[+] Summary CSV written to {csv_out}")
 
 def analyze_job_mapping(jobs_info: list):
     results = {}  # (interface, variant) -> list of per-run medians
@@ -239,13 +187,11 @@ def main():
         filename = job_list_path.name.lower()
         jobs_info = []
         
-        # Check if CSV manifest
         if job_list_path.suffix == ".csv":
             lines = job_list_path.read_text().splitlines()
-            header = lines[0].split(',')
             for line in lines[1:]:
                 parts = line.strip().split(',')
-                if len(parts) >= 6:
+                if len(parts) >= 6 and parts[5].isdigit():
                     jobs_info.append({
                         'rep': parts[0],
                         'interface': parts[1],  # db_nodes
@@ -258,7 +204,6 @@ def main():
             for line in job_list_path.read_text().splitlines():
                 parts = line.strip().split()
                 if len(parts) >= 3:
-                    # Find numeric job id
                     job_id = None
                     for p in parts:
                         if p.isdigit() and len(p) >= 6:

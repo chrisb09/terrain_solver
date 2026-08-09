@@ -25,6 +25,7 @@ close_driver*
 
 solver_cpp/build
 solver_cpp/build_*/
+build_scorep/
 
 # Local/Runtime files
 core.*

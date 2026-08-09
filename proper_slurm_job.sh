@@ -804,7 +804,11 @@ if [[ "${USE_SCOREP}" == "1" ]]; then
   _scorep_job_name="${SLURM_JOB_NAME:-scorep_job}"
   _scorep_job_name="${_scorep_job_name//[^A-Za-z0-9_.-]/_}"
   # install.sh pre-sets this under ${SMARTSIM_ROOT_DIR}; keep mini-app profiles local.
-  export SCOREP_EXPERIMENT_DIRECTORY="${MINI_APP_DIR}/scorep_runs/${_scorep_job_name}_${RUN_ID}"
+  if [[ -n "${SCOREP_DIR_TAG_ENV:-}" ]]; then
+    export SCOREP_EXPERIMENT_DIRECTORY="${MINI_APP_DIR}/scorep_runs/${SCOREP_DIR_TAG_ENV}"
+  else
+    export SCOREP_EXPERIMENT_DIRECTORY="${MINI_APP_DIR}/scorep_runs/${_scorep_job_name}_${RUN_ID}"
+  fi
   export SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY="${SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY:-true}"
   mkdir -p "${SCOREP_EXPERIMENT_DIRECTORY}"
 fi
@@ -1499,15 +1503,16 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
   DB_HOSTNAME="127.0.0.1:6379"
 
   if [[ "${USE_SMARTSIM}" -eq 1 || ( "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:u}" == "SMARTSIM" ) ]]; then
+    TARGET_DB_PORT=$((6700 + (${SLURM_JOB_ID:-0} % 1000)))
     if [[ "${DB_NODE_PREFLIGHT}" -eq 1 ]]; then
-      echo "Running DB node preflight checks (ib0, port 6780, local write)..."
+      echo "Running DB node preflight checks (ib0, port ${TARGET_DB_PORT}, local write)..."
       DB_PREFLIGHT_LOG="logs/db_preflight_${RUN_ID}.log"
       mkdir -p logs
       : > "${DB_PREFLIGHT_LOG}"
       set +e
       srun --export=ALL $(get_srun_het_flag "${DB_HET_GROUP}") --nodes "${DB_NODES}" --ntasks-per-node 1 --cpus-per-task 1 \
         $([[ "${DB_NODES}" -gt 1 ]] && echo "--distribution=block") \
-        /bin/zsh -lc 'set +e; _host=$(hostname); _ib=$(ip -o -4 addr show ib0 2>/dev/null | awk "{print \$4}" | head -n1); if [[ -z "${_ib}" ]]; then _ib="missing"; fi; echo "DB_PREFLIGHT host=${_host} ib0=${_ib}"; python3 -c "import socket; s=socket.socket(); s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1); s.bind((\"0.0.0.0\", 6780)); s.close(); print(\"DB_PREFLIGHT port_bind_6780=ok\")" 2>/dev/null || echo "DB_PREFLIGHT port_bind_6780=fail"; _root="${LOCAL_FAST_ROOT:-/tmp}"; _probe="${_root%/}/.db_preflight_${SLURM_JOB_ID}_$$"; mkdir -p "${_probe}" 2>/dev/null && echo "DB_PREFLIGHT fs_write=ok root=${_root}" && rmdir "${_probe}" 2>/dev/null || echo "DB_PREFLIGHT fs_write=fail root=${_root}"' \
+        /bin/zsh -lc 'set +e; _host=$(hostname); _ib=$(ip -o -4 addr show ib0 2>/dev/null | awk "{print \$4}" | head -n1); if [[ -z "${_ib}" ]]; then _ib="missing"; fi; echo "DB_PREFLIGHT host=${_host} ib0=${_ib}"; python3 -c "import socket; s=socket.socket(); s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1); s.bind((\"0.0.0.0\", '${TARGET_DB_PORT}')); s.close(); print(\"DB_PREFLIGHT port_bind='${TARGET_DB_PORT}':ok\")" 2>/dev/null || echo "DB_PREFLIGHT port_bind='${TARGET_DB_PORT}':fail"; _root="${LOCAL_FAST_ROOT:-/tmp}"; _probe="${_root%/}/.db_preflight_${SLURM_JOB_ID}_$$"; mkdir -p "${_probe}" 2>/dev/null && echo "DB_PREFLIGHT fs_write=ok root=${_root}" && rmdir "${_probe}" 2>/dev/null || echo "DB_PREFLIGHT fs_write=fail root=${_root}"' \
         2>&1 | tee -a "${DB_PREFLIGHT_LOG}"
       db_preflight_rc=$?
       set -e
@@ -1547,6 +1552,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
       rm -f "${DB_HOSTNAME_FILE}"
       echo "=== CONTROLLER_ATTEMPT ${controller_attempt}/${CONTROLLER_START_MAX_RETRIES} ===" >> "${driver_log}"
       ${python_path} smartsim_controller.py --db_nodes "${DB_NODES}" \
+          --port="${TARGET_DB_PORT}" \
           $([[ -n "${SLURM_HET_SIZE:-}" || -n "${SLURM_JOB_NUM_NODES_HET_GROUP_0:-}" ]] && echo "--het_group=${DB_HET_GROUP}") \
           --hostname_file="${DB_HOSTNAME_FILE}" \
           $([ "${USE_GPU}" -eq 1 ] && echo "--use_gpu") \

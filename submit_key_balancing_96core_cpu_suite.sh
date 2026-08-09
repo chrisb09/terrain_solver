@@ -1,13 +1,13 @@
 #!/usr/bin/env zsh
 
-# 96-Core Exclusive CPU Benchmark Suite (10 Replicates):
+# 96-Core Exclusive CPU Benchmark Suite (3 Replicates):
 # Evaluates 96-core exclusive node allocations across 3 scaling strategies:
 # 1. Dynamic Balanced: TPQ = floor(96 / db_nodes), Intra = ceil(96 / TPQ)  (n = 1, 3, 4, 5, 6, 7, 8)
 # 2. TPQ-Only Baseline: TPQ = 96, Intra = 1                               (n = 3, 4, 5, 6, 7, 8)
 # 3. Intra-Only Baseline: TPQ = 1, Intra = 96                              (n = 3, 4, 5, 6, 7, 8)
 #
 # Grid: 1440x960 | Ranks: 96 (12x8 grid) | Allocation: Exclusive c23mm nodes
-# All 190 jobs are chained with dependencies to prevent port collisions.
+# All 57 jobs are chained with dependencies to prevent port collisions.
 
 set -euo pipefail
 
@@ -20,9 +20,10 @@ MPI_RANKS=96
 ALLOC_CPUS_PER_NODE=96
 DB_CPU_CORES=96
 TIME_LIMIT="${TIME_LIMIT_ENV:-00:30:00}"
+SLURM_ACCOUNT="${ACCOUNT_ENV:-thes2181}"
 RANK_GRID_X=12
 RANK_GRID_Z=8
-REPLICATES=10
+REPLICATES=3
 
 if [[ ! -x "${SCRIPT_DIR}/solver_cpp/${BUILD_DIR}/terrain_solver" ]]; then
   print -u2 "Missing normal direct build: solver_cpp/${BUILD_DIR}/terrain_solver"
@@ -46,8 +47,8 @@ else
   print "replicate,db_nodes,strategy,tpq,intra,job_id" > "${CSV_MANIFEST}"
 fi
 
-print "Submitting 96-Core Exclusive CPU ML Scaling Suite (190 jobs total)..."
-print "Grid: 1440x960 | Ranks: 96 (12x8) | Node Allocation: Exclusive 96 cores/node | Wall time: ${TIME_LIMIT}"
+print "Submitting 96-Core Exclusive CPU ML Scaling Suite (57 jobs total)..."
+print "Grid: 1440x960 | Ranks: 96 (12x8) | Account: ${SLURM_ACCOUNT} | Node Allocation: Exclusive 96 cores/node | Wall time: ${TIME_LIMIT}"
 
 job_count=${#existing_submissions}
 
@@ -105,6 +106,7 @@ for rep in $(seq 1 "${REPLICATES}"); do
       submit_raw=""
       if ! submit_raw=$(sbatch --parsable \
         "${dependency_args[@]}" \
+        --account="${SLURM_ACCOUNT}" \
         --export="${exports}" \
         --partition=c23mm \
         --exclusive \
@@ -114,12 +116,11 @@ for rep in $(seq 1 "${REPLICATES}"); do
         --mem=0 \
         --time="${TIME_LIMIT}" \
         "${RUNNER}" 2>&1); then
-        print -u2 "Slurm submit limit reached (${submit_raw}). Submitted ${job_count}/190 jobs so far."
+        print -u2 "Slurm submit limit reached (${submit_raw}). Submitted ${job_count}/57 jobs so far."
         print -u2 "Re-run ./submit_key_balancing_96core_cpu_suite.sh once queued jobs complete to submit remaining jobs."
         exit 0
       fi
 
-      # Parse purely numeric job ID from sbatch output
       parsed_job_id=$(print -r -- "${submit_raw}" | grep -oE '[0-9]+' | tail -n 1)
       if [[ -z "${parsed_job_id}" ]]; then
         print -u2 "Failed to parse job ID from sbatch output: ${submit_raw}"
@@ -129,12 +130,12 @@ for rep in $(seq 1 "${REPLICATES}"); do
       previous_job_id="${parsed_job_id}"
       existing_submissions[${key}]="${previous_job_id}"
       job_count=$((job_count + 1))
-      print "Submitted [${job_count}/190] Rep ${rep} n=${db_nodes} ${strat} (TPQ=${tpq}, Intra=${intra}): Job ID ${previous_job_id}"
+      print "Submitted [${job_count}/57] Rep ${rep} n=${db_nodes} ${strat} (TPQ=${tpq}, Intra=${intra}): Job ID ${previous_job_id}"
       print "${db_nodes} ${strat} ${previous_job_id} tpq=${tpq} intra=${intra} rep=${rep}" >> "${MANIFEST_FILE}"
       print "${rep},${db_nodes},${strat},${tpq},${intra},${previous_job_id}" >> "${CSV_MANIFEST}"
     done
   done
 done
 
-print "All 190 jobs in the 96-core CPU suite submitted successfully."
+print "All 57 jobs in the 96-core CPU suite submitted successfully."
 print "Manifests saved to ${MANIFEST_FILE} and ${CSV_MANIFEST}."
