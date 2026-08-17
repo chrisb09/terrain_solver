@@ -779,6 +779,17 @@ if (( ${USE_SCOREP:-0} )); then
   echo "Score-P active: forcing OMPI_MCA_pml=ob1, OMPI_MCA_btl=self,vader,tcp, PMIX_MCA_gds=hash to avoid hetjob PMIx/UCX failures"
 fi
 
+# PhyDLL's MPMD launch performs its own MPI_Comm_split on the hetjob world and
+# has been observed to stall at that point without the same OpenMPI settings that
+# Score-P forces above (ob1 pml + self/vader/tcp btl + hash PMIx gds). This is an
+# opt-in override for non-Score-P PhyDLL runs that hit the same startup hang.
+if [[ "${PHYDLL_SAFE_MPI_ENV:-0}" == "1" ]]; then
+  export OMPI_MCA_pml=ob1
+  export OMPI_MCA_btl=self,vader,tcp
+  export PMIX_MCA_gds=hash
+  echo "PHYDLL_SAFE_MPI_ENV=1: forcing OMPI_MCA_pml=ob1, OMPI_MCA_btl=self,vader,tcp, PMIX_MCA_gds=hash for non-Score-P PhyDLL MPMD launch"
+fi
+
 if [[ "${USE_SCOREP}" == "1" ]]; then
   CMI_DIR="$(realpath "${MINI_APP_DIR}/../CPP-ML-Interface")"
   export SMARTSIM_PAPI_ROOT="${CMI_DIR}/tmp/opencode/papi-7.2.0-install"
@@ -1783,7 +1794,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
     USE_PYTHON_DL_CLIENT=${USE_PYTHON_DL_CLIENT:-0}
     PHYDLL_PY_SCOREP_WRAPPER=${PHYDLL_PY_SCOREP_WRAPPER:-0}
     export PHYDLL_PY_SCOREP_WRAPPER
-    PHYDLL_REBUILD_DL_CLIENT=${PHYDLL_REBUILD_DL_CLIENT:-1}
+    PHYDLL_REBUILD_DL_CLIENT=${PHYDLL_REBUILD_DL_CLIENT_ENV:-${PHYDLL_REBUILD_DL_CLIENT:-1}}
     DL_CLIENT_CMD=()
     if [[ "${USE_PYTHON_DL_CLIENT}" == "1" ]]; then
       if [[ "${USE_SCOREP}" == "1" && "${PHYDLL_PY_SCOREP_WRAPPER}" == "1" ]]; then

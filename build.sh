@@ -49,7 +49,8 @@ export LD_LIBRARY_PATH="$CUDA_ROOT/extras/CUPTI/lib64:$CUDA_ROOT/lib64:$CUDA_ROO
 export LIBRARY_PATH="$CUDA_ROOT/extras/CUPTI/lib64:$CUDA_ROOT/lib64:$CUDA_ROOT/targets/x86_64-linux/lib/stubs:$LIBRARY_PATH"
 export PATH="$CUDA_ROOT/bin:$PATH"
 
-AIX_SERVICE_DIR="$(realpath "${script_dir}/../CPP-ML-Interface/extern/AIxeleratorService")"
+AIX_SERVICE_NAME="${AIX_SERVICE_NAME_ENV:-AIxeleratorService}"
+AIX_SERVICE_DIR="$(realpath "${script_dir}/../CPP-ML-Interface/extern/${AIX_SERVICE_NAME}")"
 TORCH_VERSION="${TORCH_VERSION:-2.4.0}"
 
 if [[ "${USE_SCOREP:-}" == "1" ]]; then
@@ -60,7 +61,15 @@ if [[ "${USE_SCOREP:-}" == "1" ]]; then
     if [[ -f "${CMI_SCOREP_ENV}" ]]; then
         source "${CMI_SCOREP_ENV}"
     fi
-    export LD_LIBRARY_PATH="${script_dir}/../CPP-ML-Interface/extern/AIxeleratorService/INSTALL-SCOREP/lib:${SMARTSIM_SCOREP_ROOT}/lib:${SMARTSIM_PAPI_ROOT}/lib:${LD_LIBRARY_PATH}"
+    if [[ "${AIX_SERVICE_NAME}" == *"pipelined"* || "${AIX_SERVICE_NAME}" == *"P2P"* || "${AIX_SERVICE_NAME}" == *"p2p"* ]]; then
+        AIX_INSTALL_PREFIX="${AIX_SERVICE_DIR}/INSTALL-PIPELINED-SCOREP-MPI"
+        if [[ ! -d "${AIX_INSTALL_PREFIX}" ]]; then
+            AIX_INSTALL_PREFIX="${AIX_SERVICE_DIR}/INSTALL-PIPELINED-SCOREP"
+        fi
+    else
+        AIX_INSTALL_PREFIX="${AIX_SERVICE_DIR}/INSTALL-SCOREP"
+    fi
+    export LD_LIBRARY_PATH="${AIX_INSTALL_PREFIX}/lib:${SMARTSIM_SCOREP_ROOT}/lib:${SMARTSIM_PAPI_ROOT}/lib:${LD_LIBRARY_PATH}"
 
     if ! command -v scorep-config >/dev/null 2>&1 || ! command -v scorep-mpicxx >/dev/null 2>&1; then
         echo "USE_SCOREP=1 but local Score-P tools are unavailable on PATH." >&2
@@ -70,11 +79,16 @@ if [[ "${USE_SCOREP:-}" == "1" ]]; then
     echo "USE_SCOREP=1 detected, using local scorep-mpicxx compiler for CMake"
     SCOREP_BIN_DIR="$(dirname "$(command -v scorep-config)")"
     export SCOREP_WRAPPER_INSTRUMENTER_FLAGS="--nocompiler --user --mpp=mpi --io=none --memory=none --thread=none --nocuda"
-    SCOREP_FLAGS="-DCMAKE_CXX_COMPILER=${SCOREP_BIN_DIR}/scorep-mpicxx -DCMAKE_C_COMPILER=${SCOREP_BIN_DIR}/scorep-mpicc -DWITH_SCOREP=ON -DSCOREP_ROOT_DIR=${SMARTSIM_SCOREP_ROOT} -DSCOREP_CONFIG_EXECUTABLE=${SCOREP_BIN_DIR}/scorep-config -DSCOREP_INFO_EXECUTABLE=${SCOREP_BIN_DIR}/scorep-info -DAIX_USE_PREBUILT=ON -DFORCE_AIX_REBUILD=${FORCE_AIX_REBUILD_ENV:-OFF} -DAIXELERATOR_PREBUILT_INSTALL_PREFIX=${AIX_SERVICE_DIR}/INSTALL-SCOREP -DTORCH_VERSION=${TORCH_VERSION}"
+    SCOREP_FLAGS="-DCMAKE_CXX_COMPILER=${SCOREP_BIN_DIR}/scorep-mpicxx -DCMAKE_C_COMPILER=${SCOREP_BIN_DIR}/scorep-mpicc -DWITH_SCOREP=ON -DSCOREP_ROOT_DIR=${SMARTSIM_SCOREP_ROOT} -DSCOREP_CONFIG_EXECUTABLE=${SCOREP_BIN_DIR}/scorep-config -DSCOREP_INFO_EXECUTABLE=${SCOREP_BIN_DIR}/scorep-info -DAIX_USE_PREBUILT=ON -DFORCE_AIX_REBUILD=${FORCE_AIX_REBUILD_ENV:-OFF} -DAIXELERATOR_DIR=${AIX_SERVICE_DIR} -DAIXELERATOR_PREBUILT_INSTALL_PREFIX=${AIX_INSTALL_PREFIX} -DTORCH_VERSION=${TORCH_VERSION}"
     unset CC
     unset CXX
 else
-    SCOREP_FLAGS="-DWITH_SCOREP=OFF -DAIX_USE_PREBUILT=ON -DAIXELERATOR_PREBUILT_INSTALL_PREFIX=${AIX_SERVICE_DIR}/INSTALL"
+    if [[ "${AIX_SERVICE_NAME}" == *"pipelined"* || "${AIX_SERVICE_NAME}" == *"P2P"* || "${AIX_SERVICE_NAME}" == *"p2p"* ]]; then
+        AIX_INSTALL_PREFIX="${AIX_SERVICE_DIR}/INSTALL-PIPELINED"
+    else
+        AIX_INSTALL_PREFIX="${AIX_SERVICE_DIR}/INSTALL"
+    fi
+    SCOREP_FLAGS="-DWITH_SCOREP=OFF -DAIX_USE_PREBUILT=ON -DAIXELERATOR_DIR=${AIX_SERVICE_DIR} -DAIXELERATOR_PREBUILT_INSTALL_PREFIX=${AIX_INSTALL_PREFIX}"
 fi
 
 cmake -S .. -DCMAKE_BUILD_TYPE=Release -DUSE_CPP_ML_INTERFACE=${USE_CPP_ML_INTERFACE} $SCOREP_FLAGS || { echo "Build failed"; cd "$current_dir"; exit 1; }
