@@ -24,8 +24,10 @@ stdout
 close_driver*
 
 solver_cpp/build
+solver_cpp/build*/
 solver_cpp/build_*/
 build_scorep/
+input/smoke_input_*.h5
 
 # Local/Runtime files
 core.*

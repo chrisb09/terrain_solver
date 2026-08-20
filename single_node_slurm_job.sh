@@ -15,10 +15,10 @@
 ############################
 #SBATCH --partition=c23g
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=32
+#SBATCH --ntasks-per-node=25
 #SBATCH --cpus-per-task=1
 #SBATCH --gres=gpu:2
-#SBATCH --mem-per-cpu=10G
+#SBATCH --mem-per-cpu=3G
 
 
 
@@ -46,9 +46,27 @@ export SMARTSIM_WLM_TRIALS=60
 
 ########## SmartSim/ML Parameters ##########
 
-USE_SMARTSIM=${USE_SMARTSIM:-0} # directly use SmartSim for model management and inference
-# inverse ${USE_SMARTSIM} so that if USE_SMARTSIM is 0, we use the C++ ML interface instead of SmartSim
-USE_CPP_ML_INTERFACE=${USE_CPP_ML_INTERFACE:-$(( ! USE_SMARTSIM ))}
+if [[ "${ML_INTERFACE_ENV:-}" == "none" ]]; then
+  USE_SMARTSIM=0
+  USE_CPP_ML_INTERFACE=0
+  USE_DIRECT_AIX=0
+elif [[ "${ML_INTERFACE_ENV:-}" == "aix" ]]; then
+  USE_SMARTSIM=0
+  USE_CPP_ML_INTERFACE=0
+  USE_DIRECT_AIX=1
+elif [[ "${ML_INTERFACE_ENV:-}" == "smartsim" ]]; then
+  USE_SMARTSIM=1
+  USE_CPP_ML_INTERFACE=0
+  USE_DIRECT_AIX=0
+elif [[ "${ML_INTERFACE_ENV:-}" == "cpp" ]]; then
+  USE_SMARTSIM=0
+  USE_CPP_ML_INTERFACE=1
+  USE_DIRECT_AIX=0
+else
+  USE_SMARTSIM=${USE_SMARTSIM:-0}
+  USE_DIRECT_AIX=${USE_DIRECT_AIX:-0}
+  USE_CPP_ML_INTERFACE=${USE_CPP_ML_INTERFACE:-$(( ! USE_SMARTSIM && ! USE_DIRECT_AIX ))}
+fi
 CPP_ML_INTERFACE_PROVIDER="SMARTSIM" # SMARTSIM, AIX, PHYDLL
 CPP_ML_INTERFACE_LOG_LEVEL="info" # debug, info, warning, error
 # Detect if we are running in a heterogeneous job allocation.
@@ -89,7 +107,9 @@ if [[ -n "${ML_INTERFACE_ENV:-}" ]]; then
   ML_INTERFACE_MODE="${ML_INTERFACE_ENV}"
 fi
 if [[ -z "${ML_INTERFACE_MODE}" ]]; then
-  if (( USE_SMARTSIM == 1 )); then
+  if (( USE_DIRECT_AIX == 1 )); then
+    ML_INTERFACE_MODE="aix"
+  elif (( USE_SMARTSIM == 1 )); then
     ML_INTERFACE_MODE="smartsim"
   elif (( USE_CPP_ML_INTERFACE == 1 )); then
     ML_INTERFACE_MODE="cpp"
@@ -99,10 +119,14 @@ if [[ -z "${ML_INTERFACE_MODE}" ]]; then
 fi
 ML_INTERFACE_MODE_LOWER="${ML_INTERFACE_MODE:l}"
 if [[ "${ML_INTERFACE_MODE_LOWER}" == "auto" ]]; then
-  if (( USE_CPP_ML_INTERFACE == 1 )); then
+  if (( USE_DIRECT_AIX == 1 )); then
+    ML_INTERFACE_RESOLVED="aix"
+  elif (( USE_CPP_ML_INTERFACE == 1 )); then
     ML_INTERFACE_RESOLVED="cpp"
-  else
+  elif (( USE_SMARTSIM == 1 )); then
     ML_INTERFACE_RESOLVED="smartsim"
+  else
+    ML_INTERFACE_RESOLVED="none"
   fi
 else
   ML_INTERFACE_RESOLVED="${ML_INTERFACE_MODE_LOWER}"
@@ -152,6 +176,8 @@ if [[ "${USE_CPP_ML_INTERFACE}" -eq 1 ]]; then
   elif [[ "${_cpp_provider}" == "AIX" ]]; then
     MODEL_STAGE_DB_GROUP=1
   fi
+elif [[ "${USE_DIRECT_AIX:-0}" -eq 1 ]]; then
+  MODEL_STAGE_DB_GROUP=1
 fi
 DB_NODE_PREFLIGHT=1
 MODEL_IO_LAYOUT="split_3x3"
@@ -165,6 +191,12 @@ if [[ "${USE_CPP_ML_INTERFACE}" -eq 1 ]]; then
     if [[ -z "${MODEL_PATH:-}" ]]; then
       MODEL_PATH="train_models/model_a/giant_cuda.pt"
     fi
+  fi
+elif [[ "${USE_DIRECT_AIX:-0}" -eq 1 ]]; then
+  MODEL_IO_LAYOUT="flat_contiguous"
+  MODEL_ARTIFACT_MANIFEST="${MODEL_ARTIFACT_MANIFEST%_split.json}_flat.json"
+  if [[ -z "${MODEL_PATH:-}" ]]; then
+    MODEL_PATH="train_models/model_a/giant_cuda.pt"
   fi
 fi
 MODEL_PATH_SOURCE=""
@@ -276,7 +308,7 @@ echo "DB_HET_GROUP=${DB_HET_GROUP} Slurm raw vars: ${_db_gpus_per_node_var}='${(
 
 USE_GPU=$(( GPUS_PER_NODE > 0 ? 1 : 0 ))
 
-if (( USE_SMARTSIM == 1 || USE_CPP_ML_INTERFACE == 1 )); then
+if (( USE_SMARTSIM == 1 || USE_CPP_ML_INTERFACE == 1 || USE_DIRECT_AIX == 1 )); then
   if [[ "${ML_INTERFACE_RESOLVED}" == "smartsim" ]]; then
     echo "Use SmartSim for ML model management and inference"
 
@@ -286,6 +318,15 @@ if (( USE_SMARTSIM == 1 || USE_CPP_ML_INTERFACE == 1 )); then
     else
       echo "Configuring for CPU-based ML inference with ${ML_INFERENCE_CPU_CORES} CPU cores per task."
       export CUSTOM_JOB_NAME_SUFFIX_ENV="_SMARTSIM_${ML_INFERENCE_CPU_CORES}cpu_${MODEL_NAME}_revamped_prepare_${terrain_status}"
+    fi
+  elif [[ "${ML_INTERFACE_RESOLVED}" == "aix" ]]; then
+    echo "Using Direct AIx for model management and inference"
+    if (( USE_GPU == 1 )); then
+      echo "Configuring for GPU-based ML inference with ${GPUS_PER_NODE} GPUs per node."
+      export CUSTOM_JOB_NAME_SUFFIX_ENV="_direct_aix_${GPUS_PER_NODE}gpu_${MODEL_NAME}_${terrain_status}"
+    else
+      echo "Configuring for CPU-based ML inference with ${ML_INFERENCE_CPU_CORES} CPU cores per task."
+      export CUSTOM_JOB_NAME_SUFFIX_ENV="_direct_aix_${ML_INFERENCE_CPU_CORES}cpu_${MODEL_NAME}_${terrain_status}"
     fi
   elif [[ "${ML_INTERFACE_RESOLVED}" == "cpp" ]]; then
     echo "Using C++ ML interface for model management and inference"
@@ -1360,7 +1401,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
 
     if [[ "${USE_CPP_ML_INTERFACE}" -eq 1 ]]; then
       # enable the USE_CPP_ML_INTERFACE option defined in the CMakeLists.txt to compile the C++ ML inference interface
-      COMPILE_ARGS+=("-DUSE_CPP_ML_INTERFACE=ON")
+      COMPILE_ARGS+=("-DUSE_CPP_ML_INTERFACE=ON" "-DWITH_DIRECT_SMARTSIM=OFF" "-DWITH_DIRECT_AIX=OFF")
       if [[ "${CPP_ML_INTERFACE_PROVIDER:u}" == "PHYDLL" ]]; then
         echo "Enabling WITH_PHYDLL=ON for CPP-ML PhyDLL provider."
         COMPILE_ARGS+=("-DWITH_PHYDLL=ON")
@@ -1369,6 +1410,12 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
           "${MINI_APP_DIR}/../CPP-ML-Interface/build_phydll.sh"
         fi
       fi
+    elif [[ "${USE_DIRECT_AIX:-0}" -eq 1 ]]; then
+      COMPILE_ARGS+=("-DUSE_CPP_ML_INTERFACE=OFF" "-DWITH_DIRECT_SMARTSIM=OFF" "-DWITH_DIRECT_AIX=ON")
+    elif [[ "${USE_SMARTSIM:-0}" -eq 1 ]]; then
+      COMPILE_ARGS+=("-DUSE_CPP_ML_INTERFACE=OFF" "-DWITH_DIRECT_SMARTSIM=ON" "-DWITH_DIRECT_AIX=OFF")
+    else
+      COMPILE_ARGS+=("-DUSE_CPP_ML_INTERFACE=OFF" "-DWITH_DIRECT_SMARTSIM=OFF" "-DWITH_DIRECT_AIX=OFF")
     fi
 
     if [[ -n "${USE_SCOREP:-}" ]]; then
@@ -1534,6 +1581,9 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
   fi
   if [[ -n "${ML_INTERFACE_MODE_LOWER}" ]]; then
     MODEL_IO_ARGS+=(--ml-interface "${ML_INTERFACE_MODE_LOWER}")
+  fi
+  if [[ -n "${AIX_COMMUNICATION_MODE_ENV:-}" ]]; then
+    MODEL_IO_ARGS+=(--aix-communication-mode "${AIX_COMMUNICATION_MODE_ENV}")
   fi
   if [[ "${FORCE_TERRAIN_UPLOAD_EACH_STEP}" -eq 1 ]]; then
     MODEL_IO_ARGS+=(--force-terrain-upload-each-step)
@@ -1822,7 +1872,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
     unset SSDB
     fi
 
-    if [[ "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:u}" == "AIX" ]]; then
+    if [[ ( "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:u}" == "AIX" ) || "${USE_DIRECT_AIX:-0}" -eq 1 ]]; then
     srun_cmd="srun --export=ALL $(get_srun_het_flag "${SOLVER_HET_GROUP}") --nodes \"${_nodes:-1}\" --ntasks \"${MPI_RANKS}\" ${SOLVER_SRUN_EXTRA_ARGS} \
         --cpus-per-task 1 \
         ${SRUN_DIST} \

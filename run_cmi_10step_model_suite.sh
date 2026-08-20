@@ -25,11 +25,8 @@ echo "Model: ${MODEL} | Resolution: ${TARGET_WIDTH}x${TARGET_HEIGHT} | Steps: ${
 if [ "${SKIP_COMPILE_ENV:-0}" -eq 1 ]; then
     echo "=== Skipping compilation (SKIP_COMPILE_ENV=1) ==="
 else
-    echo "=== Step 1: Pre-compiling Standard CMI Solver into ${BUILD_STD} ==="
+    echo "=== Step 1: Pre-compiling CMI Solver into ${BUILD_STD} ==="
     ./build.sh "${BUILD_STD}"
-
-    echo "=== Step 2: Pre-compiling AIx P2P CMI Solver into ${BUILD_AIX_P2P} ==="
-    AIX_SERVICE_NAME_ENV=AIxeleratorService-pipelined ./build.sh "${BUILD_AIX_P2P}"
     echo "=== Pre-compilation completed successfully ==="
 fi
 
@@ -94,7 +91,7 @@ submit_suite_job "CMI_${MODEL}_AIx_collective_10step" \
 
 # 5. AIxelerator P2P / Pipelined (auto rank grid, 24 solver ranks + 1 GPU controller = 25)
 submit_suite_job "CMI_${MODEL}_AIx_p2p_10step" \
-    "COMPILE_OUTPUT_PATH_ENV=${BUILD_AIX_P2P},USE_SMARTSIM=0,USE_CPP_ML_INTERFACE=1,ML_INTERFACE_ENV=cpp,CPP_ML_INTERFACE_PROVIDER_ENV=AIX,CPP_ML_CONFIG_ENV=config_aix.toml,RANK_GRID_X_ENV=,RANK_GRID_Z_ENV="
+    "COMPILE_OUTPUT_PATH_ENV=${BUILD_STD},USE_SMARTSIM=0,USE_CPP_ML_INTERFACE=1,ML_INTERFACE_ENV=cpp,CPP_ML_INTERFACE_PROVIDER_ENV=AIX,CPP_ML_CONFIG_ENV=config_aix_pipelined.toml,RANK_GRID_X_ENV=,RANK_GRID_Z_ENV="
 
 echo ""
 echo "=== All 5 ${MODEL} benchmark cases submitted successfully ==="

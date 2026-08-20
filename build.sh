@@ -1,7 +1,41 @@
 #!/usr/bin/env bash
 
-# Pass USE_CPP_ML_INTERFACE=OFF to build the direct SmartSim path.
-USE_CPP_ML_INTERFACE="${USE_CPP_ML_INTERFACE:-ON}"
+# Resolve mutually exclusive ML mode
+# Modes: cmi (default), direct_aix (or aix), direct_smartsim (or smartsim), none
+BUILD_ML_MODE="${BUILD_ML_MODE:-${MODE:-}}"
+
+if [[ -z "${BUILD_ML_MODE}" ]]; then
+    if [[ "${WITH_DIRECT_AIX:-0}" == "1" || "${WITH_DIRECT_AIX:-}" == "ON" ]]; then
+        BUILD_ML_MODE="direct_aix"
+    elif [[ "${WITH_DIRECT_SMARTSIM:-0}" == "1" || "${WITH_DIRECT_SMARTSIM:-}" == "ON" ]]; then
+        BUILD_ML_MODE="direct_smartsim"
+    elif [[ "${USE_CPP_ML_INTERFACE:-ON}" == "OFF" || "${USE_CPP_ML_INTERFACE:-ON}" == "0" ]]; then
+        BUILD_ML_MODE="direct_smartsim"
+    else
+        BUILD_ML_MODE="cmi"
+    fi
+fi
+
+case "${BUILD_ML_MODE}" in
+    cmi|cpp)
+        CMAKE_ML_FLAGS="-DUSE_CPP_ML_INTERFACE=ON -DWITH_DIRECT_SMARTSIM=OFF -DWITH_DIRECT_AIX=OFF"
+        ;;
+    direct_aix|aix)
+        CMAKE_ML_FLAGS="-DUSE_CPP_ML_INTERFACE=OFF -DWITH_DIRECT_SMARTSIM=OFF -DWITH_DIRECT_AIX=ON"
+        ;;
+    direct_smartsim|smartsim)
+        CMAKE_ML_FLAGS="-DUSE_CPP_ML_INTERFACE=OFF -DWITH_DIRECT_SMARTSIM=ON -DWITH_DIRECT_AIX=OFF"
+        ;;
+    none|no_ml)
+        CMAKE_ML_FLAGS="-DUSE_CPP_ML_INTERFACE=OFF -DWITH_DIRECT_SMARTSIM=OFF -DWITH_DIRECT_AIX=OFF"
+        ;;
+    *)
+        echo "Unknown BUILD_ML_MODE: '${BUILD_ML_MODE}' (expected cmi, direct_aix, direct_smartsim, none)" >&2
+        exit 1
+        ;;
+esac
+
+echo "Building terrain solver with mode: ${BUILD_ML_MODE} (${CMAKE_ML_FLAGS})"
 
 # Build the terrain solver
 
@@ -78,7 +112,7 @@ if [[ "${USE_SCOREP:-}" == "1" ]]; then
 
     echo "USE_SCOREP=1 detected, using local scorep-mpicxx compiler for CMake"
     SCOREP_BIN_DIR="$(dirname "$(command -v scorep-config)")"
-    export SCOREP_WRAPPER_INSTRUMENTER_FLAGS="--nocompiler --user --mpp=mpi --io=none --memory=none --thread=none --nocuda"
+    export SCOREP_WRAPPER_INSTRUMENTER_FLAGS="--nocompiler --user --mpp=${SCOREP_MPP:-none} --io=none --memory=none --thread=none --nocuda"
     SCOREP_FLAGS="-DCMAKE_CXX_COMPILER=${SCOREP_BIN_DIR}/scorep-mpicxx -DCMAKE_C_COMPILER=${SCOREP_BIN_DIR}/scorep-mpicc -DWITH_SCOREP=ON -DSCOREP_ROOT_DIR=${SMARTSIM_SCOREP_ROOT} -DSCOREP_CONFIG_EXECUTABLE=${SCOREP_BIN_DIR}/scorep-config -DSCOREP_INFO_EXECUTABLE=${SCOREP_BIN_DIR}/scorep-info -DAIX_USE_PREBUILT=ON -DFORCE_AIX_REBUILD=${FORCE_AIX_REBUILD_ENV:-OFF} -DAIXELERATOR_DIR=${AIX_SERVICE_DIR} -DAIXELERATOR_PREBUILT_INSTALL_PREFIX=${AIX_INSTALL_PREFIX} -DTORCH_VERSION=${TORCH_VERSION}"
     unset CC
     unset CXX
@@ -91,7 +125,7 @@ else
     SCOREP_FLAGS="-DWITH_SCOREP=OFF -DAIX_USE_PREBUILT=ON -DAIXELERATOR_DIR=${AIX_SERVICE_DIR} -DAIXELERATOR_PREBUILT_INSTALL_PREFIX=${AIX_INSTALL_PREFIX}"
 fi
 
-cmake -S .. -DCMAKE_BUILD_TYPE=Release -DUSE_CPP_ML_INTERFACE=${USE_CPP_ML_INTERFACE} $SCOREP_FLAGS || { echo "Build failed"; cd "$current_dir"; exit 1; }
+cmake -S .. -DCMAKE_BUILD_TYPE=Release ${CMAKE_ML_FLAGS} $SCOREP_FLAGS || { echo "Build failed"; cd "$current_dir"; exit 1; }
 build_jobs="${SLURM_CPUS_ON_NODE:-4}"
 echo "Building with -j${build_jobs} parallel jobs..."
 cmake --build . -j ${build_jobs} || { echo "Build failed"; cd "$current_dir"; exit 1; }

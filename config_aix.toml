@@ -2,7 +2,7 @@
 level = "debug"
 error_separate = false
 
-[provider]
+[library]
 class = "AIX"
 model_file = "./train_models/model_a/perfect_cuda.pt"
 

@@ -3,11 +3,9 @@ level = "debug"
 error_separate = false
 
 [library]
-class = "Phydll"
+class = "AIX"
 model_file = "./train_models/model_a/perfect_cuda.pt"
-backend = "TORCH"
-device = "GPU"
-batch_size = 500000
+communication_mode = "pipelined"
 
 [normalization]
 class = "MinMax"

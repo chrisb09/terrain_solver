@@ -4,7 +4,7 @@
 level = "debug"
 error_separate = false
 
-[provider]
+[library]
 class = "Smartsim"
 device = "GPU"
 model_backend = "TORCH"

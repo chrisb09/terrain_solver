@@ -2,40 +2,57 @@
 
 message(STATUS "Directory: ${CMAKE_CURRENT_SOURCE_DIR}")
 
-set(PROJECT_NAME "terrain_solver")
-set(MAIN_CPP_FILE "terrain_solver.cpp")
-set(SMARTREDIS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../CPP-ML-Interface/extern/SmartRedis")
-set(CUSTOM_CORE_DEPENDENCIES_DIR "/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software")
-set(CPPML_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../CPP-ML-Interface")
+cmake_minimum_required(VERSION 3.16)
 
-option(WITH_PHYDLL "Enable PhyDLL provider support through CPP-ML-Interface" ON)
+# Mutually exclusive ML modes
+option(USE_CPP_ML_INTERFACE "Use the CPP-ML-Interface in the mini-app" OFF)
+option(WITH_DIRECT_SMARTSIM "Use direct SmartSim/SmartRedis in the mini-app (without CMI)" OFF)
+option(WITH_DIRECT_AIX "Use direct AIxeleratorService in the mini-app (without CMI)" OFF)
+option(USE_CUSTOM_SMARTREDIS "Use a custom SmartRedis build" OFF)
 
-set(CPPML_DISABLE_REGISTRY_GEN ON CACHE BOOL "Disable CPP-ML-Interface standalone registry generation" FORCE)
-add_subdirectory("${CPPML_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/cpp-ml-interface-build" EXCLUDE_FROM_ALL)
+set(ACTIVE_ML_MODES 0)
+if(USE_CPP_ML_INTERFACE)
+    math(EXPR ACTIVE_ML_MODES "${ACTIVE_ML_MODES} + 1")
+endif()
+if(WITH_DIRECT_SMARTSIM)
+    math(EXPR ACTIVE_ML_MODES "${ACTIVE_ML_MODES} + 1")
+endif()
+if(WITH_DIRECT_AIX)
+    math(EXPR ACTIVE_ML_MODES "${ACTIVE_ML_MODES} + 1")
+endif()
 
+if(ACTIVE_ML_MODES GREATER 1)
+    message(FATAL_ERROR "Mutually exclusive ML modes selected. Please enable at most one of: USE_CPP_ML_INTERFACE, WITH_DIRECT_SMARTSIM, WITH_DIRECT_AIX.")
+endif()
 
+if(USE_CPP_ML_INTERFACE)
+    message(STATUS "Mode: USE_CPP_ML_INTERFACE (CPP-ML-Interface)")
+    add_definitions(-DUSE_CPP_ML_INTERFACE)
+elseif(WITH_DIRECT_SMARTSIM)
+    message(STATUS "Mode: WITH_DIRECT_SMARTSIM (Direct SmartSim/SmartRedis)")
+    add_definitions(-DWITH_DIRECT_SMARTSIM)
+elseif(WITH_DIRECT_AIX)
+    message(STATUS "Mode: WITH_DIRECT_AIX (Direct AIxeleratorService)")
+    add_definitions(-DWITH_DIRECT_AIX)
+else()
+    message(STATUS "Mode: No-ML (Pure physics solver)")
+endif()
 
-
-
-# a fork with some debug prints
-OPTION(USE_CUSTOM_SMARTREDIS "Use a custom SmartRedis build" OFF)
-# pass this so we can use #ifdef in the code to print debug statements
 if(USE_CUSTOM_SMARTREDIS)
     add_definitions(-DUSE_CUSTOM_SMARTREDIS)
     message(STATUS "Using custom SmartRedis build")
 endif()
 
-# option to use the CPP-ML-Interface instead of directly using SmartRedis in the mini-app
-OPTION(USE_CPP_ML_INTERFACE "Use the CPP-ML-Interface instead of directly using SmartRedis in the mini-app" OFF)
-if(USE_CPP_ML_INTERFACE)
-    add_definitions(-DUSE_CPP_ML_INTERFACE)
-    message(STATUS "Using CPP-ML-Interface in the mini-app")
-endif()
+set(PROJECT_NAME "terrain_solver")
+set(MAIN_CPP_FILE "terrain_solver.cpp")
+set(SMARTREDIS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../CPP-ML-Interface/extern/SmartRedis")
+set(CUSTOM_CORE_DEPENDENCIES_DIR "/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software")
+set(CPPML_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../CPP-ML-Interface")
+set(AIX_DIR "${CPPML_DIR}/extern/AIxeleratorService")
 
-## CMake configuration for the terrain_solver mini-app
-cmake_minimum_required(VERSION 3.14)
+set(AIXELERATOR_PREBUILT_INSTALL_PREFIX "${AIX_DIR}/INSTALL" CACHE PATH "Install prefix for AIxeleratorService")
 
-if(DEFINED ENV{USE_SCOREP} AND NOT "$ENV{USE_SCOREP}" STREQUAL "")
+if(WITH_SCOREP OR (DEFINED ENV{USE_SCOREP} AND NOT "$ENV{USE_SCOREP}" STREQUAL "" AND NOT "$ENV{USE_SCOREP}" STREQUAL "0"))
     set(CMAKE_CXX_COMPILER scorep-mpicxx)
     set(CMAKE_C_COMPILER scorep-mpicc)
 endif()
@@ -63,20 +80,25 @@ find_package(MPI REQUIRED COMPONENTS CXX)
 set(HDF5_PREFER_PARALLEL TRUE)
 find_package(HDF5 REQUIRED COMPONENTS C)
 
-# Warn if HDF5 is not built with parallel support. The application
-# expects parallel HDF5 when run with --io-mode parallel_hdf5.
 if(HDF5_C_IS_PARALLEL OR HDF5_IS_PARALLEL)
     message(STATUS "HDF5 parallel support: YES")
 else()
     message(WARNING "HDF5 was found but is NOT built with parallel support. "
                     "--io-mode parallel_hdf5 will fail at runtime. "
-                    "Load a parallel HDF5 module (e.g. HDF5/1.14.3 built against OpenMPI/4.1.6).")
+                    "Load a parallel HDF5 module (e.g. HDF5/1.12.2 built against OpenMPI/4.1.4).")
 endif()
-
 
 # Build the executable and link with MPI + HDF5
 add_executable(${PROJECT_NAME} ${MAIN_CPP_FILE})
+target_include_directories(${PROJECT_NAME} PRIVATE ${HDF5_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME} PRIVATE MPI::MPI_CXX ${HDF5_LIBRARIES})
+
+# 1. CMI Mode
 if(USE_CPP_ML_INTERFACE)
+    option(WITH_PHYDLL "Enable PhyDLL provider support through CPP-ML-Interface" ON)
+    set(CPPML_DISABLE_REGISTRY_GEN ON CACHE BOOL "Disable CPP-ML-Interface standalone registry generation" FORCE)
+    add_subdirectory("${CPPML_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/cpp-ml-interface-build" EXCLUDE_FROM_ALL)
+
     set(SMARTSIM_PYTHON "${CMAKE_CURRENT_SOURCE_DIR}/../../python/smartsim_cuda-12/bin/python"
         CACHE FILEPATH "Python interpreter with clang module available")
 
@@ -93,7 +115,7 @@ if(USE_CPP_ML_INTERFACE)
     set(ALL_HEADERS ${CPPML_HEADERS} ${TERRAIN_HEADERS})
     list(REMOVE_DUPLICATES ALL_HEADERS)
 
-    set(BASE_CLASSES "MLCouplingProvider,MLCouplingNormalization,MLCouplingBehavior,MLCouplingApplication")
+    set(BASE_CLASSES "MLCouplingLibrary,MLCouplingNormalization,MLCouplingBehavior,MLCouplingApplication")
     set(CLANG_ARGS "-std=c++17 -I${CPPML_DIR}/include -I${CMAKE_CURRENT_SOURCE_DIR}/include -I${SMARTREDIS_DIR}/include -I${SMARTREDIS_DIR}/install/include -xc++")
 
     add_custom_command(
@@ -110,33 +132,42 @@ if(USE_CPP_ML_INTERFACE)
 
     add_custom_target(terrain_solver_registry DEPENDS "${CPPML_GENERATED_REGISTRY}" "${CPPML_LIBRARY_GENERATED_REGISTRY}")
     add_dependencies(${PROJECT_NAME} terrain_solver_registry)
-    # The interface library includes this generated header as well.  Make its
-    # compilation wait for registry generation when building from a clean tree.
     add_dependencies(cpp_ml_interface_library terrain_solver_registry)
     target_include_directories(cpp_ml_interface_library PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/include"
         "${CMAKE_CURRENT_BINARY_DIR}")
-    target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_BINARY_DIR}")
-endif()
-target_include_directories(${PROJECT_NAME} PRIVATE ${HDF5_INCLUDE_DIRS})
-target_include_directories(${PROJECT_NAME} PRIVATE "${CPPML_DIR}/include")
-target_link_libraries(${PROJECT_NAME} PRIVATE MPI::MPI_CXX ${HDF5_LIBRARIES})
+    target_include_directories(${PROJECT_NAME} PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/include"
+        "${CMAKE_CURRENT_BINARY_DIR}"
+        "${CPPML_DIR}/include")
 
-# Manually set SmartRedis include and library paths
-target_include_directories(${PROJECT_NAME} PRIVATE ${SMARTREDIS_DIR}/include)
-target_include_directories(${PROJECT_NAME} PRIVATE ${SMARTREDIS_DIR}/install/include)
-target_link_directories(${PROJECT_NAME} PRIVATE ${SMARTREDIS_DIR}/install/lib64)
-target_link_libraries(${PROJECT_NAME} PRIVATE smartredis)
-
-# The interface library requires the generated coupling registry.  It is not
-# needed for No-ML or direct SmartSim runs, which do not enable this interface.
-if(USE_CPP_ML_INTERFACE)
+    target_include_directories(${PROJECT_NAME} PRIVATE ${SMARTREDIS_DIR}/include ${SMARTREDIS_DIR}/install/include)
+    target_link_directories(${PROJECT_NAME} PRIVATE ${SMARTREDIS_DIR}/install/lib64)
+    target_link_libraries(${PROJECT_NAME} PRIVATE smartredis)
     target_link_libraries(${PROJECT_NAME} PRIVATE cpp_ml_interface_headers cpp_ml_interface_library)
+
+# 2. Direct SmartSim Mode
+elseif(WITH_DIRECT_SMARTSIM)
+    target_include_directories(${PROJECT_NAME} PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/include"
+        "${CPPML_DIR}/include"
+        ${SMARTREDIS_DIR}/include
+        ${SMARTREDIS_DIR}/install/include)
+    target_link_directories(${PROJECT_NAME} PRIVATE ${SMARTREDIS_DIR}/install/lib64)
+    target_link_libraries(${PROJECT_NAME} PRIVATE smartredis)
+
+# 3. Direct AIx Mode
+elseif(WITH_DIRECT_AIX)
+    target_include_directories(${PROJECT_NAME} PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/include"
+        "${AIXELERATOR_PREBUILT_INSTALL_PREFIX}/include")
+    target_link_directories(${PROJECT_NAME} PRIVATE
+        "${AIXELERATOR_PREBUILT_INSTALL_PREFIX}/lib")
+    target_link_libraries(${PROJECT_NAME} PRIVATE AIxeleratorService)
 endif()
 
 if(WITH_SCOREP OR (DEFINED ENV{USE_SCOREP} AND NOT "$ENV{USE_SCOREP}" STREQUAL "" AND NOT "$ENV{USE_SCOREP}" STREQUAL "0"))
-    # Set Score-P MPP properties so target properties match cpp_ml_interface_headers requirement
-    list(APPEND CMAKE_MODULE_PATH "${CPPML_DIR}/extern/AIxeleratorService/cmake")
+    list(APPEND CMAKE_MODULE_PATH "${AIX_DIR}/cmake")
     find_package(Scorep REQUIRED)
     if(SCOREP_FOUND)
         set_target_properties(${PROJECT_NAME} PROPERTIES
@@ -147,8 +178,10 @@ if(WITH_SCOREP OR (DEFINED ENV{USE_SCOREP} AND NOT "$ENV{USE_SCOREP}" STREQUAL "
     endif()
 endif()
 
-# Add Intel compiler libraries path for SmartRedis dependencies
-target_link_directories(${PROJECT_NAME} PRIVATE ${CUSTOM_CORE_DEPENDENCIES_DIR}/imkl/2024.2.0/compiler/2024.2/lib)
+# Add Intel compiler libraries path for SmartRedis dependencies (if needed)
+if(USE_CPP_ML_INTERFACE OR WITH_DIRECT_SMARTSIM)
+    target_link_directories(${PROJECT_NAME} PRIVATE ${CUSTOM_CORE_DEPENDENCIES_DIR}/imkl/2024.2.0/compiler/2024.2/lib)
+endif()
 
 # Link against GCC's libstdc++
 target_link_directories(${PROJECT_NAME} PRIVATE ${CUSTOM_CORE_DEPENDENCIES_DIR}/GCCcore/11.3.0/lib64)

@@ -8,17 +8,13 @@ cd "${SCRIPT_DIR}"
 
 # Build directories
 BUILD_STD="build_cmi_22step"
-BUILD_AIX_P2P="build_aix_p2p"
 
 # Pre-compilation phase
 if [ "${SKIP_COMPILE_ENV:-0}" -eq 1 ]; then
     echo "=== Skipping compilation (SKIP_COMPILE_ENV=1) ==="
 else
-    echo "=== Step 1: Pre-compiling Standard CMI Solver into ${BUILD_STD} ==="
+    echo "=== Step 1: Pre-compiling CMI Solver into ${BUILD_STD} ==="
     ./build.sh "${BUILD_STD}"
-    
-    echo "=== Step 2: Pre-compiling AIx P2P CMI Solver into ${BUILD_AIX_P2P} ==="
-    AIX_SERVICE_NAME_ENV=AIxeleratorService-pipelined ./build.sh "${BUILD_AIX_P2P}"
     echo "=== Pre-compilation completed successfully ==="
 fi
 
@@ -83,7 +79,7 @@ submit_suite_job "CMI_AIx_collective_22step" \
 
 # 5. AIxelerator P2P / Pipelined
 submit_suite_job "CMI_AIx_p2p_22step" \
-    "COMPILE_OUTPUT_PATH_ENV=${BUILD_AIX_P2P},USE_SMARTSIM=0,USE_CPP_ML_INTERFACE=1,ML_INTERFACE_ENV=cpp,CPP_ML_INTERFACE_PROVIDER_ENV=AIX,CPP_ML_CONFIG_ENV=config_aix.toml,MPI_RANKS_ENV=24,RANK_GRID_X_ENV=,RANK_GRID_Z_ENV="
+    "COMPILE_OUTPUT_PATH_ENV=${BUILD_STD},USE_SMARTSIM=0,USE_CPP_ML_INTERFACE=1,ML_INTERFACE_ENV=cpp,CPP_ML_INTERFACE_PROVIDER_ENV=AIX,CPP_ML_CONFIG_ENV=config_aix_pipelined.toml,MPI_RANKS_ENV=24,RANK_GRID_X_ENV=,RANK_GRID_Z_ENV="
 
 # 6. PhyDLL C++ DL Client
 submit_suite_job "CMI_PhyDLL_cpp_22step" \

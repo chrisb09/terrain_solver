@@ -68,9 +68,23 @@ export SR_SOCKET_TIMEOUT=900000
 if [[ "${ML_INTERFACE_ENV:-}" == "none" ]]; then
   USE_SMARTSIM=0
   USE_CPP_ML_INTERFACE=0
+  USE_DIRECT_AIX=0
+elif [[ "${ML_INTERFACE_ENV:-}" == "aix" ]]; then
+  USE_SMARTSIM=0
+  USE_CPP_ML_INTERFACE=0
+  USE_DIRECT_AIX=1
+elif [[ "${ML_INTERFACE_ENV:-}" == "smartsim" ]]; then
+  USE_SMARTSIM=1
+  USE_CPP_ML_INTERFACE=0
+  USE_DIRECT_AIX=0
+elif [[ "${ML_INTERFACE_ENV:-}" == "cpp" ]]; then
+  USE_SMARTSIM=0
+  USE_CPP_ML_INTERFACE=1
+  USE_DIRECT_AIX=0
 else
   USE_SMARTSIM=${USE_SMARTSIM:-0}
-  USE_CPP_ML_INTERFACE=${USE_CPP_ML_INTERFACE:-$(( ! USE_SMARTSIM ))}
+  USE_DIRECT_AIX=${USE_DIRECT_AIX:-0}
+  USE_CPP_ML_INTERFACE=${USE_CPP_ML_INTERFACE:-$(( ! USE_SMARTSIM && ! USE_DIRECT_AIX ))}
 fi
 CPP_ML_INTERFACE_PROVIDER="${CPP_ML_INTERFACE_PROVIDER_ENV:-SMARTSIM}"
 CPP_ML_INTERFACE_LOG_LEVEL="info" # debug, info, warning, error
@@ -112,7 +126,9 @@ if [[ -n "${ML_INTERFACE_ENV:-}" ]]; then
   ML_INTERFACE_MODE="${ML_INTERFACE_ENV}"
 fi
 if [[ -z "${ML_INTERFACE_MODE}" ]]; then
-  if (( USE_SMARTSIM == 1 )); then
+  if (( USE_DIRECT_AIX == 1 )); then
+    ML_INTERFACE_MODE="aix"
+  elif (( USE_SMARTSIM == 1 )); then
     ML_INTERFACE_MODE="smartsim"
   elif (( USE_CPP_ML_INTERFACE == 1 )); then
     ML_INTERFACE_MODE="cpp"
@@ -122,10 +138,14 @@ if [[ -z "${ML_INTERFACE_MODE}" ]]; then
 fi
 ML_INTERFACE_MODE_LOWER="${ML_INTERFACE_MODE:l}"
 if [[ "${ML_INTERFACE_MODE_LOWER}" == "auto" ]]; then
-  if (( USE_CPP_ML_INTERFACE == 1 )); then
+  if (( USE_DIRECT_AIX == 1 )); then
+    ML_INTERFACE_RESOLVED="aix"
+  elif (( USE_CPP_ML_INTERFACE == 1 )); then
     ML_INTERFACE_RESOLVED="cpp"
-  else
+  elif (( USE_SMARTSIM == 1 )); then
     ML_INTERFACE_RESOLVED="smartsim"
+  else
+    ML_INTERFACE_RESOLVED="none"
   fi
 else
   ML_INTERFACE_RESOLVED="${ML_INTERFACE_MODE_LOWER}"
@@ -179,6 +199,8 @@ if [[ "${USE_CPP_ML_INTERFACE}" -eq 1 ]]; then
   elif [[ "${_cpp_provider}" == "AIX" ]]; then
     MODEL_STAGE_DB_GROUP=1
   fi
+elif [[ "${USE_DIRECT_AIX:-0}" -eq 1 ]]; then
+  MODEL_STAGE_DB_GROUP=1
 fi
 DB_NODE_PREFLIGHT=1
 MODEL_IO_LAYOUT="split_3x3"
@@ -192,6 +214,12 @@ if [[ "${USE_CPP_ML_INTERFACE}" -eq 1 ]]; then
     if [[ -z "${MODEL_PATH:-}" ]]; then
       MODEL_PATH="train_models/model_a/giant_cuda.pt"
     fi
+  fi
+elif [[ "${USE_DIRECT_AIX:-0}" -eq 1 ]]; then
+  MODEL_IO_LAYOUT="flat_contiguous"
+  MODEL_ARTIFACT_MANIFEST="${MODEL_ARTIFACT_MANIFEST%_split.json}_flat.json"
+  if [[ -z "${MODEL_PATH:-}" ]]; then
+    MODEL_PATH="train_models/model_a/giant_cuda.pt"
   fi
 fi
 MODEL_PATH_SOURCE=""
@@ -303,7 +331,7 @@ echo "DB_HET_GROUP=${DB_HET_GROUP} Slurm raw vars: ${_db_gpus_per_node_var}='${(
 
 USE_GPU=$(( GPUS_PER_NODE > 0 ? 1 : 0 ))
 
-if (( USE_SMARTSIM == 1 || USE_CPP_ML_INTERFACE == 1 )); then
+if (( USE_SMARTSIM == 1 || USE_CPP_ML_INTERFACE == 1 || USE_DIRECT_AIX == 1 )); then
   if [[ "${ML_INTERFACE_RESOLVED}" == "smartsim" ]]; then
     echo "Use SmartSim for ML model management and inference"
 
@@ -313,6 +341,15 @@ if (( USE_SMARTSIM == 1 || USE_CPP_ML_INTERFACE == 1 )); then
     else
       echo "Configuring for CPU-based ML inference with ${ML_INFERENCE_CPU_CORES} CPU cores per task."
       export CUSTOM_JOB_NAME_SUFFIX_ENV="_SMARTSIM_${ML_INFERENCE_CPU_CORES}cpu_${MODEL_NAME}_revamped_prepare_${terrain_status}"
+    fi
+  elif [[ "${ML_INTERFACE_RESOLVED}" == "aix" ]]; then
+    echo "Using Direct AIx for model management and inference"
+    if (( USE_GPU == 1 )); then
+      echo "Configuring for GPU-based ML inference with ${GPUS_PER_NODE} GPUs per node."
+      export CUSTOM_JOB_NAME_SUFFIX_ENV="_direct_aix_${GPUS_PER_NODE}gpu_${MODEL_NAME}_${terrain_status}"
+    else
+      echo "Configuring for CPU-based ML inference with ${ML_INFERENCE_CPU_CORES} CPU cores per task."
+      export CUSTOM_JOB_NAME_SUFFIX_ENV="_direct_aix_${ML_INFERENCE_CPU_CORES}cpu_${MODEL_NAME}_${terrain_status}"
     fi
   elif [[ "${ML_INTERFACE_RESOLVED}" == "cpp" ]]; then
     echo "Using C++ ML interface for model management and inference"
@@ -790,8 +827,9 @@ if [[ "${PHYDLL_SAFE_MPI_ENV:-0}" == "1" ]]; then
   echo "PHYDLL_SAFE_MPI_ENV=1: forcing OMPI_MCA_pml=ob1, OMPI_MCA_btl=self,vader,tcp, PMIX_MCA_gds=hash for non-Score-P PhyDLL MPMD launch"
 fi
 
+CMI_DIR="$(realpath "${MINI_APP_DIR}/../CPP-ML-Interface")"
+
 if [[ "${USE_SCOREP}" == "1" ]]; then
-  CMI_DIR="$(realpath "${MINI_APP_DIR}/../CPP-ML-Interface")"
   export SMARTSIM_PAPI_ROOT="${CMI_DIR}/tmp/opencode/papi-7.2.0-install"
   export SMARTSIM_SCOREP_ROOT="${CMI_DIR}/tmp/opencode/scorep-8.4-papi72-install"
   if [[ -f "${MINI_APP_DIR}/../CPP-ML-Interface/env_scorep.sh" ]]; then
@@ -1236,7 +1274,7 @@ if [[ "${USE_LOCAL_MODEL_CACHE}" -eq 1 ]]; then
     if [[ "${#group_nodes[@]}" -eq 0 ]]; then
       echo "Warning: Could not resolve explicit node list for het-group ${het_group}; falling back to single srun staging." | tee -a "${MODEL_STAGE_LOG}"
       setopt pipefail
-      srun --export=ALL $(get_srun_het_flag "${het_group}") --nodes "${node_count}" --ntasks-per-node 1 --cpus-per-task 4 \
+      srun --export=ALL $(get_srun_het_flag "${het_group}") --nodes "${node_count}" --ntasks-per-node 1 --cpus-per-task 1 \
         $([[ "${node_count}" -gt 1 ]] && echo "--distribution=block") \
         /bin/zsh -lc "set -euo pipefail; _t0=\$(date +%s); mkdir -p \"${MODEL_LOCAL_DIR}\"; cp -f \"${MODEL_PATH_SOURCE}\" \"${MODEL_LOCAL_PATH}\"; test -s \"${MODEL_LOCAL_PATH}\"; _t1=\$(date +%s); echo MODEL_STAGE_PER_NODE label=${label} het_group=${het_group} host=\$(hostname) duration_s=\$((_t1-_t0)) path=${MODEL_LOCAL_PATH}" \
         2>&1 | tee -a "${MODEL_STAGE_LOG}"
@@ -1251,10 +1289,16 @@ if [[ "${USE_LOCAL_MODEL_CACHE}" -eq 1 ]]; then
     else
       stage_start=$(date +%s)
       for node in "${group_nodes[@]}"; do
+        if [[ "${node}" == "$(hostname)" || "${node}" == "$(hostname -s)" || "${node}" == "${HOSTNAME:-}" ]]; then
+          mkdir -p "${MODEL_LOCAL_DIR}"
+          cp -f "${MODEL_PATH_SOURCE}" "${MODEL_LOCAL_PATH}"
+          node_ok=1
+          continue
+        fi
         node_ok=0
         for attempt in {1..${MODEL_STAGE_MAX_RETRIES}}; do
           set +e
-          srun --export=ALL $(get_srun_het_flag "${het_group}") --nodes 1 --ntasks 1 --cpus-per-task 4 --nodelist "${node}" \
+          srun --export=ALL $(get_srun_het_flag "${het_group}") --nodes 1 --ntasks 1 --cpus-per-task 1 --nodelist "${node}" \
             /bin/zsh -lc "set -euo pipefail; _t0=\$(date +%s); mkdir -p \"${MODEL_LOCAL_DIR}\"; cp -f \"${MODEL_PATH_SOURCE}\" \"${MODEL_LOCAL_PATH}\"; test -s \"${MODEL_LOCAL_PATH}\"; _t1=\$(date +%s); echo MODEL_STAGE_PER_NODE label=${label} het_group=${het_group} host=\$(hostname) duration_s=\$((_t1-_t0)) path=${MODEL_LOCAL_PATH}" \
             >> "${MODEL_STAGE_LOG}" 2>&1
           stage_rc=$?
@@ -1456,7 +1500,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
 
     if [[ "${USE_CPP_ML_INTERFACE}" -eq 1 ]]; then
       # enable the USE_CPP_ML_INTERFACE option defined in the CMakeLists.txt to compile the C++ ML inference interface
-      COMPILE_ARGS+=("-DUSE_CPP_ML_INTERFACE=ON")
+      COMPILE_ARGS+=("-DUSE_CPP_ML_INTERFACE=ON" "-DWITH_DIRECT_SMARTSIM=OFF" "-DWITH_DIRECT_AIX=OFF")
       if [[ "${CPP_ML_INTERFACE_PROVIDER:u}" == "PHYDLL" ]]; then
         echo "Enabling WITH_PHYDLL=ON for CPP-ML PhyDLL provider."
         COMPILE_ARGS+=("-DWITH_PHYDLL=ON")
@@ -1465,6 +1509,12 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
           "${MINI_APP_DIR}/../CPP-ML-Interface/build_phydll.sh"
         fi
       fi
+    elif [[ "${USE_DIRECT_AIX:-0}" -eq 1 ]]; then
+      COMPILE_ARGS+=("-DUSE_CPP_ML_INTERFACE=OFF" "-DWITH_DIRECT_SMARTSIM=OFF" "-DWITH_DIRECT_AIX=ON")
+    elif [[ "${USE_SMARTSIM:-0}" -eq 1 ]]; then
+      COMPILE_ARGS+=("-DUSE_CPP_ML_INTERFACE=OFF" "-DWITH_DIRECT_SMARTSIM=ON" "-DWITH_DIRECT_AIX=OFF")
+    else
+      COMPILE_ARGS+=("-DUSE_CPP_ML_INTERFACE=OFF" "-DWITH_DIRECT_SMARTSIM=OFF" "-DWITH_DIRECT_AIX=OFF")
     fi
 
     if [[ "${USE_SCOREP}" == "1" ]]; then
@@ -1634,6 +1684,9 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
   if [[ -n "${ML_INTERFACE_MODE_LOWER}" ]]; then
     MODEL_IO_ARGS+=(--ml-interface "${ML_INTERFACE_MODE_LOWER}")
   fi
+  if [[ -n "${AIX_COMMUNICATION_MODE_ENV:-}" ]]; then
+    MODEL_IO_ARGS+=(--aix-communication-mode "${AIX_COMMUNICATION_MODE_ENV}")
+  fi
   if [[ "${FORCE_TERRAIN_UPLOAD_EACH_STEP}" -eq 1 ]]; then
     MODEL_IO_ARGS+=(--force-terrain-upload-each-step)
   fi
@@ -1645,7 +1698,6 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
     SRUN_DIST="" # Single node: distribution doesn't matter
   fi
   mkdir -p logs
-  setopt pipefail
   device="CPU"
   if (( USE_GPU == 1 )); then
     device="GPU"
@@ -1794,7 +1846,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
     USE_PYTHON_DL_CLIENT=${USE_PYTHON_DL_CLIENT:-0}
     PHYDLL_PY_SCOREP_WRAPPER=${PHYDLL_PY_SCOREP_WRAPPER:-0}
     export PHYDLL_PY_SCOREP_WRAPPER
-    PHYDLL_REBUILD_DL_CLIENT=${PHYDLL_REBUILD_DL_CLIENT_ENV:-${PHYDLL_REBUILD_DL_CLIENT:-1}}
+    PHYDLL_REBUILD_DL_CLIENT=${PHYDLL_REBUILD_DL_CLIENT_ENV:-${PHYDLL_REBUILD_DL_CLIENT:-0}}
     DL_CLIENT_CMD=()
     if [[ "${USE_PYTHON_DL_CLIENT}" == "1" ]]; then
       if [[ "${USE_SCOREP}" == "1" && "${PHYDLL_PY_SCOREP_WRAPPER}" == "1" ]]; then
@@ -1808,42 +1860,20 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
     else
       if [[ -z "${PHYDLL_DL_BUILD_DIR:-}" ]]; then
         if [[ "${USE_SCOREP:-0}" -eq 1 ]]; then
-          if [[ "${SCOREP_MPP}" == "mpi" ]]; then
+          if [[ "${SCOREP_MPP:-mpi}" == "mpi" ]]; then
             PHYDLL_DL_BUILD_DIR="${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/build-miniapp-scorep"
           else
-            PHYDLL_DL_BUILD_DIR="${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/build-miniapp-scorep-${SCOREP_MPP}"
+            PHYDLL_DL_BUILD_DIR="${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/build-miniapp-scorep-${SCOREP_MPP:-mpi}"
           fi
         else
           PHYDLL_DL_BUILD_DIR="${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/build-miniapp"
         fi
       fi
       PHYDLL_DL_CLIENT="${PHYDLL_DL_CLIENT:-${PHYDLL_DL_BUILD_DIR}/phydll_dl_client}"
-      if [[ "${USE_SCOREP}" == "1" ]]; then
-        DL_CLIENT_CMD=("env" "SCOREP_EXPERIMENT_DIRECTORY=${SCOREP_EXPERIMENT_DIRECTORY}_cpp_client" "SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY=true" "LD_LIBRARY_PATH=${SMARTSIM_PAPI_ROOT}/lib:${SMARTSIM_SCOREP_ROOT}/lib:${LD_LIBRARY_PATH}" "${PHYDLL_DL_CLIENT}")
-      else
-        DL_CLIENT_CMD=("${PHYDLL_DL_CLIENT}")
-      fi
+      DL_CLIENT_CMD=("${PHYDLL_DL_CLIENT}")
     fi
 
     if [[ "${USE_PYTHON_DL_CLIENT}" == "0" ]]; then
-      if [[ "${PHYDLL_REBUILD_DL_CLIENT}" == "1" || ! -x "${PHYDLL_DL_CLIENT}" ]]; then
-        local DL_CMAKE_ARGS=()
-        if [[ "${USE_SCOREP:-0}" -eq 1 ]]; then
-          SCOREP_BIN_DIR="$(dirname "$(command -v scorep-config)")"
-          DL_CMAKE_ARGS+=("-DWITH_SCOREP=ON" "-DCPPML_SCOREP_MPP=${SCOREP_MPP}")
-          DL_CMAKE_ARGS+=("-DCMAKE_EXE_LINKER_FLAGS=-L${SMARTSIM_PAPI_ROOT}/lib" "-DCMAKE_SHARED_LINKER_FLAGS=-L${SMARTSIM_PAPI_ROOT}/lib")
-          export CC=gcc
-          export CXX=g++
-        else
-          export CC=gcc
-          export CXX=g++
-          DL_CMAKE_ARGS+=("-DWITH_SCOREP=OFF")
-        fi
-        # Remove build dir if it exists to ensure CMake re-detects the new compiler wrappers
-        rm -rf "${PHYDLL_DL_BUILD_DIR}"
-        cmake -S "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients" -B "${PHYDLL_DL_BUILD_DIR}" "${DL_CMAKE_ARGS[@]}"
-        cmake --build "${PHYDLL_DL_BUILD_DIR}" -j
-      fi
       if [[ ! -x "${PHYDLL_DL_CLIENT}" ]]; then
         echo "PHYDLL_DL_CLIENT not executable: ${PHYDLL_DL_CLIENT}" >&2
         exit 1
@@ -1868,12 +1898,19 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
     export PHYDLL_MPMD_SHUTDOWN_BARRIER="${PHYDLL_MPMD_SHUTDOWN_BARRIER_ENV:-1}"
 
     PHYDLL_LIB_DIR="$(realpath "${MINI_APP_DIR}/../CPP-ML-Interface/extern/phydll/build/lib")"
-    DL_LD_LIBRARY_PATH="${PHYDLL_LIB_DIR}:${LD_LIBRARY_PATH:-}"
+    if [[ "${USE_GPU}" -eq 1 ]]; then
+      DL_LD_LIBRARY_PATH="${PHYDLL_LIB_DIR}:${LD_LIBRARY_PATH:-}"
+    else
+      DL_LD_LIBRARY_PATH="${PHYDLL_LIB_DIR}:${_CUDA_STUBS:+${_CUDA_STUBS}:}${LD_LIBRARY_PATH:-}"
+    fi
+    if [[ "${USE_SCOREP:-0}" -eq 1 ]]; then
+      DL_LD_LIBRARY_PATH="${SMARTSIM_PAPI_ROOT}/lib:${SMARTSIM_SCOREP_ROOT}/lib:${DL_LD_LIBRARY_PATH}"
+    fi
 
     if [[ "${DB_HET_GROUP}" -eq "${SOLVER_HET_GROUP}" ]]; then
       # Single allocation mode: use mpirun instead of srun to avoid duplicate het group errors
-      NP_PHY=$(( SLURM_NTASKS - PHYDLL_NP_DL ))
-      launch_cmd="mpirun --bind-to none -x LD_LIBRARY_PATH=\"${PHYDLL_LIB_DIR}:${LD_LIBRARY_PATH:-}\" -n ${NP_PHY} \
+      NP_PHY="${MPI_RANKS:-$(( SLURM_NTASKS - PHYDLL_NP_DL ))}"
+      launch_cmd="mpirun --bind-to none --oversubscribe -x OMPI_MCA_pml=ob1 -x OMPI_MCA_btl=self,vader,tcp -x PMIX_MCA_gds=hash -x LD_LIBRARY_PATH=\"${PHYDLL_LIB_DIR}:${LD_LIBRARY_PATH:-}\" -n ${NP_PHY} \
       -x PHYDLL_MPMD_SHUTDOWN_BARRIER ./solver_wrapper.sh \
         --device \"${device}\" \
         --gpus-per-node \"${GPUS_PER_NODE}\" \
@@ -1896,7 +1933,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
         ${RANK_GRID_ARGS[@]} \
         ${OVERWRITE_ARG[@]} \
         --write-surface \
-         : -n ${PHYDLL_NP_DL} -x LD_LIBRARY_PATH=\"${DL_LD_LIBRARY_PATH}\" -x PATH \
+         : -n ${PHYDLL_NP_DL} -x LD_LIBRARY_PATH=\"${DL_LD_LIBRARY_PATH}\" -x PATH $([[ "${USE_SCOREP:-0}" -eq 1 ]] && echo "-x SCOREP_EXPERIMENT_DIRECTORY=\"${SCOREP_EXPERIMENT_DIRECTORY:-}_cpp_client\" -x SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY=true") \
           ${DL_CLIENT_CMD[*]}"
     else
       # HetJob mode: use srun
@@ -1936,11 +1973,12 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
     echo "Launching PhyDLL with NP_PHY=${NP_PHY}, NP_DL=${PHYDLL_NP_DL}, PHYDLL_DL_FIELD_COUNT=${PHYDLL_DL_FIELD_COUNT}"
     echo "Using DL client: ${DL_CLIENT_CMD[*]}"
 
-    eval "${launch_cmd}" || {
-      _phydll_rc=$?
-      echo "PhyDLL launch_cmd failed with exit code ${_phydll_rc}." >&2
-      exit "${_phydll_rc}"
-    }
+    eval "${launch_cmd}"
+    SRUN_STATUS=$?
+    if [[ "${SRUN_STATUS}" -ne 0 ]]; then
+      echo "PhyDLL launch_cmd failed with exit code ${SRUN_STATUS}." >&2
+      exit "${SRUN_STATUS}"
+    fi
 
     else
     if [[ "${USE_SMARTSIM}" -eq 1 || ( "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:u}" == "SMARTSIM" ) ]]; then
@@ -1949,7 +1987,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
     unset SSDB
     fi
 
-    if [[ "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:u}" == "AIX" ]]; then
+    if [[ ( "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:u}" == "AIX" ) || "${USE_DIRECT_AIX:-0}" -eq 1 ]]; then
     srun_cmd="srun --export=ALL $(get_srun_het_flag "${SOLVER_HET_GROUP}") --nodes \"${_nodes:-1}\" --ntasks \"${MPI_RANKS}\" ${SOLVER_SRUN_EXTRA_ARGS} \
         --cpus-per-task 1 \
         ${SRUN_DIST} \
@@ -2006,6 +2044,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
         echo "Launching AIX on single allocation"
     fi
     eval "${srun_cmd}"
+    SRUN_STATUS=$?
     else
       srun --export=ALL --gres=none $(get_srun_het_flag "${SOLVER_HET_GROUP}") --nodes "${_nodes:-1}" --ntasks "${MPI_RANKS}" ${SOLVER_SRUN_EXTRA_ARGS} \
         --cpus-per-task 1 \
@@ -2032,12 +2071,10 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
         "${RANK_GRID_ARGS[@]}" \
         "${OVERWRITE_ARG[@]}" \
         --write-surface
+      SRUN_STATUS=$?
     fi
   fi
-    #--write-surface 2>&1 | tee "${SOLVER_STEP_LOG}"
-  SRUN_STATUS=${pipestatus[1]}
-  unsetopt pipefail
-  if [[ "${SRUN_STATUS}" -ne 0 ]]; then
+  if [[ "${SRUN_STATUS:-0}" -ne 0 ]]; then
     echo "Solver failed with exit code ${SRUN_STATUS}"
     exit "${SRUN_STATUS}"
   fi
