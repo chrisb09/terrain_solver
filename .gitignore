@@ -2,6 +2,7 @@
 !.gitignore
 !.gitmodules
 !.gitattributes
+!.smoke_*.sh
 
 __pycache__/
 *.pyc

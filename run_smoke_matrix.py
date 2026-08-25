@@ -3,6 +3,7 @@ import subprocess
 import time
 import sys
 import os
+import re
 from pathlib import Path
 
 MINI_APP_DIR = Path(__file__).resolve().parent
@@ -272,6 +273,81 @@ CASES = [
         "height": 144,
         "chunk": 12,
     },
+    # 5. SmartSim Sharded (per-ml-node)
+    {
+        "name": "smoke_cpu_native_smartsim_sharded",
+        "device": "cpu",
+        "scorep": False,
+        "provider": "SMARTSIM",
+        "config": "config.toml",
+        "model": "watercnn",
+        "py_dl": 0,
+        "ntasks": 6,
+        "mpi_ranks": 6,
+        "grid_x": 3,
+        "grid_z": 2,
+        "width": 216,
+        "height": 144,
+        "chunk": 12,
+        "db_layout": "per-ml-node",
+        "db_nodes": 2,
+    },
+    {
+        "name": "smoke_cpu_scorep_smartsim_sharded",
+        "device": "cpu",
+        "scorep": True,
+        "provider": "SMARTSIM",
+        "config": "config.toml",
+        "model": "watercnn",
+        "py_dl": 0,
+        "ntasks": 6,
+        "mpi_ranks": 6,
+        "grid_x": 3,
+        "grid_z": 2,
+        "width": 216,
+        "height": 144,
+        "chunk": 12,
+        "db_layout": "per-ml-node",
+        "db_nodes": 2,
+    },
+    {
+        "name": "smoke_gpu_native_smartsim_sharded",
+        "device": "gpu",
+        "scorep": False,
+        "provider": "SMARTSIM",
+        "config": "config.toml",
+        "model": "watercnn",
+        "py_dl": 0,
+        "ntasks": 6,
+        "mpi_ranks": 6,
+        "grid_x": 3,
+        "grid_z": 2,
+        "width": 216,
+        "height": 144,
+        "chunk": 12,
+        "db_layout": "per-ml-node",
+        "db_nodes": 2,
+        "template": ".smoke_gpu_template_2ml.sh",
+    },
+    {
+        "name": "smoke_gpu_scorep_smartsim_sharded",
+        "device": "gpu",
+        "scorep": True,
+        "provider": "SMARTSIM",
+        "config": "config.toml",
+        "model": "watercnn",
+        "py_dl": 0,
+        "ntasks": 6,
+        "mpi_ranks": 6,
+        "grid_x": 3,
+        "grid_z": 2,
+        "width": 216,
+        "height": 144,
+        "chunk": 12,
+        "db_layout": "per-ml-node",
+        "db_nodes": 2,
+        "template": ".smoke_gpu_template_2ml.sh",
+    },
 ]
 
 def build_sbatch_command(c):
@@ -317,6 +393,12 @@ def build_sbatch_command(c):
     if not is_gpu:
         export_vars.append("APPLY_CUDA_STUBS_ENV=1")
 
+    if c.get("db_layout"):
+        export_vars.append(f"DB_LAYOUT_ENV={c['db_layout']}")
+
+    if c.get("db_nodes"):
+        export_vars.append(f"DB_NODES_ENV={c['db_nodes']}")
+
     if is_scorep:
         export_vars.extend([
             "SCOREP_ENABLE_PROFILING_ENV=true",
@@ -348,10 +430,10 @@ def build_sbatch_command(c):
         cmd.extend([
             f"--ntasks={c['ntasks']}",
             "--nodes=1",
-            ".smoke_cpu_template.sh"
+            c.get("template", ".smoke_cpu_template.sh")
         ])
     else:
-        cmd.append(".smoke_gpu_template.sh")
+        cmd.append(c.get("template", ".smoke_gpu_template.sh"))
 
     return cmd
 
@@ -392,7 +474,7 @@ def verify_results(job_ids):
         raw_jid, primary_jid = job_ids[name]
         
         # Check logs
-        log_files = list(LOGS_DIR.glob(f"{name}_*.log"))
+        log_files = [p for p in LOGS_DIR.glob(f"{name}_*.log") if re.match(rf"^{re.escape(name)}_\d+\.log$", p.name)]
         log_content = ""
         if log_files:
             latest_log = max(log_files, key=os.path.getmtime)
@@ -434,14 +516,14 @@ def verify_results(job_ids):
         })
 
     # Print Table
-    header = f"{'Case Name':<30} | {'JID':<8} | {'Dev':<4} | {'Mode':<7} | {'Provider':<15} | {'ML Step':<7} | {'HDF5':<5} | {'Cubex':<6} | {'Status':<7}"
+    header = f"{'Case Name':<35} | {'JID':<8} | {'Dev':<4} | {'Mode':<7} | {'Provider':<15} | {'ML Step':<7} | {'HDF5':<5} | {'Cubex':<6} | {'Status':<7}"
     print(header)
     print("-" * len(header))
     for r in results:
         ml_str = "OK" if r["ml_step"] else "FAIL"
         h5_str = "OK" if r["h5"] else "FAIL"
         cub_str = "OK" if r["scorep_cubex"] is True else ("FAIL" if r["scorep_cubex"] is False else "N/A")
-        print(f"{r['name']:<30} | {r['jid']:<8} | {r['device']:<4} | {r['scorep']:<7} | {r['provider']:<15} | {ml_str:<7} | {h5_str:<5} | {cub_str:<6} | {r['status']:<7}")
+        print(f"{r['name']:<35} | {r['jid']:<8} | {r['device']:<4} | {r['scorep']:<7} | {r['provider']:<15} | {ml_str:<7} | {h5_str:<5} | {cub_str:<6} | {r['status']:<7}")
     print("="*80)
     return all_ok
 
@@ -449,7 +531,8 @@ if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "--verify-only":
         jids = {}
         for c in CASES:
-            log_files = list(LOGS_DIR.glob(f"{c['name']}_*.log"))
+            name = c["name"]
+            log_files = [p for p in LOGS_DIR.glob(f"{name}_*.log") if re.match(rf"^{re.escape(name)}_\d+\.log$", p.name)]
             if log_files:
                 latest = max(log_files, key=os.path.getmtime)
                 jid = latest.stem.split("_")[-1]

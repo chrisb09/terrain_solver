@@ -94,6 +94,7 @@ struct Config {
     bool print_build_timestamp = false;
     int gpus_per_node = 1;
     int ml_nodes = -1;
+    std::string ml_db_layout = "";
     int ml_batch_size = 50000;
     std::string ml_interface = "auto";
     std::string aix_communication_mode = "collective";
@@ -166,6 +167,7 @@ static void usage() {
         << "  --device <cpu|gpu>               Device to run the solver on (default: cpu)\n"
         << "  --gpus-per-node <int>            Number of GPUs per node (default: 1)\n"
         << "  --ml-nodes <int>                 Number of ML/DB nodes for CPP-ML provider\n"
+        << "  --db-layout <shared|per-ml-node> Database layout for SmartSim provider (default: shared)\n"
         << "  --ml-batch-size <int>            Max per-rank ML batch size (default: 50000)\n"
         << "  --ml-interface <auto|cpp|smartsim|aix|none>\n"
         << "                                   ML interface selection (default: auto)\n"
@@ -989,7 +991,7 @@ static Config parse_args(int argc, char** argv, int rank, int total_ranks) {
                arg == "--cpp-ml-config" || arg == "--ml-interface" || arg == "--aix-communication-mode" ||
                     arg == "--input-hdf5" || arg == "--output-hdf5" ||
                     arg == "--steps" || arg == "--device" ||
-                    arg == "--gpus-per-node" || arg == "--ml-nodes" || arg == "--ml-batch-size" ||
+                    arg == "--gpus-per-node" || arg == "--ml-nodes" || arg == "--db-layout" || arg == "--ml-batch-size" ||
                     arg == "--save-every" || arg == "--save-mode" || arg == "--triangular-scale" || arg == "--chunk-size" || arg == "--io-mode" ||
                     arg == "--mpi-sync-mode" || arg == "--hdf5-xfer-mode" || arg == "--rank-grid-x" || arg == "--rank-grid-z" || arg == "--clamp-epsilon") {
             require(i + 1 < argc, "Missing value for argument: " + arg);
@@ -1027,6 +1029,8 @@ static Config parse_args(int argc, char** argv, int rank, int total_ranks) {
             } else if (arg == "--ml-nodes") {
                 cfg.ml_nodes = std::stoi(value);
                 require(cfg.ml_nodes > 0, "--ml-nodes must be > 0.");
+            } else if (arg == "--db-layout") {
+                cfg.ml_db_layout = value;
             } else if (arg == "--ml-batch-size") {
                 cfg.ml_batch_size = std::stoi(value);
             } else if (arg == "--input-hdf5") {
@@ -1088,6 +1092,12 @@ static Config parse_args(int argc, char** argv, int rank, int total_ranks) {
 
     if (cfg.ml_nodes < 0) {
         cfg.ml_nodes = get_env_int("MLCOUPLING_SMARTSIM_NODES", cfg.ml_nodes);
+    }
+    if (cfg.ml_db_layout.empty()) {
+        const char *env_val = std::getenv("MLCOUPLING_SMARTSIM_DB_LAYOUT");
+        if (env_val != nullptr && *env_val != '\0') {
+            cfg.ml_db_layout = env_val;
+        }
     }
     return cfg;
 }
@@ -3544,9 +3554,13 @@ int main(int argc, char** argv) {
                     cpp_ml_overrides.emplace("library.num_gpus", static_cast<int64_t>(cfg.gpus_per_node));
                     cpp_ml_overrides.emplace("library.batch_size", static_cast<int64_t>(0)); // 0 disables the max batch limit
                 }
-                if (cpp_ml_provider_is_smartsim &&
-                    cfg.ml_nodes > 0) {
-                    cpp_ml_overrides.emplace("library.nodes", static_cast<int64_t>(cfg.ml_nodes));
+                if (cpp_ml_provider_is_smartsim) {
+                    if (cfg.ml_nodes > 0) {
+                        cpp_ml_overrides.emplace("library.nodes", static_cast<int64_t>(cfg.ml_nodes));
+                    }
+                    if (!cfg.ml_db_layout.empty()) {
+                        cpp_ml_overrides.emplace("library.db_layout", cfg.ml_db_layout);
+                    }
                 }
 
                 log_memory_usage(world_rank, "before_cpp_ml_create_from_config");

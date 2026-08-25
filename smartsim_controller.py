@@ -23,11 +23,13 @@ parser.add_argument("--use_gpu", action="store_true", help="Use GPU for the expe
 parser.add_argument("--cpu_cores_per_node", type=int, default=1, help="Number of CPU cores per node to allocate for the database (only relevant if using slurm launcher)")
 parser.add_argument("--het_group", default=None, type=str, help="Heterogeneous group to run the database on (if using slurm launcher)")
 parser.add_argument("--hostname_file", default=None, type=str, help="File to write the database hostname to")
+parser.add_argument("--db_layout", default="shared", choices=["shared", "per-ml-node"], help="Database layout mode: 'shared' (single/clustered DB) or 'per-ml-node' (N independent standalone DBs)")
 args = parser.parse_args()
 
 ##### Print out the configuration for this run
 print("Experiment configuration:")
 print(f"  Database nodes: {args.db_nodes}")
+print(f"  Database layout: {args.db_layout}")
 print(f"  Use GPU: {args.use_gpu}")
 print(f"  CPU cores per node for database: {args.cpu_cores_per_node}")
 print(f"  Heterogeneous group: {args.het_group}")
@@ -129,37 +131,61 @@ if os.path.exists(exp_dir):
 
 exp = Experiment(name=exp_dir, launcher="slurm")
 
-
-db = exp.create_database(port=args.port,
-                         interface="ib0",
-                         batch=False,
-#                         time="00:10:00",
-                         single_cmd=False,
-                         db_nodes=args.db_nodes,
-                          intra_op_threads=intra_op_threads,
-                          inter_op_threads=inter_op_threads,
-                          threads_per_queue=threads_per_queue
-                         )
-
-db.set_run_arg("export", "ALL")
-db.set_run_arg("ntasks", str(args.db_nodes))
-db.set_run_arg("ntasks-per-node", "1")
-if db_nodelist and env.get("SMARTSIM_PIN_DB_NODELIST", "0") == "1":
-    db_hosts = db_nodelist.split(",")
-    db_settings = [entity.run_settings for entity in db.entities]
-    if len(db_hosts) != args.db_nodes or len(db_settings) != args.db_nodes:
-        raise RuntimeError(
-            f"cannot map {args.db_nodes} database shards to hosts={db_nodelist!r}"
+dbs = []
+if args.db_layout == "per-ml-node":
+    db_hosts = db_nodelist.split(",") if db_nodelist else []
+    for i in range(args.db_nodes):
+        shard_port = args.port + i
+        db_i = exp.create_database(
+            port=shard_port,
+            interface="ib0",
+            batch=False,
+            single_cmd=False,
+            db_nodes=1,
+            db_identifier=f"shard_{i}",
+            intra_op_threads=intra_op_threads,
+            inter_op_threads=inter_op_threads,
+            threads_per_queue=threads_per_queue,
         )
-    for host, run_settings in zip(db_hosts, db_settings):
-        run_settings.run_args["nodelist"] = host
-if db_exclude_node and not (db_nodelist and env.get("SMARTSIM_PIN_DB_NODELIST", "0") == "1"):
-    db.set_run_arg("exclude", db_exclude_node)
-# Only apply het-group if we are actually in a heterogeneous job allocation.
-if args.het_group is not None and (env.get("SLURM_HET_SIZE") or env.get("SLURM_JOB_NUM_NODES_HET_GROUP_0")):
-    db.set_run_arg("het-group", args.het_group)
-
-db.set_cpus(max(1, args.cpu_cores_per_node))
+        db_i.set_run_arg("export", "ALL")
+        db_i.set_run_arg("overlap", None)
+        db_i.set_run_arg("exact", None)
+        if db_nodelist and env.get("SMARTSIM_PIN_DB_NODELIST", "0") == "1" and i < len(db_hosts):
+            for entity in db_i.entities:
+                entity.run_settings.run_args["nodelist"] = db_hosts[i]
+        if db_exclude_node and not (db_nodelist and env.get("SMARTSIM_PIN_DB_NODELIST", "0") == "1"):
+            db_i.set_run_arg("exclude", db_exclude_node)
+        if args.het_group is not None and (env.get("SLURM_HET_SIZE") or env.get("SLURM_JOB_NUM_NODES_HET_GROUP_0")):
+            db_i.set_run_arg("het-group", args.het_group)
+        db_i.set_cpus(max(1, args.cpu_cores_per_node))
+        dbs.append(db_i)
+else:
+    db = exp.create_database(
+        port=args.port,
+        interface="ib0",
+        batch=False,
+        single_cmd=False,
+        db_nodes=args.db_nodes,
+        intra_op_threads=intra_op_threads,
+        inter_op_threads=inter_op_threads,
+        threads_per_queue=threads_per_queue,
+    )
+    db.set_run_arg("export", "ALL")
+    if db_nodelist and env.get("SMARTSIM_PIN_DB_NODELIST", "0") == "1":
+        db_hosts = db_nodelist.split(",")
+        db_settings = [entity.run_settings for entity in db.entities]
+        if len(db_hosts) != args.db_nodes or len(db_settings) != args.db_nodes:
+            raise RuntimeError(
+                f"cannot map {args.db_nodes} database shards to hosts={db_nodelist!r}"
+            )
+        for host, run_settings in zip(db_hosts, db_settings):
+            run_settings.run_args["nodelist"] = host
+    if db_exclude_node and not (db_nodelist and env.get("SMARTSIM_PIN_DB_NODELIST", "0") == "1"):
+        db.set_run_arg("exclude", db_exclude_node)
+    if args.het_group is not None and (env.get("SLURM_HET_SIZE") or env.get("SLURM_JOB_NUM_NODES_HET_GROUP_0")):
+        db.set_run_arg("het-group", args.het_group)
+    db.set_cpus(max(1, args.cpu_cores_per_node))
+    dbs.append(db)
 
 import traceback
 
@@ -173,7 +199,7 @@ for k in sorted(env.keys()):
         print(f"  {k}={v}", flush=True)
 
 try:
-    exp.start(db, block=False, summary=True)
+    exp.start(*dbs, block=False, summary=True)
 except Exception:
     print("=== DEBUG: exp.start failed ===", flush=True)
     traceback.print_exc()
@@ -208,7 +234,7 @@ except Exception:
         print(f"srun diagnostic failed: {srun_err}", flush=True)
     raise
 
-if args.db_nodes > 1:
+if args.db_layout == "shared" and args.db_nodes > 1:
     # Clustered Redis can temporarily mark peers as failed while TF backend/model
     # initialization stalls event processing on a shard.
     # Apply these settings only after the orchestrator is active.
@@ -220,8 +246,8 @@ if args.db_nodes > 1:
     config_applied = False
     for attempt in range(1, conf_retries + 1):
         try:
-            db.set_db_conf("cluster-node-timeout", timeout_ms)
-            db.set_db_conf("cluster-require-full-coverage", require_full_coverage)
+            dbs[0].set_db_conf("cluster-node-timeout", timeout_ms)
+            dbs[0].set_db_conf("cluster-require-full-coverage", require_full_coverage)
             print(
                 "Applied clustered Redis stability config: "
                 f"cluster-node-timeout={timeout_ms}, "
@@ -244,7 +270,9 @@ if args.db_nodes > 1:
 
 time.sleep(5)  # Wait a bit
 
-address = db.get_address()
+address = []
+for db_i in dbs:
+    address.extend(db_i.get_address())
 print(f"DB address: {address}")
 
 if args.hostname_file is not None:
@@ -265,6 +293,6 @@ while not os.path.exists(done_file):
 print("Solver finished, stopping database and cleaning up experiment...", flush=True)
 
 
-exp.stop(db)
+exp.stop(*dbs)
 
 os.remove(done_file)

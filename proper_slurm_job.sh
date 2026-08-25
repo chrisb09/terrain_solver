@@ -250,7 +250,13 @@ _db_gpus_on_node_var="SLURM_GPUS_ON_NODE_HET_GROUP_${DB_HET_GROUP}"
 _db_tres_per_task_var="SLURM_TRES_PER_TASK_HET_GROUP_${DB_HET_GROUP}"
 _db_tres_per_node_var="SLURM_TRES_PER_NODE_HET_GROUP_${DB_HET_GROUP}"
 
-DB_NODES="${DB_NODES_ENV:-${(P)_db_nodes_var:-${SLURM_JOB_NUM_NODES:-1}}}"
+DB_PHYSICAL_NODES="${(P)_db_nodes_var:-${SLURM_JOB_NUM_NODES:-1}}"
+DB_NODES="${DB_NODES_ENV:-${DB_PHYSICAL_NODES}}"
+DB_LAYOUT="${DB_LAYOUT_ENV:-${(P)_db_layout_var:-shared}}"
+if [[ "${DB_LAYOUT}" != "per-ml-node" && "${DB_LAYOUT}" != "shared" ]]; then
+  DB_LAYOUT="shared"
+fi
+export MLCOUPLING_SMARTSIM_DB_LAYOUT="${DB_LAYOUT}"
 ML_INFERENCE_CPU_CORES="${ML_INFERENCE_CPU_CORES_ENV:-${(P)_db_cpus_per_task_var:-${SLURM_CPUS_PER_TASK:-1}}}"
 
 _gpus_per_node_raw="${(P)_db_gpus_per_node_var:-${SLURM_GPUS_PER_NODE:-}}"
@@ -1354,7 +1360,7 @@ if [[ "${USE_LOCAL_MODEL_CACHE}" -eq 1 ]]; then
   if [[ "${local_cache_ok}" -eq 1 ]] && [[ "${MODEL_STAGE_DB_GROUP}" -eq 1 ]]; then
     # Stage to DB group if it's a different group, OR if it's the same group but we haven't staged it yet
     if [[ "${DB_HET_GROUP}" -ne "${SOLVER_HET_GROUP}" ]] || [[ "${solver_staged}" -eq 0 ]]; then
-      if ! stage_model_to_group "${DB_HET_GROUP}" "${DB_NODES}" "db"; then
+      if ! stage_model_to_group "${DB_HET_GROUP}" "${DB_PHYSICAL_NODES}" "db"; then
         local_cache_ok=0
       fi
     fi
@@ -1571,8 +1577,8 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
       mkdir -p logs
       : > "${DB_PREFLIGHT_LOG}"
       set +e
-      srun --export=ALL $(get_srun_het_flag "${DB_HET_GROUP}") --nodes "${DB_NODES}" --ntasks-per-node 1 --cpus-per-task 1 \
-        $([[ "${DB_NODES}" -gt 1 ]] && echo "--distribution=block") \
+      srun --export=ALL $(get_srun_het_flag "${DB_HET_GROUP}") --nodes "${DB_PHYSICAL_NODES}" --ntasks-per-node 1 --cpus-per-task 1 \
+        $([[ "${DB_PHYSICAL_NODES}" -gt 1 ]] && echo "--distribution=block") \
         /bin/zsh -lc 'set +e; _host=$(hostname); _ib=$(ip -o -4 addr show ib0 2>/dev/null | awk "{print \$4}" | head -n1); if [[ -z "${_ib}" ]]; then _ib="missing"; fi; echo "DB_PREFLIGHT host=${_host} ib0=${_ib}"; python3 -c "import socket; s=socket.socket(); s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1); s.bind((\"0.0.0.0\", '${TARGET_DB_PORT}')); s.close(); print(\"DB_PREFLIGHT port_bind='${TARGET_DB_PORT}':ok\")" 2>/dev/null || echo "DB_PREFLIGHT port_bind='${TARGET_DB_PORT}':fail"; _root="${LOCAL_FAST_ROOT:-/tmp}"; _probe="${_root%/}/.db_preflight_${SLURM_JOB_ID}_$$"; mkdir -p "${_probe}" 2>/dev/null && echo "DB_PREFLIGHT fs_write=ok root=${_root}" && rmdir "${_probe}" 2>/dev/null || echo "DB_PREFLIGHT fs_write=fail root=${_root}"' \
         2>&1 | tee -a "${DB_PREFLIGHT_LOG}"
       db_preflight_rc=$?
@@ -1584,15 +1590,15 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
 
     echo "Starting SmartSim controller in the background..."
 
-    # SmartRedis defaults to clustered mode unless SR_DB_TYPE is set.
-    # Our mini_app launches a single non-cluster Redis instance.
-    
-    # Let's check if the het-group 1 node count is larger than 1, in which case we should use "Clustered" mode, otherwise we can use "Standalone" mode which is more lightweight and doesn't require the controller to manage cluster topology.
-    if [[ "${DB_NODES}" -gt 1 ]]; then
-      echo "DB_NODES=${DB_NODES} > 1, using SmartSim Clustered mode"
+    # Setting SR_DB_TYPE based on DB_LAYOUT and DB_NODES
+    if [[ "${DB_LAYOUT}" == "per-ml-node" ]]; then
+      echo "DB_LAYOUT=per-ml-node, using SmartSim Standalone mode (per-node databases)"
+      export SR_DB_TYPE="Standalone"
+    elif [[ "${DB_NODES}" -gt 1 ]]; then
+      echo "DB_NODES=${DB_NODES} > 1 (shared), using SmartSim Clustered mode"
       export SR_DB_TYPE="Clustered"
     else
-      echo "DB_NODES=${DB_NODES} <= 1, using SmartSim Standalone mode"
+      echo "DB_NODES=${DB_NODES} <= 1 (shared), using SmartSim Standalone mode"
       export SR_DB_TYPE="Standalone"
     fi
   
@@ -1613,6 +1619,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
       rm -f "${DB_HOSTNAME_FILE}"
       echo "=== CONTROLLER_ATTEMPT ${controller_attempt}/${CONTROLLER_START_MAX_RETRIES} ===" >> "${driver_log}"
       ${python_path} smartsim_controller.py --db_nodes "${DB_NODES}" \
+          --db_layout "${DB_LAYOUT}" \
           --port="${TARGET_DB_PORT}" \
           $([[ -n "${SLURM_HET_SIZE:-}" || -n "${SLURM_JOB_NUM_NODES_HET_GROUP_0:-}" ]] && echo "--het_group=${DB_HET_GROUP}") \
           --hostname_file="${DB_HOSTNAME_FILE}" \
