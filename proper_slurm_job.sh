@@ -1910,7 +1910,11 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
     if [[ "${DB_HET_GROUP}" -eq "${SOLVER_HET_GROUP}" ]]; then
       # Single allocation mode: use mpirun instead of srun to avoid duplicate het group errors
       NP_PHY="${MPI_RANKS:-$(( SLURM_NTASKS - PHYDLL_NP_DL ))}"
-      launch_cmd="mpirun --bind-to none --oversubscribe -x OMPI_MCA_pml=ob1 -x OMPI_MCA_btl=self,vader,tcp -x PMIX_MCA_gds=hash -x LD_LIBRARY_PATH=\"${PHYDLL_LIB_DIR}:${LD_LIBRARY_PATH:-}\" -n ${NP_PHY} \
+      _phydll_scorep_opts=""
+      if [[ "${USE_SCOREP:-0}" -eq 1 ]]; then
+        _phydll_scorep_opts="-x SCOREP_EXPERIMENT_DIRECTORY=\"${SCOREP_EXPERIMENT_DIRECTORY:-}_cpp_client\" -x SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY=true"
+      fi
+      launch_cmd="mpirun --bind-to none --oversubscribe -x OMPI_MCA_pml=ob1 -x OMPI_MCA_btl=self,vader,tcp -x PMIX_MCA_gds=hash -x LD_LIBRARY_PATH=\"${DL_LD_LIBRARY_PATH}\" -n ${NP_PHY} \
       -x PHYDLL_MPMD_SHUTDOWN_BARRIER ./solver_wrapper.sh \
         --device \"${device}\" \
         --gpus-per-node \"${GPUS_PER_NODE}\" \
@@ -1933,7 +1937,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
         ${RANK_GRID_ARGS[@]} \
         ${OVERWRITE_ARG[@]} \
         --write-surface \
-         : -n ${PHYDLL_NP_DL} -x LD_LIBRARY_PATH=\"${DL_LD_LIBRARY_PATH}\" -x PATH $([[ "${USE_SCOREP:-0}" -eq 1 ]] && echo "-x SCOREP_EXPERIMENT_DIRECTORY=\"${SCOREP_EXPERIMENT_DIRECTORY:-}_cpp_client\" -x SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY=true") \
+         : -n ${PHYDLL_NP_DL} -x LD_LIBRARY_PATH=\"${DL_LD_LIBRARY_PATH}\" -x PATH ${_phydll_scorep_opts} \
           ${DL_CLIENT_CMD[*]}"
     else
       # HetJob mode: use srun

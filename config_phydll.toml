@@ -9,15 +9,9 @@ backend = "TORCH"
 device = "GPU"
 batch_size = 500000
 
-[normalization]
-class = "MinMax"
-input_min = 0.0
-input_max = 1.0
-output_min = 0.0
-output_max = 1.0
-
 [behavior]
 class = "Default"
 
 [application]
 class = "MLCouplingApplicationTerrainSolver"
+model_io_layout = "split_3x3"

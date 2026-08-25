@@ -137,25 +137,6 @@ struct Decomposition {
     int local_nz = 0;
 };
 
-struct CppMlBuffers {
-    std::size_t chunk_cap = 0;
-    bool use_flat_layout = false;
-
-    std::vector<float> flat_input;
-    std::vector<float> output;
-
-    std::vector<float***> water_batch;
-    std::vector<float**> water_channels;
-    std::vector<float*> water_rows;
-
-    std::vector<float***> terrain_batch;
-    std::vector<float**> terrain_channels;
-    std::vector<float*> terrain_rows;
-
-    std::array<float, 9> pad_tile{};
-    std::array<float*, 3> pad_rows{};
-};
-
 static std::string to_lower_copy(std::string value);
 #if defined(WITH_DIRECT_SMARTSIM) || defined(USE_CPP_ML_INTERFACE)
 static double compute_local_step_ml_smartsim(
@@ -1623,144 +1604,20 @@ static void fill_flat_input_chunk(
 #endif
 
 #ifdef USE_CPP_ML_INTERFACE
-static void build_nested_view_for_field_chunk_padded(
-    const std::vector<float>& field,
-    const Decomposition& decomp,
-    std::size_t chunk_begin,
-    std::size_t chunk_count,
-    std::size_t chunk_cap,
-    std::vector<float***>& batch,
-    std::vector<float**>& channels,
-    std::vector<float*>& rows,
-    float** pad_rows) {
-    const int local_nx = decomp.local_nx;
-    const int pitch = local_nx + 2;
-
-    batch.resize(chunk_cap);
-    channels.resize(chunk_cap);
-    rows.resize(chunk_cap * 3);
-
-    for (std::size_t k = 0; k < chunk_count; ++k) {
-        const std::size_t b = chunk_begin + k;
-        const int i = static_cast<int>(b / static_cast<std::size_t>(local_nx));
-        const int j = static_cast<int>(b % static_cast<std::size_t>(local_nx));
-        const int ii = i + 1;
-        const int jj = j + 1;
-
-        batch[k] = &channels[k];
-        channels[k] = &rows[k * 3];
-
-        for (int di = -1; di <= 1; ++di) {
-            const int n_i = ii + di;
-            const int n_j_start = jj - 1;
-            rows[k * 3 + static_cast<std::size_t>(di + 1)] =
-                const_cast<float*>(&field[local_index(n_i, n_j_start, pitch)]);
-        }
-    }
-
-    for (std::size_t k = chunk_count; k < chunk_cap; ++k) {
-        batch[k] = &channels[k];
-        channels[k] = pad_rows;
-    }
-}
-#endif
-
-#ifdef USE_CPP_ML_INTERFACE
-static double compute_local_step_ml_cpp(MLCoupling<float, float>& ml_coupling,
-    const std::vector<float>& terrain,
-    const std::vector<float>& current,
-    std::vector<float>& next,
+static double compute_local_step_ml_cpp(
+    MLCoupling<float, float>& ml_coupling,
     const Decomposition& decomp,
     float epsilon,
     const Config& cfg,
-    std::vector<float>& tile_output,
-    CppMlBuffers& ml_buffers,
-    bool provider_is_aix,
+    float& ml_moved_val,
     int step) {
-    const int local_nz = decomp.local_nz;
-    const int local_nx = decomp.local_nx;
-    const int pitch = local_nx + 2;
-
-    long long prepare_data_time = 0;
-    long long run_model_time = 0;
-    long long unpack_time = 0;
-    long long cleanup_time = 0;
-
-    next = current;
-
-    const std::size_t batch_size = static_cast<std::size_t>(local_nz) * static_cast<std::size_t>(local_nx);
-    require(tile_output.size() == batch_size, "ML output buffer size mismatch.");
-
-    const std::size_t chunk_cap = ml_buffers.chunk_cap;
-    require(chunk_cap > 0, "ML chunk size must be > 0.");
-    require(chunk_cap >= 1, "ML chunk size must be >= 1.");
-
-    if (provider_is_aix && !ml_buffers.use_flat_layout) {
-        throw std::runtime_error("AIx provider requires flat_contiguous model I/O layout.");
-    }
-
     auto start = std::chrono::high_resolution_clock::now();
-    double moved = 0.0;
-
-    const std::size_t chunk_cap_eff = ml_buffers.chunk_cap;
-    const std::size_t chunk_begin = 0;
-    const std::size_t chunk_count = batch_size;
-    const long long chunk_id = 0;
     const bool profile_ml_details = step > 2;
-        
-    if (chunk_count > 0) {
-        log_memory_usage(decomp.world_rank, "cpp_ml_chunk_begin", step, chunk_id);
-        add_ml_traffic(ml_buffers.use_flat_layout, true, chunk_count);
+
+    auto* terrain_app = dynamic_cast<MLCouplingApplicationTerrainSolver<float, float>*>(ml_coupling.get_application());
+    if (terrain_app != nullptr) {
+        terrain_app->set_active_buffer_index((step - 1) % 2);
     }
-
-    const auto chunk_start = std::chrono::high_resolution_clock::now();
-
-    if (profile_ml_details) {
-        SCOREP_USER_REGION_DEFINE(handle_solver_ml_prepare_input)
-        SCOREP_USER_REGION_BEGIN(handle_solver_ml_prepare_input, "solver_ml_prepare_input", SCOREP_USER_REGION_TYPE_COMMON)
-        if (chunk_count > 0) {
-            if (ml_buffers.use_flat_layout) {
-                fill_flat_input_chunk(current, terrain, decomp, chunk_begin, chunk_count, chunk_cap_eff, ml_buffers.flat_input);
-            } else {
-                build_nested_view_for_field_chunk_padded(current,
-                                                         decomp,
-                                                         chunk_begin,
-                                                         chunk_count,
-                                                         chunk_cap_eff,
-                                                         ml_buffers.water_batch,
-                                                         ml_buffers.water_channels,
-                                                         ml_buffers.water_rows,
-                                                         ml_buffers.pad_rows.data());
-                build_nested_view_for_field_chunk_padded(terrain,
-                                                         decomp,
-                                                         chunk_begin,
-                                                         chunk_count,
-                                                         chunk_cap_eff,
-                                                         ml_buffers.terrain_batch,
-                                                         ml_buffers.terrain_channels,
-                                                         ml_buffers.terrain_rows,
-                                                         ml_buffers.pad_rows.data());
-            }
-        }
-        SCOREP_USER_REGION_END(handle_solver_ml_prepare_input)
-    } else if (chunk_count > 0) {
-        if (ml_buffers.use_flat_layout) {
-            fill_flat_input_chunk(current, terrain, decomp, chunk_begin, chunk_count, chunk_cap_eff, ml_buffers.flat_input);
-        } else {
-            build_nested_view_for_field_chunk_padded(current, decomp, chunk_begin, chunk_count, chunk_cap_eff,
-                                                     ml_buffers.water_batch, ml_buffers.water_channels,
-                                                     ml_buffers.water_rows, ml_buffers.pad_rows.data());
-            build_nested_view_for_field_chunk_padded(terrain, decomp, chunk_begin, chunk_count, chunk_cap_eff,
-                                                     ml_buffers.terrain_batch, ml_buffers.terrain_channels,
-                                                     ml_buffers.terrain_rows, ml_buffers.pad_rows.data());
-        }
-    }
-
-    const auto data_prepared_time = std::chrono::high_resolution_clock::now();
-    if (chunk_count > 0) log_memory_usage(decomp.world_rank, "cpp_ml_after_prepare_data", step, chunk_id);
-
-    std::fill(ml_buffers.output.begin(), ml_buffers.output.end(), 0.0F);
-    if (chunk_count > 0) log_memory_usage(decomp.world_rank, "cpp_ml_before_ml_step", step, chunk_id);
 
     ml_coupling.set_scorep_detailed_regions_enabled(profile_ml_details);
     if (profile_ml_details) {
@@ -1772,66 +1629,14 @@ static double compute_local_step_ml_cpp(MLCoupling<float, float>& ml_coupling,
         (void)ml_coupling.step();
     }
 
-    if (chunk_count > 0) log_memory_usage(decomp.world_rank, "cpp_ml_after_ml_step", step, chunk_id);
-
-    const auto model_ran_time = std::chrono::high_resolution_clock::now();
-
-    if (profile_ml_details) {
-        SCOREP_USER_REGION_DEFINE(handle_solver_ml_output_copy)
-        SCOREP_USER_REGION_BEGIN(handle_solver_ml_output_copy, "solver_ml_output_copy", SCOREP_USER_REGION_TYPE_COMMON)
-        if (chunk_count > 0) {
-            std::copy(ml_buffers.output.begin(),
-                      ml_buffers.output.begin() + static_cast<std::ptrdiff_t>(chunk_count),
-                      tile_output.begin() + static_cast<std::ptrdiff_t>(chunk_begin));
-        }
-        SCOREP_USER_REGION_END(handle_solver_ml_output_copy)
-    } else if (chunk_count > 0) {
-        std::copy(ml_buffers.output.begin(),
-                  ml_buffers.output.begin() + static_cast<std::ptrdiff_t>(chunk_count),
-                  tile_output.begin() + static_cast<std::ptrdiff_t>(chunk_begin));
-    }
-
-    const auto unpacked_time = std::chrono::high_resolution_clock::now();
-    if (chunk_count > 0) log_memory_usage(decomp.world_rank, "cpp_ml_after_copy_output", step, chunk_id);
-
-    if (chunk_count > 0) {
-        prepare_data_time += std::chrono::duration_cast<std::chrono::microseconds>(data_prepared_time - chunk_start).count();
-        run_model_time += std::chrono::duration_cast<std::chrono::microseconds>(model_ran_time - data_prepared_time).count();
-        unpack_time += std::chrono::duration_cast<std::chrono::microseconds>(unpacked_time - model_ran_time).count();
-    }
-
-    SCOREP_USER_REGION_DEFINE(handle_solver_ml_apply_output)
-    if (profile_ml_details) {
-        SCOREP_USER_REGION_BEGIN(handle_solver_ml_apply_output, "solver_ml_apply_output", SCOREP_USER_REGION_TYPE_COMMON)
-    }
-    for (int i = 0; i < local_nz; ++i) {
-        for (int j = 0; j < local_nx; ++j) {
-            const std::size_t idx = static_cast<std::size_t>(i * local_nx + j);
-            next[local_index(i + 1, j + 1, pitch)] = tile_output[idx];
-            moved += std::max(static_cast<double>(tile_output[idx]) -
-                              static_cast<double>(current[local_index(i + 1, j + 1, pitch)]), 0.0);
-        }
-    }
-    if (profile_ml_details) {
-        SCOREP_USER_REGION_END(handle_solver_ml_apply_output)
-    }
-
-    total_prepare_data_time += prepare_data_time;
-    total_run_model_time += run_model_time;
-    total_unpack_time += unpack_time;
-
+    const double moved = static_cast<double>(ml_moved_val);
     const auto end = std::chrono::high_resolution_clock::now();
     const long long ml_step_wall_time = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-    total_cleanup_time += cleanup_time;
     total_ml_step_wall_time += ml_step_wall_time;
 
     if (decomp.world_rank == 0) {
-        const long long accounted_us = prepare_data_time + run_model_time + unpack_time + cleanup_time;
-        std::cout << "Finished CPP-ML step. Timings (seconds): prepare=" << (prepare_data_time / 1000000.0)
-                  << " run=" << (run_model_time / 1000000.0)
-                  << " unpack=" << (unpack_time / 1000000.0)
-                  << " total=" << (ml_step_wall_time / 1000000.0)
-                  << " accounted=" << (accounted_us / 1000000.0)
+        std::cout << "Finished CPP-ML step. Wall time (seconds): total=" << (ml_step_wall_time / 1000000.0)
+                  << " moved=" << moved
                   << std::endl;
     }
 
@@ -3325,7 +3130,6 @@ int main(int argc, char** argv) {
     bool cpp_ml_provider_is_aix = false;
     bool cpp_ml_provider_is_smartsim = false;
     std::unique_ptr<MLCoupling<float, float>> ml_coupling;
-    CppMlBuffers cpp_ml_buffers;
 #endif
 #ifdef WITH_DIRECT_AIX
     std::unique_ptr<AIxeleratorService<float>> direct_aix;
@@ -3623,6 +3427,46 @@ int main(int argc, char** argv) {
         }
 #endif
 
+        if (world_rank == 0) {
+            std::cout << "Loaded grid metadata: nx=" << nx
+                      << ", nz=" << nz
+                      << ", chunk_size=" << cfg.chunk_size
+                      << ", chunks_x=" << decomp.chunks_x
+                      << ", chunks_z=" << decomp.chunks_z
+                      << ", ranks_x=" << decomp.ranks_x
+                      << ", ranks_z=" << decomp.ranks_z
+                      << ", world_size=" << world_size
+                      << ", io_mode=" << (cfg.io_mode == IoMode::ParallelHdf5 ? "parallel_hdf5" : "rank0_gather")
+                      << ", save_mode=" << (cfg.save_mode == SaveMode::Periodic ? "periodic" : "triangular")
+                      << ", triangular_scale=" << cfg.triangular_scale
+                      << ", ml_batch_size=" << cfg.ml_batch_size
+                      << ", hdf5_xfer_mode=" << (cfg.hdf5_xfer_mode == Hdf5XferMode::Collective ? "collective" : "independent")
+                      << ", sync_mode="
+                      << (cfg.mpi_sync_mode == SyncMode::None ? "none" : (cfg.mpi_sync_mode == SyncMode::Step ? "step" : "report"))
+                      << std::endl;
+        }
+
+        std::vector<float> terrain_local_packed;
+        std::vector<float> water_local_packed;
+        if (cfg.io_mode == IoMode::Rank0Gather) {
+            terrain_local_packed = read_local_2d_rank0_gather(cfg.input_hdf5, "terrain", decomp, nz_u, nx_u);
+            water_local_packed   = read_local_2d_rank0_gather(cfg.input_hdf5, "water_init", decomp, nz_u, nx_u);
+        } else {
+            terrain_local_packed = read_local_2d_parallel(cfg.input_hdf5, "terrain", decomp, nz_u, nx_u);
+            water_local_packed   = read_local_2d_parallel(cfg.input_hdf5, "water_init", decomp, nz_u, nx_u);
+        }
+
+        const int pitch = decomp.local_nx + 2;
+        const std::size_t total_grid_cells = static_cast<std::size_t>(decomp.local_nz + 2) * static_cast<std::size_t>(decomp.local_nx + 2);
+        std::vector<float> terrain(total_grid_cells, 0.0F);
+        std::vector<float> water(total_grid_cells, 0.0F);
+        std::vector<float> next = water;
+        float ml_moved_val = 0.0F;
+
+        copy_packed_to_with_halo(terrain_local_packed, terrain, decomp.local_nz, decomp.local_nx);
+        copy_packed_to_with_halo(water_local_packed, water, decomp.local_nz, decomp.local_nx);
+        exchange_halo_1cell(terrain, decomp, 1000);
+
         #ifdef USE_CPP_ML_INTERFACE
             if (use_ml_interface && !use_smartsim) {
                 if (cfg.cpp_ml_config.empty()) {
@@ -3643,59 +3487,39 @@ int main(int argc, char** argv) {
                     throw std::runtime_error("AIx provider requires --model-io-layout flat_contiguous.");
                 }
 
-                const std::size_t batch_size = static_cast<std::size_t>(decomp.local_nx) * static_cast<std::size_t>(decomp.local_nz);
-                const std::size_t chunk_cap = std::max<std::size_t>(1, batch_size);
-
-                cpp_ml_buffers.chunk_cap = chunk_cap;
-                cpp_ml_buffers.use_flat_layout = use_flat_model_io;
-                cpp_ml_buffers.pad_rows[0] = cpp_ml_buffers.pad_tile.data();
-                cpp_ml_buffers.pad_rows[1] = cpp_ml_buffers.pad_tile.data() + 3;
-                cpp_ml_buffers.pad_rows[2] = cpp_ml_buffers.pad_tile.data() + 6;
-                log_memory_usage(world_rank, "before_cpp_ml_buffer_alloc");
-
-                if (use_flat_model_io) {
-                    cpp_ml_buffers.flat_input.resize(chunk_cap * 18, 0.0F);
-                } else {
-                    cpp_ml_buffers.water_batch.resize(chunk_cap);
-                    cpp_ml_buffers.water_channels.resize(chunk_cap);
-                    cpp_ml_buffers.terrain_batch.resize(chunk_cap);
-                    cpp_ml_buffers.terrain_channels.resize(chunk_cap);
-
-                    for (std::size_t k = 0; k < chunk_cap; ++k) {
-                        cpp_ml_buffers.water_batch[k] = &cpp_ml_buffers.water_channels[k];
-                        cpp_ml_buffers.water_channels[k] = cpp_ml_buffers.pad_rows.data();
-                        cpp_ml_buffers.terrain_batch[k] = &cpp_ml_buffers.terrain_channels[k];
-                        cpp_ml_buffers.terrain_channels[k] = cpp_ml_buffers.pad_rows.data();
-                    }
-                }
-
-                cpp_ml_buffers.output.resize(chunk_cap, 0.0F);
-                log_memory_usage(world_rank, "after_cpp_ml_buffer_alloc");
+                const std::vector<int> field_shape = {decomp.local_nz + 2, decomp.local_nx + 2};
 
                 MLCouplingData<float> input_data;
-                if (use_flat_model_io) {
-                    input_data.add_tensor(MLCouplingTensor<float>::wrap_flat(
-                        cpp_ml_buffers.flat_input.data(),
-                        std::vector<int>{static_cast<int>(chunk_cap), 18},
-                        MLCouplingMemLayoutContiguous,
-                        MLCouplingOwnershipExternal));
-                } else {
-                    input_data.add_tensor(MLCouplingTensor<float>::wrap_nested(
-                        static_cast<void*>(cpp_ml_buffers.water_batch.data()),
-                        std::vector<int>{static_cast<int>(chunk_cap), 1, 3, 3},
-                        MLCouplingMemLayoutNested,
-                        MLCouplingOwnershipExternal));
-                    input_data.add_tensor(MLCouplingTensor<float>::wrap_nested(
-                        static_cast<void*>(cpp_ml_buffers.terrain_batch.data()),
-                        std::vector<int>{static_cast<int>(chunk_cap), 1, 3, 3},
-                        MLCouplingMemLayoutNested,
-                        MLCouplingOwnershipExternal));
-                }
+                input_data.add_tensor(MLCouplingTensor<float>::wrap_flat(
+                    water.data(),
+                    field_shape,
+                    MLCouplingMemLayoutContiguous,
+                    MLCouplingOwnershipExternal));
+                input_data.add_tensor(MLCouplingTensor<float>::wrap_flat(
+                    next.data(),
+                    field_shape,
+                    MLCouplingMemLayoutContiguous,
+                    MLCouplingOwnershipExternal));
+                input_data.add_tensor(MLCouplingTensor<float>::wrap_flat(
+                    terrain.data(),
+                    field_shape,
+                    MLCouplingMemLayoutContiguous,
+                    MLCouplingOwnershipExternal));
 
                 MLCouplingData<float> output_data;
                 output_data.add_tensor(MLCouplingTensor<float>::wrap_flat(
-                    cpp_ml_buffers.output.data(),
-                    std::vector<int>{static_cast<int>(chunk_cap)},
+                    water.data(),
+                    field_shape,
+                    MLCouplingMemLayoutContiguous,
+                    MLCouplingOwnershipExternal));
+                output_data.add_tensor(MLCouplingTensor<float>::wrap_flat(
+                    next.data(),
+                    field_shape,
+                    MLCouplingMemLayoutContiguous,
+                    MLCouplingOwnershipExternal));
+                output_data.add_tensor(MLCouplingTensor<float>::wrap_flat(
+                    &ml_moved_val,
+                    std::vector<int>{1},
                     MLCouplingMemLayoutContiguous,
                     MLCouplingOwnershipExternal));
 
@@ -3703,12 +3527,12 @@ int main(int argc, char** argv) {
                     (cfg.device == "GPU") ? "water_step_model_gpu" : "water_step_model";
 
                 ConfigDottedOverrides cpp_ml_overrides;
+                cpp_ml_overrides.emplace("application.model_io_layout", cfg.model_io_layout);
                 if (cpp_ml_provider_is_aix) {
                     cpp_ml_overrides.emplace("library.model_file", cfg.model_path);
                     cpp_ml_overrides.emplace("library.batchsize", static_cast<int64_t>(cfg.ml_batch_size));
                     cpp_ml_overrides.emplace("library.app_comm", static_cast<void*>(MPI_COMM_WORLD));
-                }
- else if (cpp_ml_provider_is_phydll) {
+                } else if (cpp_ml_provider_is_phydll) {
                     cpp_ml_overrides.emplace("library.model_file", cfg.model_path);
                     cpp_ml_overrides.emplace("library.backend", cfg.model_backend);
                     cpp_ml_overrides.emplace("library.device", cfg.device);
@@ -3762,44 +3586,6 @@ int main(int argc, char** argv) {
             log_memory_usage(world_rank, "after_direct_aix_init");
         }
         #endif
-
-        if (world_rank == 0) {
-            std::cout << "Loaded grid metadata: nx=" << nx
-                      << ", nz=" << nz
-                      << ", chunk_size=" << cfg.chunk_size
-                      << ", chunks_x=" << decomp.chunks_x
-                      << ", chunks_z=" << decomp.chunks_z
-                      << ", ranks_x=" << decomp.ranks_x
-                      << ", ranks_z=" << decomp.ranks_z
-                      << ", world_size=" << world_size
-                      << ", io_mode=" << (cfg.io_mode == IoMode::ParallelHdf5 ? "parallel_hdf5" : "rank0_gather")
-                      << ", save_mode=" << (cfg.save_mode == SaveMode::Periodic ? "periodic" : "triangular")
-                      << ", triangular_scale=" << cfg.triangular_scale
-                      << ", ml_batch_size=" << cfg.ml_batch_size
-                      << ", hdf5_xfer_mode=" << (cfg.hdf5_xfer_mode == Hdf5XferMode::Collective ? "collective" : "independent")
-                      << ", sync_mode="
-                      << (cfg.mpi_sync_mode == SyncMode::None ? "none" : (cfg.mpi_sync_mode == SyncMode::Step ? "step" : "report"))
-                      << std::endl;
-        }
-
-        std::vector<float> terrain_local_packed;
-        std::vector<float> water_local_packed;
-        if (cfg.io_mode == IoMode::Rank0Gather) {
-            terrain_local_packed = read_local_2d_rank0_gather(cfg.input_hdf5, "terrain", decomp, nz_u, nx_u);
-            water_local_packed   = read_local_2d_rank0_gather(cfg.input_hdf5, "water_init", decomp, nz_u, nx_u);
-        } else {
-            terrain_local_packed = read_local_2d_parallel(cfg.input_hdf5, "terrain", decomp, nz_u, nx_u);
-            water_local_packed   = read_local_2d_parallel(cfg.input_hdf5, "water_init", decomp, nz_u, nx_u);
-        }
-
-        const int pitch = decomp.local_nx + 2;
-        std::vector<float> terrain(static_cast<std::size_t>(decomp.local_nz + 2) * static_cast<std::size_t>(decomp.local_nx + 2), 0.0F);
-        std::vector<float> water(static_cast<std::size_t>(decomp.local_nz + 2) * static_cast<std::size_t>(decomp.local_nx + 2), 0.0F);
-        std::vector<float> next = water;
-
-        copy_packed_to_with_halo(terrain_local_packed, terrain, decomp.local_nz, decomp.local_nx);
-        copy_packed_to_with_halo(water_local_packed, water, decomp.local_nz, decomp.local_nx);
-        exchange_halo_1cell(terrain, decomp, 1000);
 
         // Split the terrain data into width x height many 3x3 tiles (one tile per cell), and pack each tile into a contiguous 9-float array. This is the format expected by the ML model. 
 
@@ -3995,15 +3781,10 @@ int main(int argc, char** argv) {
                         } else {
                             moved_this_step_local = compute_local_step_ml_cpp(
                                 *ml_coupling,
-                                terrain,
-                                water,
-                                next,
                                 decomp,
                                 cfg.clamp_epsilon,
                                 cfg,
-                                ml_tile_output,
-                                cpp_ml_buffers,
-                                cpp_ml_provider_is_aix,
+                                ml_moved_val,
                                 step);
                         }
                     #elif defined(WITH_DIRECT_SMARTSIM)

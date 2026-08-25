@@ -26,6 +26,8 @@ close_driver*
 solver_cpp/build
 solver_cpp/build*/
 solver_cpp/build_*/
+solver_cpp/release/
+solver_cpp/scorep/
 build_scorep/
 input/smoke_input_*.h5
 
