@@ -6,6 +6,8 @@
 !.trace_*.sh
 
 analysis_*/
+results_*/
+test_*_analysis/
 
 __pycache__/
 *.pyc

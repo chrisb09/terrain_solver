@@ -449,6 +449,9 @@ if [[ -z "${SLURM_HET_SIZE:-}" ]] && [[ "${USE_SMARTSIM:-0}" -eq 1 || ( "${USE_C
     elif [[ "${#hosts[@]}" -ge 2 ]]; then
       SOLVER_SRUN_EXTRA_ARGS="--nodelist=${hosts[2]}"
       echo "SmartSim active on ${#hosts[@]} nodes. Pinning solver srun to node: ${hosts[2]}"
+    elif [[ "${#hosts[@]}" -eq 1 ]]; then
+      SOLVER_SRUN_EXTRA_ARGS="--overlap --exact"
+      echo "Single-node SmartSim allocation. Using overlap/exact for solver step."
     fi
   fi
 fi
@@ -867,6 +870,7 @@ if [[ "${USE_SCOREP}" == "1" ]]; then
   export SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY="${SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY:-false}"
   mkdir -p "$(dirname "${SCOREP_EXPERIMENT_DIRECTORY}")"
   rm -rf "${SCOREP_EXPERIMENT_DIRECTORY}"
+  rm -rf "${SCOREP_EXPERIMENT_DIRECTORY}"_rank_*(N)
 fi
 
 if [[ "${AIX_DIAGNOSTICS_ENV:-0}" == "1" ]]; then
