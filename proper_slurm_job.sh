@@ -864,8 +864,9 @@ if [[ "${USE_SCOREP}" == "1" ]]; then
   else
     export SCOREP_EXPERIMENT_DIRECTORY="${MINI_APP_DIR}/scorep_runs/${_scorep_job_name}_${RUN_ID}"
   fi
-  export SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY="${SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY:-true}"
-  mkdir -p "${SCOREP_EXPERIMENT_DIRECTORY}"
+  export SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY="${SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY:-false}"
+  mkdir -p "$(dirname "${SCOREP_EXPERIMENT_DIRECTORY}")"
+  rm -rf "${SCOREP_EXPERIMENT_DIRECTORY}"
 fi
 
 if [[ "${AIX_DIAGNOSTICS_ENV:-0}" == "1" ]]; then
@@ -883,6 +884,17 @@ if [[ "${AIX_DIAGNOSTICS_ENV:-0}" == "1" ]]; then
   export AIX_DIAGNOSTICS_DIR
   mkdir -p "${AIX_DIAGNOSTICS_DIR}"
   echo "AIx diagnostics enabled: barriers=${AIX_DIAGNOSTIC_BARRIERS} dir=${AIX_DIAGNOSTICS_DIR}"
+fi
+
+if [[ "${AIX_P2P_TIMELINE_ENV:-0}" == "1" || -n "${AIX_P2P_TIMELINE_DIR_ENV:-}" || "${AIX_COMMUNICATION_MODE_ENV:-}" == "pipelined" ]]; then
+  if [[ -z "${AIX_P2P_TIMELINE_DIR_ENV:-}" ]]; then
+    AIX_P2P_TIMELINE_DIR="${MINI_APP_DIR}/logs/aix_p2p_timeline_${RUN_ID}"
+  else
+    AIX_P2P_TIMELINE_DIR="${AIX_P2P_TIMELINE_DIR_ENV}"
+  fi
+  export AIX_P2P_TIMELINE_DIR
+  mkdir -p "${AIX_P2P_TIMELINE_DIR}"
+  echo "AIx P2P timeline enabled: dir=${AIX_P2P_TIMELINE_DIR}"
 fi
 
 # TensorFlow GPU backend in RedisAI may require an explicit CUDA data dir for XLA JIT
@@ -1603,8 +1615,8 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
     fi
   
     if [[ "${USE_SCOREP}" == "1" ]]; then
-      mkdir -p "${SCOREP_EXPERIMENT_DIRECTORY}"
-      nvidia-smi dmon -s mu -d 1 -o TD > "${SCOREP_EXPERIMENT_DIRECTORY}/redis_gpu.log" 2>/dev/null &
+      mkdir -p logs
+      nvidia-smi dmon -s mu -d 1 -o TD > "logs/redis_gpu_${RUN_ID}.log" 2>/dev/null &
       NV_DMON_PID=$!
     fi
 
@@ -1822,9 +1834,18 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
   }
 
   if [[ "${USE_SCOREP}" == "1" ]]; then
-      export SCOREP_ENABLE_PROFILING="${SCOREP_ENABLE_PROFILING_ENV:-true}"
-      export SCOREP_ENABLE_TRACING="${SCOREP_ENABLE_TRACING_ENV:-false}"
+      if [[ "${SCOREP_ENABLE_PROFILING_ENV:-1}" == "0" || "${SCOREP_ENABLE_PROFILING_ENV:-}" == "false" ]]; then
+        export SCOREP_ENABLE_PROFILING=false
+      else
+        export SCOREP_ENABLE_PROFILING=true
+      fi
+      if [[ "${SCOREP_ENABLE_TRACING_ENV:-0}" == "1" || "${SCOREP_ENABLE_TRACING_ENV:-}" == "true" ]]; then
+        export SCOREP_ENABLE_TRACING=true
+      else
+        export SCOREP_ENABLE_TRACING=false
+      fi
       export SCOREP_TOTAL_MEMORY=524288K  # 512M per rank; prevents pre-MPI-init trace buffer flush
+      export SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY=true
       export ENABLE_SCOREP_USER=1
       # Match prior successful Score-P smoke-test config: disable memory recording
       # (which adds massive overhead on every malloc/free interception) and PAPI metrics.
@@ -2111,6 +2132,7 @@ if [[ "${USE_SMARTSIM}" -eq 1 || ( "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_
   if [[ -n "${NV_DMON_PID:-}" ]]; then
     echo "Terminating nvidia-smi dmon sidecar with PID ${NV_DMON_PID}"
     kill "${NV_DMON_PID}" 2>/dev/null || true
+    cp "logs/redis_gpu_${RUN_ID}.log" "${SCOREP_EXPERIMENT_DIRECTORY}/" 2>/dev/null || true
   fi
 fi
 

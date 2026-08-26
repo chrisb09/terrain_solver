@@ -3,6 +3,9 @@
 !.gitmodules
 !.gitattributes
 !.smoke_*.sh
+!.trace_*.sh
+
+analysis_*/
 
 __pycache__/
 *.pyc
