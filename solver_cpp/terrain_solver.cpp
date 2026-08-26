@@ -2138,7 +2138,9 @@ static double compute_local_step_ml_smartsim(SmartRedis::Client* client,
             std::time_t t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
             std::tm ltime;
             localtime_r(&t, &ltime);
-            std::cout << "Current real-world time (hh:mm:ss): " << std::put_time(&ltime, "%H:%M:%S") << std::endl;
+            char time_buf[64];
+            std::strftime(time_buf, sizeof(time_buf), "%H:%M:%S", &ltime);
+            std::cout << "Current real-world time (hh:mm:ss): " << time_buf << std::endl;
 
         }
 

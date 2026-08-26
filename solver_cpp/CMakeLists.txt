@@ -167,21 +167,10 @@ elseif(WITH_DIRECT_AIX)
 endif()
 
 if(WITH_SCOREP OR (DEFINED ENV{USE_SCOREP} AND NOT "$ENV{USE_SCOREP}" STREQUAL "" AND NOT "$ENV{USE_SCOREP}" STREQUAL "0"))
-    list(APPEND CMAKE_MODULE_PATH "${AIX_DIR}/cmake")
-    find_package(Scorep REQUIRED)
-    if(SCOREP_FOUND)
-        set_target_properties(${PROJECT_NAME} PROPERTIES
-            SCOREP_ENABLE_COMPILER OFF
-            SCOREP_ENABLE_USER ON
-            SCOREP_MPP_SYSTEM "${CPPML_SCOREP_MPP}"
-            INTERFACE_SCOREP_MPP_SYSTEM "${CPPML_SCOREP_MPP}")
-    endif()
+    add_compile_options(--user)
+    add_link_options(--user)
 endif()
 
-# Add Intel compiler libraries path for SmartRedis dependencies (if needed)
-if(USE_CPP_ML_INTERFACE OR WITH_DIRECT_SMARTSIM)
-    target_link_directories(${PROJECT_NAME} PRIVATE ${CUSTOM_CORE_DEPENDENCIES_DIR}/imkl/2024.2.0/compiler/2024.2/lib)
+if(WITH_AIX OR USE_CPP_ML_INTERFACE)
+    target_link_libraries(${PROJECT_NAME} PRIVATE nvidia-ml)
 endif()
-
-# Link against GCC's libstdc++
-target_link_directories(${PROJECT_NAME} PRIVATE ${CUSTOM_CORE_DEPENDENCIES_DIR}/GCCcore/11.3.0/lib64)
