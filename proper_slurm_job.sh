@@ -821,11 +821,11 @@ module -t list
 # causing PMIx collective timeouts and UCX worker address exchange failures
 # between c23mm (CPU) and c23g (GPU) het-groups. These MUST be set AFTER
 # the module load because modules may reset OMPI_MCA values.
-if (( ${USE_SCOREP:-0} )); then
+if [[ "${CPP_ML_INTERFACE_PROVIDER:u}" == "PHYDLL" || "${PHYDLL_SAFE_MPI_ENV:-0}" == "1" ]] || ( [[ -n "${SLURM_HET_SIZE:-}" ]] && (( ${USE_SCOREP:-0} )) ); then
   export OMPI_MCA_pml=ob1
   export OMPI_MCA_btl=self,vader,tcp
   export PMIX_MCA_gds=hash
-  echo "Score-P active: forcing OMPI_MCA_pml=ob1, OMPI_MCA_btl=self,vader,tcp, PMIX_MCA_gds=hash to avoid hetjob PMIx/UCX failures"
+  echo "PhyDLL MPMD / Score-P hetjob active: forcing OMPI_MCA_pml=ob1, OMPI_MCA_btl=self,vader,tcp, PMIX_MCA_gds=hash"
 fi
 
 # PhyDLL's MPMD launch performs its own MPI_Comm_split on the hetjob world and
@@ -1887,7 +1887,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
       if [[ "${USE_SCOREP}" == "1" && "${PHYDLL_PY_SCOREP_WRAPPER}" == "1" ]]; then
         SCOREP_BIN_DIR="$(dirname "$(command -v scorep-config)")"
         SCOREP_PYTHONPATH="${CMI_DIR}/extern/python/${RUNTIME_DEVICE}/lib/python3.9/site-packages"
-        DL_CLIENT_CMD=("env" "ENABLE_SCOREP_USER=1" "SCOREP_EXPERIMENT_DIRECTORY=${SCOREP_EXPERIMENT_DIRECTORY}_py_client" "SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY=true" "SMARTSIM_PAPI_ROOT=${SMARTSIM_PAPI_ROOT}" "SMARTSIM_SCOREP_ROOT=${SMARTSIM_SCOREP_ROOT}" "PATH=${SCOREP_BIN_DIR}:$PATH" "PYTHONPATH=${SCOREP_PYTHONPATH}:${PYTHONPATH:-}" "${PY_ENV}/bin/python3" "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/phydll_dl_client.py")
+        DL_CLIENT_CMD=("env" "ENABLE_SCOREP_USER=1" "SCOREP_EXPERIMENT_DIRECTORY=${SCOREP_EXPERIMENT_DIRECTORY}_py_client" "SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY=true" "SMARTSIM_PAPI_ROOT=${SMARTSIM_PAPI_ROOT}" "SMARTSIM_SCOREP_ROOT=${SMARTSIM_SCOREP_ROOT}" "PATH=${SCOREP_BIN_DIR}:$PATH" "PYTHONPATH=${SCOREP_PYTHONPATH}:${PYTHONPATH:-}" "${PY_ENV}/bin/python3" "-m" "scorep" "--keep-files" "--noinstrumenter" "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/phydll_dl_client.py")
       else
         DL_CLIENT_CMD=("${PY_ENV}/bin/python3" "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/phydll_dl_client.py")
       fi
@@ -1949,7 +1949,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
       if [[ "${USE_SCOREP:-0}" -eq 1 ]]; then
         _phydll_scorep_opts="-x SCOREP_EXPERIMENT_DIRECTORY=\"${SCOREP_EXPERIMENT_DIRECTORY:-}_cpp_client\" -x SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY=true"
       fi
-      launch_cmd="mpirun --bind-to none --oversubscribe -x OMPI_MCA_pml=ob1 -x OMPI_MCA_btl=self,vader,tcp -x PMIX_MCA_gds=hash -x LD_LIBRARY_PATH=\"${DL_LD_LIBRARY_PATH}\" -n ${NP_PHY} \
+      launch_cmd="mpirun --bind-to none --oversubscribe -x LD_LIBRARY_PATH=\"${DL_LD_LIBRARY_PATH}\" -n ${NP_PHY} \
       -x PHYDLL_MPMD_SHUTDOWN_BARRIER ./solver_wrapper.sh \
         --device \"${device}\" \
         --gpus-per-node \"${GPUS_PER_NODE}\" \
@@ -2027,7 +2027,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
     fi
 
     if [[ ( "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:u}" == "AIX" ) || "${USE_DIRECT_AIX:-0}" -eq 1 ]]; then
-    srun_cmd="srun --export=ALL $(get_srun_het_flag "${SOLVER_HET_GROUP}") --nodes \"${_nodes:-1}\" --ntasks \"${MPI_RANKS}\" ${SOLVER_SRUN_EXTRA_ARGS} \
+    srun_cmd="srun --export=ALL --gres=none $(get_srun_het_flag "${SOLVER_HET_GROUP}") --nodes \"${_nodes:-1}\" --ntasks \"${MPI_RANKS}\" ${SOLVER_SRUN_EXTRA_ARGS} \
         --cpus-per-task 1 \
         ${SRUN_DIST} \
         ${SOLVER_EXE} \
