@@ -52,11 +52,11 @@ set(AIX_DIR "${CPPML_DIR}/extern/AIxeleratorService")
 
 set(AIXELERATOR_PREBUILT_INSTALL_PREFIX "${AIX_DIR}/INSTALL" CACHE PATH "Install prefix for AIxeleratorService")
 
-if(WITH_SCOREP OR (DEFINED ENV{USE_SCOREP} AND NOT "$ENV{USE_SCOREP}" STREQUAL "" AND NOT "$ENV{USE_SCOREP}" STREQUAL "0"))
-    set(CMAKE_CXX_COMPILER scorep-mpicxx)
-    set(CMAKE_C_COMPILER scorep-mpicc)
-    set(CMAKE_CXX_COMPILER_ARG1 "--nocompiler --user")
-    set(CMAKE_C_COMPILER_ARG1 "--nocompiler --user")
+if(NOT CMAKE_CXX_COMPILER)
+    if(WITH_SCOREP OR (DEFINED ENV{USE_SCOREP} AND NOT "$ENV{USE_SCOREP}" STREQUAL "" AND NOT "$ENV{USE_SCOREP}" STREQUAL "0"))
+        set(CMAKE_CXX_COMPILER scorep-mpicxx)
+        set(CMAKE_C_COMPILER scorep-mpicc)
+    endif()
 endif()
 
 project(${PROJECT_NAME} LANGUAGES CXX C)

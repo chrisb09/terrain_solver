@@ -1552,7 +1552,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
       LIBTORCH_LIB_DIR="$(realpath "${MINI_APP_DIR}/../CPP-ML-Interface/extern/libtorch/lib")"
       export SCOREP_WRAPPER_INSTRUMENTER_FLAGS="--nocompiler --user --mpp=${SCOREP_MPP} --io=none --memory=malloc --thread=none --nocuda"
       SCOREP_BIN_DIR="$(dirname "$(command -v scorep-config)")"
-      COMPILE_ARGS+=("-DWITH_SCOREP=ON" "-DCPPML_SCOREP_MPP=${SCOREP_MPP}" "-DSCOREP_MPP_SYSTEM=${SCOREP_MPP}" "-DPHYDLL_DL_WITH_TORCH=OFF" "-DSCOREP_ROOT_DIR=${SMARTSIM_SCOREP_ROOT}" "-DSCOREP_CONFIG_EXECUTABLE=${SCOREP_BIN_DIR}/scorep-config" "-DSCOREP_INFO_EXECUTABLE=${SCOREP_BIN_DIR}/scorep-info" "-DAIX_USE_PREBUILT=ON" "-DFORCE_AIX_REBUILD=${FORCE_AIX_REBUILD_ENV:-OFF}" "-DAIXELERATOR_PREBUILT_INSTALL_PREFIX=${MINI_APP_DIR}/../CPP-ML-Interface/extern/AIxeleratorService/INSTALL-SCOREP" "-DTORCH_VERSION=2.4.0" "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-rpath-link,${LIBTORCH_LIB_DIR} -Wl,-rpath-link,/usr/lib64 -Wl,-rpath-link,/lib64 -Wl,-rpath,/usr/lib64 -Wl,-rpath,/lib64 -Wl,-rpath,/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/CUDA/12.4.0/lib/stubs -Wl,--allow-shlib-undefined" "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,-rpath-link,${LIBTORCH_LIB_DIR} -Wl,-rpath-link,/usr/lib64 -Wl,-rpath-link,/lib64 -Wl,-rpath,/usr/lib64 -Wl,-rpath,/lib64 -Wl,-rpath,/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/CUDA/12.4.0/lib/stubs -Wl,--allow-shlib-undefined")
+      COMPILE_ARGS+=("-DWITH_SCOREP=ON" "-DSCOREP_ENABLE_COMPILER=OFF" "-DSCOREP_ENABLE_USER=ON" "-DCPPML_SCOREP_MPP=${SCOREP_MPP}" "-DSCOREP_MPP_SYSTEM=${SCOREP_MPP}" "-DPHYDLL_DL_WITH_TORCH=OFF" "-DSCOREP_ROOT_DIR=${SMARTSIM_SCOREP_ROOT}" "-DSCOREP_CONFIG_EXECUTABLE=${SCOREP_BIN_DIR}/scorep-config" "-DSCOREP_INFO_EXECUTABLE=${SCOREP_BIN_DIR}/scorep-info" "-DAIX_USE_PREBUILT=ON" "-DFORCE_AIX_REBUILD=${FORCE_AIX_REBUILD_ENV:-OFF}" "-DAIXELERATOR_PREBUILT_INSTALL_PREFIX=${MINI_APP_DIR}/../CPP-ML-Interface/extern/AIxeleratorService/INSTALL-SCOREP" "-DTORCH_VERSION=2.4.0" "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-rpath-link,${LIBTORCH_LIB_DIR} -Wl,-rpath-link,/usr/lib64 -Wl,-rpath-link,/lib64 -Wl,-rpath,/usr/lib64 -Wl,-rpath,/lib64 -Wl,-rpath,/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/CUDA/12.4.0/lib/stubs -Wl,--allow-shlib-undefined" "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,-rpath-link,${LIBTORCH_LIB_DIR} -Wl,-rpath-link,/usr/lib64 -Wl,-rpath-link,/lib64 -Wl,-rpath,/usr/lib64 -Wl,-rpath,/lib64 -Wl,-rpath,/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/CUDA/12.4.0/lib/stubs -Wl,--allow-shlib-undefined")
       export CXX="${SCOREP_BIN_DIR}/scorep-mpicxx"
       export CC="${SCOREP_BIN_DIR}/scorep-mpicc"
       echo "Using SCOREP compilers: CC=${CC} CXX=${CXX}"
@@ -2027,7 +2027,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
     fi
 
     if [[ ( "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:u}" == "AIX" ) || "${USE_DIRECT_AIX:-0}" -eq 1 ]]; then
-    srun_cmd="srun --export=ALL --gres=none $(get_srun_het_flag "${SOLVER_HET_GROUP}") --nodes \"${_nodes:-1}\" --ntasks \"${MPI_RANKS}\" ${SOLVER_SRUN_EXTRA_ARGS} \
+    srun_cmd="srun --export=ALL $(get_srun_het_flag "${SOLVER_HET_GROUP}") --nodes \"${_nodes:-1}\" --ntasks \"${MPI_RANKS}\" ${SOLVER_SRUN_EXTRA_ARGS} \
         --cpus-per-task 1 \
         ${SRUN_DIST} \
         ${SOLVER_EXE} \
