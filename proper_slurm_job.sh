@@ -57,6 +57,9 @@ DB_HOSTNAME_FILE="db_hostname_${RUN_ID}.txt"
 SOLVER_STEP_LOG="logs/mini_app_output_${RUN_ID}.txt"
 
 
+########## HDF5 File Locking ##########
+export HDF5_USE_FILE_LOCKING=FALSE
+
 ########## SmartSim Timout Envs ##########
 
 export SR_MODEL_TIMEOUT=900000
@@ -1884,7 +1887,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
       if [[ "${USE_SCOREP}" == "1" && "${PHYDLL_PY_SCOREP_WRAPPER}" == "1" ]]; then
         SCOREP_BIN_DIR="$(dirname "$(command -v scorep-config)")"
         SCOREP_PYTHONPATH="${CMI_DIR}/extern/python/${RUNTIME_DEVICE}/lib/python3.9/site-packages"
-        DL_CLIENT_CMD=("env" "ENABLE_SCOREP_USER=1" "SCOREP_EXPERIMENT_DIRECTORY=${SCOREP_EXPERIMENT_DIRECTORY}_py_client" "SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY=true" "SMARTSIM_PAPI_ROOT=${SMARTSIM_PAPI_ROOT}" "SMARTSIM_SCOREP_ROOT=${SMARTSIM_SCOREP_ROOT}" "PATH=${SCOREP_BIN_DIR}:$PATH" "PYTHONPATH=${SCOREP_PYTHONPATH}:${PYTHONPATH:-}" "${PY_ENV}/bin/python3" "-m" "scorep" "--keep-files" "--noinstrumenter" "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/phydll_dl_client.py")
+        DL_CLIENT_CMD=("env" "ENABLE_SCOREP_USER=1" "SCOREP_EXPERIMENT_DIRECTORY=${SCOREP_EXPERIMENT_DIRECTORY}_py_client" "SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY=true" "SMARTSIM_PAPI_ROOT=${SMARTSIM_PAPI_ROOT}" "SMARTSIM_SCOREP_ROOT=${SMARTSIM_SCOREP_ROOT}" "PATH=${SCOREP_BIN_DIR}:$PATH" "PYTHONPATH=${SCOREP_PYTHONPATH}:${PYTHONPATH:-}" "${PY_ENV}/bin/python3" "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/phydll_dl_client.py")
       else
         DL_CLIENT_CMD=("${PY_ENV}/bin/python3" "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/phydll_dl_client.py")
       fi
