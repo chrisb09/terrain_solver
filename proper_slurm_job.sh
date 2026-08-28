@@ -1887,7 +1887,11 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
       if [[ "${USE_SCOREP}" == "1" && "${PHYDLL_PY_SCOREP_WRAPPER}" == "1" ]]; then
         SCOREP_BIN_DIR="$(dirname "$(command -v scorep-config)")"
         SCOREP_PYTHONPATH="${CMI_DIR}/extern/python/${RUNTIME_DEVICE}/lib/python3.9/site-packages"
-        DL_CLIENT_CMD=("env" "ENABLE_SCOREP_USER=1" "SCOREP_EXPERIMENT_DIRECTORY=${SCOREP_EXPERIMENT_DIRECTORY}_py_client" "SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY=true" "SMARTSIM_PAPI_ROOT=${SMARTSIM_PAPI_ROOT}" "SMARTSIM_SCOREP_ROOT=${SMARTSIM_SCOREP_ROOT}" "PATH=${SCOREP_BIN_DIR}:$PATH" "PYTHONPATH=${SCOREP_PYTHONPATH}:${PYTHONPATH:-}" "${PY_ENV}/bin/python3" "-m" "scorep" "--keep-files" "--noinstrumenter" "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/phydll_dl_client.py")
+        _py_exp_dir="${SCOREP_EXPERIMENT_DIRECTORY}_py_client"
+        if [[ "${SCOREP_ENABLE_TRACING:-false}" == "true" || "${SCOREP_ENABLE_TRACING:-false}" == "1" ]]; then
+          _py_exp_dir="${SCOREP_EXPERIMENT_DIRECTORY}"
+        fi
+        DL_CLIENT_CMD=("env" "ENABLE_SCOREP_USER=1" "SCOREP_EXPERIMENT_DIRECTORY=${_py_exp_dir}" "SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY=true" "SMARTSIM_PAPI_ROOT=${SMARTSIM_PAPI_ROOT}" "SMARTSIM_SCOREP_ROOT=${SMARTSIM_SCOREP_ROOT}" "PATH=${SCOREP_BIN_DIR}:$PATH" "PYTHONPATH=${SCOREP_PYTHONPATH}:${PYTHONPATH:-}" "${PY_ENV}/bin/python3" "-m" "scorep" "--keep-files" "--noinstrumenter" "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/phydll_dl_client.py")
       else
         DL_CLIENT_CMD=("${PY_ENV}/bin/python3" "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/phydll_dl_client.py")
       fi
@@ -1947,10 +1951,12 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
       NP_PHY="${MPI_RANKS:-$(( SLURM_NTASKS - PHYDLL_NP_DL ))}"
       _phydll_scorep_opts=""
       if [[ "${USE_SCOREP:-0}" -eq 1 ]]; then
-        _phydll_scorep_opts="-x SCOREP_EXPERIMENT_DIRECTORY=\"${SCOREP_EXPERIMENT_DIRECTORY:-}_cpp_client\" -x SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY=true"
+        if [[ "${SCOREP_ENABLE_TRACING:-false}" != "true" && "${SCOREP_ENABLE_TRACING:-false}" != "1" ]]; then
+          _phydll_scorep_opts="-x SCOREP_EXPERIMENT_DIRECTORY=\"${SCOREP_EXPERIMENT_DIRECTORY:-}_cpp_client\" -x SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY=true"
+        fi
       fi
-      launch_cmd="mpirun --bind-to none --oversubscribe -x LD_LIBRARY_PATH=\"${DL_LD_LIBRARY_PATH}\" -n ${NP_PHY} \
-      -x PHYDLL_MPMD_SHUTDOWN_BARRIER ./solver_wrapper.sh \
+      launch_cmd="mpirun --bind-to none --oversubscribe -x LD_LIBRARY_PATH=\"${DL_LD_LIBRARY_PATH}\" -x PHYDLL_MPMD_SHUTDOWN_BARRIER=1 -n ${NP_PHY} \
+      ./solver_wrapper.sh \
         --device \"${device}\" \
         --gpus-per-node \"${GPUS_PER_NODE}\" \
         --ml-nodes \"${DB_NODES}\" \
@@ -1972,7 +1978,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
         ${RANK_GRID_ARGS[@]} \
         ${OVERWRITE_ARG[@]} \
         --write-surface \
-         : -n ${PHYDLL_NP_DL} -x LD_LIBRARY_PATH=\"${DL_LD_LIBRARY_PATH}\" -x PATH ${_phydll_scorep_opts} \
+         : -n ${PHYDLL_NP_DL} -x LD_LIBRARY_PATH=\"${DL_LD_LIBRARY_PATH}\" -x PATH -x PHYDLL_MPMD_SHUTDOWN_BARRIER=1 ${_phydll_scorep_opts} \
           ${DL_CLIENT_CMD[*]}"
     else
       # HetJob mode: use srun
