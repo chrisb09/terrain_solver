@@ -874,6 +874,20 @@ if [[ "${USE_SCOREP}" == "1" ]]; then
   mkdir -p "$(dirname "${SCOREP_EXPERIMENT_DIRECTORY}")"
   rm -rf "${SCOREP_EXPERIMENT_DIRECTORY}"
   rm -rf "${SCOREP_EXPERIMENT_DIRECTORY}"_rank_*(N)
+  mkdir -p "${SCOREP_EXPERIMENT_DIRECTORY}"
+  cat <<EOF > "${SCOREP_EXPERIMENT_DIRECTORY}/run_metadata.json"
+{
+  "model": "${MODEL_NAME}",
+  "model_path": "${MODEL_PATH}",
+  "resolution": "${TARGET_WIDTH}x${TARGET_HEIGHT}",
+  "batch_size": ${ML_BATCH_SIZE},
+  "ranks": ${MPI_RANKS},
+  "total_steps": ${TOTAL_STEPS},
+  "warmup_steps": 2,
+  "provider": "${CPP_ML_INTERFACE_PROVIDER:-SMARTSIM}",
+  "job_id": "${SLURM_JOB_ID:-$$}"
+}
+EOF
 fi
 
 if [[ "${AIX_DIAGNOSTICS_ENV:-0}" == "1" ]]; then
@@ -901,6 +915,18 @@ if [[ "${AIX_P2P_TIMELINE_ENV:-0}" == "1" || -n "${AIX_P2P_TIMELINE_DIR_ENV:-}" 
   fi
   export AIX_P2P_TIMELINE_DIR
   mkdir -p "${AIX_P2P_TIMELINE_DIR}"
+  cat <<EOF > "${AIX_P2P_TIMELINE_DIR}/timeline_metadata.json"
+{
+  "model": "${MODEL_NAME}",
+  "model_path": "${MODEL_PATH}",
+  "resolution": "${TARGET_WIDTH}x${TARGET_HEIGHT}",
+  "batch_size": ${ML_BATCH_SIZE},
+  "ranks": ${MPI_RANKS},
+  "total_steps": ${TOTAL_STEPS},
+  "warmup_steps": 2,
+  "job_id": "${SLURM_JOB_ID:-$$}"
+}
+EOF
   echo "AIx P2P timeline enabled: dir=${AIX_P2P_TIMELINE_DIR}"
 fi
 
