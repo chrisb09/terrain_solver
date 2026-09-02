@@ -1910,6 +1910,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
     PHYDLL_REBUILD_DL_CLIENT=${PHYDLL_REBUILD_DL_CLIENT_ENV:-${PHYDLL_REBUILD_DL_CLIENT:-0}}
     DL_CLIENT_CMD=()
     if [[ "${USE_PYTHON_DL_CLIENT}" == "1" ]]; then
+      export PHYDLL_PY_FORCE_EXIT="${PHYDLL_PY_FORCE_EXIT_ENV:-1}"
       if [[ "${USE_SCOREP}" == "1" && "${PHYDLL_PY_SCOREP_WRAPPER}" == "1" ]]; then
         SCOREP_BIN_DIR="$(dirname "$(command -v scorep-config)")"
         SCOREP_PYTHONPATH="${CMI_DIR}/extern/python/${RUNTIME_DEVICE}/lib/python3.9/site-packages"
@@ -1917,7 +1918,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
         if [[ "${SCOREP_ENABLE_TRACING:-false}" == "true" || "${SCOREP_ENABLE_TRACING:-false}" == "1" ]]; then
           _py_exp_dir="${SCOREP_EXPERIMENT_DIRECTORY}"
         fi
-        DL_CLIENT_CMD=("env" "ENABLE_SCOREP_USER=1" "SCOREP_EXPERIMENT_DIRECTORY=${_py_exp_dir}" "SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY=true" "SMARTSIM_PAPI_ROOT=${SMARTSIM_PAPI_ROOT}" "SMARTSIM_SCOREP_ROOT=${SMARTSIM_SCOREP_ROOT}" "PATH=${SCOREP_BIN_DIR}:$PATH" "PYTHONPATH=${SCOREP_PYTHONPATH}:${PYTHONPATH:-}" "${PY_ENV}/bin/python3" "-m" "scorep" "--keep-files" "--noinstrumenter" "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/phydll_dl_client.py")
+        DL_CLIENT_CMD=("env" "ENABLE_SCOREP_USER=1" "SCOREP_EXPERIMENT_DIRECTORY=${_py_exp_dir}" "SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY=true" "SMARTSIM_PAPI_ROOT=${SMARTSIM_PAPI_ROOT}" "SMARTSIM_SCOREP_ROOT=${SMARTSIM_SCOREP_ROOT}" "PATH=${SCOREP_BIN_DIR}:$PATH" "PYTHONPATH=${SCOREP_PYTHONPATH}:${PYTHONPATH:-}" "${PY_ENV}/bin/python3" "-m" "scorep" "--keep-files" "--instrumenter-type=dummy" "--noinstrumenter" "--mpp=none" "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/phydll_dl_client.py")
       else
         DL_CLIENT_CMD=("${PY_ENV}/bin/python3" "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/phydll_dl_client.py")
       fi

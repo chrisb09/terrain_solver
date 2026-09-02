@@ -55,7 +55,7 @@ submit_suite_job() {
 }
 
 echo ""
-echo "=== Submitting Score-P PhyDLL Benchmark Suite (${TARGET_WIDTH}x${TARGET_HEIGHT}, C++ client) ==="
+echo "=== Submitting Score-P PhyDLL Benchmark Suite (${TARGET_WIDTH}x${TARGET_HEIGHT}, C++ & Python clients) ==="
 
 # 1. PhyDLL C++ DL client, packed layout (baseline)
 submit_suite_job "ScoreP_${MODEL}_PhyDLL_cpp_packed" \
@@ -64,6 +64,14 @@ submit_suite_job "ScoreP_${MODEL}_PhyDLL_cpp_packed" \
 # 2. PhyDLL C++ DL client, uniform_chunks layout
 submit_suite_job "ScoreP_${MODEL}_PhyDLL_cpp_uniform" \
     "USE_SMARTSIM=0,USE_CPP_ML_INTERFACE=1,ML_INTERFACE_ENV=cpp,CPP_ML_INTERFACE_PROVIDER_ENV=PHYDLL,CPP_ML_CONFIG_ENV=config_phydll_uniform.toml,USE_PYTHON_DL_CLIENT=0,PHYDLL_DL_FIELD_COUNT=1,SCOREP_DIR_TAG_ENV=phydll_cpp_uniform,JOB_NAME_ENV=scorep_${MODEL}_phydll_cpp_uniform"
+
+# 3. PhyDLL Python DL client, packed layout
+submit_suite_job "ScoreP_${MODEL}_PhyDLL_py_packed" \
+    "USE_SMARTSIM=0,USE_CPP_ML_INTERFACE=1,ML_INTERFACE_ENV=cpp,CPP_ML_INTERFACE_PROVIDER_ENV=PHYDLL,CPP_ML_CONFIG_ENV=config_phydll.toml,USE_PYTHON_DL_CLIENT=1,PHYDLL_PY_SCOREP_WRAPPER=1,PHYDLL_DL_FIELD_COUNT=1,SCOREP_DIR_TAG_ENV=phydll_py_packed,JOB_NAME_ENV=scorep_${MODEL}_phydll_py_packed"
+
+# 4. PhyDLL Python DL client, uniform_chunks layout
+submit_suite_job "ScoreP_${MODEL}_PhyDLL_py_uniform" \
+    "USE_SMARTSIM=0,USE_CPP_ML_INTERFACE=1,ML_INTERFACE_ENV=cpp,CPP_ML_INTERFACE_PROVIDER_ENV=PHYDLL,CPP_ML_CONFIG_ENV=config_phydll_uniform.toml,USE_PYTHON_DL_CLIENT=1,PHYDLL_PY_SCOREP_WRAPPER=1,PHYDLL_DL_FIELD_COUNT=1,SCOREP_DIR_TAG_ENV=phydll_py_uniform,JOB_NAME_ENV=scorep_${MODEL}_phydll_py_uniform"
 
 echo ""
 echo "=== All Score-P PhyDLL measurement cases submitted successfully ==="
