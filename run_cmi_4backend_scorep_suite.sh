@@ -60,23 +60,27 @@ submit_backend_job() {
 }
 
 echo ""
-echo "=== Submitting 4 CMI Backend Jobs (10-step watercnn on 1920x1080) ==="
+echo "=== Submitting CMI Backend Score-P Jobs (10-step watercnn on 1920x1080) ==="
 
-# 1. CMI SmartSim
+# 1. CMI SmartSim Shared (c0)
 submit_backend_job "CMI_smartsim_watercnn_10step" \
-    "USE_SMARTSIM=0,USE_CPP_ML_INTERFACE=1,ML_INTERFACE_ENV=cpp,CPP_ML_INTERFACE_PROVIDER_ENV=SMARTSIM,CPP_ML_CONFIG_ENV=config.toml,MPI_RANKS_ENV=24,RANK_GRID_X_ENV=6,RANK_GRID_Z_ENV=4,SCOREP_DIR_TAG_ENV=cmi_watercnn_smartsim"
+    "USE_SMARTSIM=0,USE_CPP_ML_INTERFACE=1,ML_INTERFACE_ENV=cpp,CPP_ML_INTERFACE_PROVIDER_ENV=SMARTSIM,CPP_ML_CONFIG_ENV=config.toml,DB_LAYOUT_ENV=shared,DB_NODES_ENV=1,MPI_RANKS_ENV=24,RANK_GRID_X_ENV=6,RANK_GRID_Z_ENV=4,SCOREP_DIR_TAG_ENV=cmi_watercnn_smartsim"
 
-# 2. CMI AIx (MPMD requires 25 total ranks = 5x5 grid)
+# 2. CMI SmartSim Per-Node Standalone DB
+submit_backend_job "CMI_smartsim_per_ml_node_watercnn_10step" \
+    "USE_SMARTSIM=0,USE_CPP_ML_INTERFACE=1,ML_INTERFACE_ENV=cpp,CPP_ML_INTERFACE_PROVIDER_ENV=SMARTSIM,CPP_ML_CONFIG_ENV=config.toml,DB_LAYOUT_ENV=per-ml-node,DB_NODES_ENV=1,MPI_RANKS_ENV=24,RANK_GRID_X_ENV=6,RANK_GRID_Z_ENV=4,SCOREP_DIR_TAG_ENV=cmi_watercnn_smartsim_per_ml_node"
+
+# 3. CMI AIx Collective (MPMD requires 25 total ranks = 5x5 grid)
 submit_backend_job "CMI_aix_watercnn_10step" \
     "USE_SMARTSIM=0,USE_CPP_ML_INTERFACE=1,ML_INTERFACE_ENV=cpp,CPP_ML_INTERFACE_PROVIDER_ENV=AIX,CPP_ML_CONFIG_ENV=config_aix.toml,MPI_RANKS_ENV=25,RANK_GRID_X_ENV=5,RANK_GRID_Z_ENV=5,SCOREP_DIR_TAG_ENV=cmi_watercnn_aix"
 
-# 3. CMI PhyDLL C++ Client
+# 4. CMI PhyDLL C++ Client
 submit_backend_job "CMI_phydll_cpp_watercnn_10step" \
     "USE_SMARTSIM=0,USE_CPP_ML_INTERFACE=1,ML_INTERFACE_ENV=cpp,CPP_ML_INTERFACE_PROVIDER_ENV=PHYDLL,CPP_ML_CONFIG_ENV=config_phydll.toml,MPI_RANKS_ENV=24,RANK_GRID_X_ENV=6,RANK_GRID_Z_ENV=4,USE_PYTHON_DL_CLIENT=0,SCOREP_DIR_TAG_ENV=cmi_watercnn_phydll_cpp"
 
-# 4. CMI PhyDLL Python Client
+# 5. CMI PhyDLL Python Client
 submit_backend_job "CMI_phydll_py_watercnn_10step" \
     "USE_SMARTSIM=0,USE_CPP_ML_INTERFACE=1,ML_INTERFACE_ENV=cpp,CPP_ML_INTERFACE_PROVIDER_ENV=PHYDLL,CPP_ML_CONFIG_ENV=config_phydll.toml,MPI_RANKS_ENV=24,RANK_GRID_X_ENV=6,RANK_GRID_Z_ENV=4,USE_PYTHON_DL_CLIENT=1,PHYDLL_PY_SCOREP_WRAPPER=1,SCOREP_DIR_TAG_ENV=cmi_watercnn_phydll_py"
 
 echo ""
-echo "=== All 4 CMI backend jobs submitted successfully ==="
+echo "=== All CMI backend Score-P jobs submitted successfully ==="

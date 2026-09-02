@@ -11,34 +11,14 @@
 #SBATCH --output=logs/mini_app_output_%j.txt
 
 ############################
-# Component 0: CPU (c23mm)
-############################
-#SBATCH --partition=c23mm
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=24
-#SBATCH --cpus-per-task=1
-#SBATCH --mem-per-cpu=5G
-
-#SBATCH hetjob
-
-############################
-# Component 1a: GPU (c23g)
+# Single Node: GPU (c23g) 96 CPU cores + 4 GPUs
 ############################
 #SBATCH --partition=c23g
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=24
-#SBATCH --gres=gpu:1
-#SBATCH --mem-per-cpu=5G
-
-#############################
-# Component 1b: CPU (c23mm) for ML inference if not using GPU
-#############################
-##SBATCH --partition=c23mm
-##SBATCH --nodes=1
-##SBATCH --ntasks-per-node=1
-##SBATCH --cpus-per-task=72
-##SBATCH --mem-per-cpu=5G
+#SBATCH --ntasks-per-node=96
+#SBATCH --cpus-per-task=1
+#SBATCH --gres=gpu:4
+#SBATCH --mem=0
 
 
 ############################

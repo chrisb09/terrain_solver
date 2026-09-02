@@ -18,7 +18,7 @@ def parse_log(log_path: Path):
             job_name = dm.group(1)
     if job_name == "?":
         pm = re.search(r"CPP_ML_INTERFACE_PROVIDER from environment variable: (\w+)", text)
-        sm = re.search(r"CUSTOM_JOB_NAME_SUFFIX from environment variable: _cpp_interface_\w+_1gpu_(\w+?)(?:_revamped|_prepare|$)", text)
+        sm = re.search(r"CUSTOM_JOB_NAME_SUFFIX from environment variable: _cpp_interface_\w+_\d+gpu_(\w+?)(?:_revamped|_prepare|$)", text)
         if pm and sm:
             provider = pm.group(1)
             model = sm.group(1)
@@ -26,9 +26,25 @@ def parse_log(log_path: Path):
                 model = "giant_mlp"
             job_name = f"{provider}/{model}"
             if provider == "AIX":
-                bm = re.search(r"COMPILE_OUTPUT_PATH from environment variable: (\S+)", text)
-                variant = "p2p" if bm and "p2p" in bm.group(1) else "collective"
+                bm = re.search(r"CPP_ML_CONFIG from environment variable: (\S+)", text)
+                variant = "p2p" if bm and "pipelined" in bm.group(1) else "collective"
                 job_name = f"{job_name}/{variant}"
+            elif provider == "PHYDLL":
+                py_m = re.search(r"USE_PYTHON_DL_CLIENT=(\d+)", text)
+                if not py_m:
+                    py_m = re.search(r"USE_PYTHON_DL_CLIENT from environment variable: (\d+)", text)
+                py_client = (py_m and py_m.group(1) == "1") or ("phydll_dl_client.py" in text)
+                client_type = "Python" if py_client else "C++"
+                job_name = f"{job_name}/{client_type}"
+            elif provider == "SMARTSIM":
+                lay_m = re.search(r"DB_LAYOUT from environment variable: (\S+)", text)
+                seq_m = re.search(r"SMARTSIM_MPI_SEQUENTIAL_PUT from environment variable: (\d+)", text)
+                seq_val = seq_m.group(1) if seq_m else "0"
+                lay_val = lay_m.group(1) if lay_m else "shared"
+                if lay_val == "per-ml-node":
+                    job_name = f"{job_name}/per-node-db"
+                else:
+                    job_name = f"{job_name}/c{seq_val}"
 
     step_pattern = re.compile(r"STEP_TIMING step=(\d+) solver=(ML|Regular) step_ms=([\d\.]+) local_moved=([\d\.]+)")
     
