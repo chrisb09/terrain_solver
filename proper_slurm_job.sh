@@ -2005,12 +2005,12 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
         ${RANK_GRID_ARGS[@]} \
         ${OVERWRITE_ARG[@]} \
         --write-surface \
-         : -n ${PHYDLL_NP_DL} -x LD_LIBRARY_PATH=\"${DL_LD_LIBRARY_PATH}\" -x PATH -x PHYDLL_MPMD_SHUTDOWN_BARRIER=1 ${_phydll_scorep_opts} \
+         : -n ${PHYDLL_NP_DL} -x LD_LIBRARY_PATH=\"${DL_LD_LIBRARY_PATH}\" -x PATH -x PHYDLL_MPMD_SHUTDOWN_BARRIER=1 -x PHYDLL_PY_FORCE_EXIT=1 ${_phydll_scorep_opts} \
           ${DL_CLIENT_CMD[*]}"
     else
       # HetJob mode: use srun
       srun_solver_args="--export=ALL $(get_srun_het_flag "${SOLVER_HET_GROUP}") --nodes \"${_nodes:-1}\" --ntasks \"${MPI_RANKS}\""
-      srun_dl_args="--export=ALL $(get_srun_het_flag "${DB_HET_GROUP}") --nodes \"${PHYDLL_DL_NODES}\" --ntasks \"${PHYDLL_NP_DL}\" --ntasks-per-node 1 --cpus-per-task \"${ML_INFERENCE_CPU_CORES}\""
+      srun_dl_args="--export=ALL,PHYDLL_MPMD_SHUTDOWN_BARRIER=1,PHYDLL_PY_FORCE_EXIT=1 $(get_srun_het_flag "${DB_HET_GROUP}") --nodes \"${PHYDLL_DL_NODES}\" --ntasks \"${PHYDLL_NP_DL}\" --ntasks-per-node 1 --cpus-per-task \"${ML_INFERENCE_CPU_CORES}\""
       
       export LD_LIBRARY_PATH="${DL_LD_LIBRARY_PATH}"
       launch_cmd="srun ${srun_solver_args} \
