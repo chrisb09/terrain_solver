@@ -5,31 +5,22 @@ generate_benchmark_reports.py
 Generates comprehensive benchmark summary tables (Markdown + CSV) and publication-quality
 comparison figures for CMI multi-framework evaluation across hardware configurations:
   1. 24-Rank Heterogeneous Allocation (1x CPU node c23mm + 1x GPU node c23g)
-  2. 96-Core + 4-GPU Single Node Allocation (1x c23g full node)
-
-Configurations compared:
-  - SmartSim Parallel (c=0)
-  - SmartSim Per-Node Standalone DB
-  - SmartSim Sequential Token (c=1)
-  - SmartSim Sequential Token (c=3)
-  - AIxelerator Collective (MPI_Gatherv / Bcast / Scatterv)
-  - AIxelerator P2P / Pipelined
-  - PhyDLL C++ DL Client
-  - PhyDLL Python DL Client
+  2. 96-Core + 1-GPU Single Node Allocation (1x c23g node, single GPU)
+  3. 96-Core + 4-GPU Single Node Allocation (1x c23g node, 4x NVIDIA H100)
+  4. Cross-Hardware Grouped Comparison (Scaling & GPU acceleration effects)
 """
 
 import os
 import sys
 import re
+import subprocess
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 import numpy as np
 import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-
-import subprocess
 
 def get_job_name_from_sacct(job_id: str) -> str:
     try:
@@ -42,7 +33,7 @@ def get_job_name_from_sacct(job_id: str) -> str:
         pass
     return ""
 
-def parse_job_log(log_path: Path) -> Dict[str, Any]:
+def parse_job_log(log_path: Path) -> Optional[Dict[str, Any]]:
     if not log_path.exists():
         return None
     
@@ -55,10 +46,12 @@ def parse_job_log(log_path: Path) -> Dict[str, Any]:
 
     # Specific configuration label
     cfg_label = "?"
-    if "c0" in job_name:
-        cfg_label = "SmartSim Parallel (c=0)"
-    elif "per_ml_node" in job_name or "per-node" in job_name:
+    if "per_gpu_db" in job_name:
+        cfg_label = "SmartSim Per-GPU DB"
+    elif "per_node_db" in job_name or "per-node" in job_name or "per_ml_node" in job_name:
         cfg_label = "SmartSim Per-Node DB"
+    elif "c0" in job_name:
+        cfg_label = "SmartSim Parallel (c=0)"
     elif "c1" in job_name:
         cfg_label = "SmartSim Chain 1 (c=1)"
     elif "c3" in job_name:
@@ -85,7 +78,10 @@ def parse_job_log(log_path: Path) -> Dict[str, Any]:
         elif provider == "SMARTSIM":
             lay_m = re.search(r"DB_LAYOUT=per-ml-node", text)
             seq_m = re.search(r"SMARTSIM_MPI_SEQUENTIAL_PUT=(\d+)", text)
-            if lay_m:
+            nd_m = re.search(r"DB_NODES from environment variable: (\d+)", text)
+            if lay_m and nd_m and int(nd_m.group(1)) > 1:
+                cfg_label = "SmartSim Per-GPU DB"
+            elif lay_m:
                 cfg_label = "SmartSim Per-Node DB"
             elif seq_m and seq_m.group(1) == "1":
                 cfg_label = "SmartSim Chain 1 (c=1)"
@@ -135,7 +131,7 @@ def parse_job_log(log_path: Path) -> Dict[str, Any]:
         solve_time = float(st_m.group(1))
 
     return {
-        "job_id": log_path.stem.replace("mini_app_output_", ""),
+        "job_id": jid,
         "provider": provider,
         "label": cfg_label,
         "cold_ms": cold_step,
@@ -147,7 +143,7 @@ def parse_job_log(log_path: Path) -> Dict[str, Any]:
         "solve_time_s": solve_time
     }
 
-def generate_suite_report(job_ids: List[int], suite_name: str, hardware_desc: str, output_dir: Path):
+def generate_suite_report(job_ids: List[int], suite_name: str, hardware_desc: str, output_dir: Path) -> Optional[pd.DataFrame]:
     output_dir.mkdir(parents=True, exist_ok=True)
     
     results = []
@@ -157,11 +153,11 @@ def generate_suite_report(job_ids: List[int], suite_name: str, hardware_desc: st
         if data:
             results.append(data)
         else:
-            print(f"Warning: Could not parse log for job {jid}")
+            print(f"Notice: Log for job {jid} is pending or not yet available.")
             
     if not results:
-        print(f"No results found for suite {suite_name}")
-        return
+        print(f"No completed results yet for suite {suite_name}")
+        return None
 
     # Create summary metrics table
     rows = []
@@ -246,7 +242,7 @@ def generate_suite_report(job_ids: List[int], suite_name: str, hardware_desc: st
 
     print(f"Saved summary Markdown report to: {md_path}")
 
-    # Generate Publication-Quality Figures
+    # Generate Figures
     # 1. Warm Step Bar Chart with Error Bars (IQR)
     plt.figure(figsize=(12, 6.5), dpi=300)
     plt.style.use("seaborn-v0_8-whitegrid" if "seaborn-v0_8-whitegrid" in plt.style.available else "default")
@@ -255,15 +251,14 @@ def generate_suite_report(job_ids: List[int], suite_name: str, hardware_desc: st
     medians = [float(np.median(r["warm_ms"])) for r in results]
     iqrs = [float(np.percentile(r["warm_ms"], 75) - np.percentile(r["warm_ms"], 25)) for r in results]
     
-    # Custom color palette by provider
     colors = []
     for c in configs:
         if "SmartSim" in c:
-            colors.append("#2b5c8f") # Navy Blue
+            colors.append("#2b5c8f")
         elif "AIxelerator" in c:
-            colors.append("#d95f02") # Orange / Vermillion
+            colors.append("#d95f02")
         elif "PhyDLL" in c:
-            colors.append("#2ca02c") # Green
+            colors.append("#2ca02c")
         else:
             colors.append("#7570b3")
             
@@ -274,26 +269,21 @@ def generate_suite_report(job_ids: List[int], suite_name: str, hardware_desc: st
     plt.title(f"CMI Framework Comparison — Warm ML Step Duration (Median ± IQR)\n{hardware_desc}", fontsize=13, fontweight="bold", pad=15)
     plt.grid(axis="y", linestyle="--", alpha=0.6)
     
-    # Annotate bar values
     for bar, med in zip(bars, medians):
-        plt.text(bar.get_x() + bar.get_width()/2.0, bar.get_height() + max(iqrs)*0.1 + 5, f"{med:.1f} ms",
+        plt.text(bar.get_x() + bar.get_width()/2.0, bar.get_height() + max(iqrs)*0.08 + 4, f"{med:.1f} ms",
                  ha="center", va="bottom", fontsize=10.5, fontweight="bold")
 
     plt.tight_layout()
     fig1_path = output_dir / "fig_framework_warm_step_comparison.png"
     plt.savefig(fig1_path, dpi=300)
     plt.close()
-    print(f"Saved bar chart figure to: {fig1_path}")
 
-    # 2. Step-by-Step Timeline (Step 1 to 22)
+    # 2. Step-by-Step Timeline
     plt.figure(figsize=(13, 7), dpi=300)
     plt.style.use("seaborn-v0_8-whitegrid" if "seaborn-v0_8-whitegrid" in plt.style.available else "default")
     
-    markers = ['o', 's', '^', 'v', 'D', 'P', 'X', '*']
+    markers = ['o', 's', '^', 'v', 'D', 'P', 'X', '*', 'h']
     for i, r in enumerate(results):
-        steps = list(range(1, len(r["all_ml_ms"]) + 1))
-        # Steps in simulation: ML steps occur at steps 1, 3, 5, ..., 21 or 2, 4, ...
-        # Let's plot the ML step index (1 to 11)
         ml_indices = list(range(1, len(r["all_ml_ms"]) + 1))
         plt.plot(ml_indices, r["all_ml_ms"], marker=markers[i % len(markers)], label=r["label"],
                  linewidth=2.2, markersize=7.5, alpha=0.9)
@@ -309,26 +299,134 @@ def generate_suite_report(job_ids: List[int], suite_name: str, hardware_desc: st
     fig2_path = output_dir / "fig_step_by_step_progression.png"
     plt.savefig(fig2_path, dpi=300)
     plt.close()
-    print(f"Saved step timeline figure to: {fig2_path}")
+    
+    return df
+
+def generate_cross_hardware_comparison(df_het: pd.DataFrame, df_1g: pd.DataFrame, df_4g: pd.DataFrame, output_dir: Path):
+    if df_het is None or df_1g is None or df_4g is None:
+        return
+        
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Common configurations present in all suites
+    common_cfgs = [
+        "SmartSim Parallel (c=0)",
+        "SmartSim Per-Node DB",
+        "SmartSim Chain 1 (c=1)",
+        "SmartSim Chain 3 (c=3)",
+        "AIxelerator Collective",
+        "AIxelerator P2P",
+        "PhyDLL C++",
+        "PhyDLL Python"
+    ]
+    
+    rows = []
+    for cfg in common_cfgs:
+        r_het = df_het[df_het["Configuration"] == cfg]
+        r_1g = df_1g[df_1g["Configuration"] == cfg]
+        r_4g = df_4g[df_4g["Configuration"] == cfg]
+        
+        m_het = r_het.iloc[0]["Warm Median (ms)"] if not r_het.empty else np.nan
+        m_1g = r_1g.iloc[0]["Warm Median (ms)"] if not r_1g.empty else np.nan
+        m_4g = r_4g.iloc[0]["Warm Median (ms)"] if not r_4g.empty else np.nan
+        
+        rows.append({
+            "Configuration": cfg,
+            "24 Ranks (1 CPU + 1 GPU) [ms]": m_het,
+            "96 Ranks (1 Node, 1 GPU) [ms]": m_1g,
+            "96 Ranks (1 Node, 4 GPUs) [ms]": m_4g
+        })
+        
+    # Also add SmartSim Per-GPU DB from 4G if present
+    r_4g_gpu = df_4g[df_4g["Configuration"] == "SmartSim Per-GPU DB"]
+    if not r_4g_gpu.empty:
+        rows.append({
+            "Configuration": "SmartSim Per-GPU DB (4 DBs)",
+            "24 Ranks (1 CPU + 1 GPU) [ms]": np.nan,
+            "96 Ranks (1 Node, 1 GPU) [ms]": np.nan,
+            "96 Ranks (1 Node, 4 GPUs) [ms]": r_4g_gpu.iloc[0]["Warm Median (ms)"]
+        })
+        
+    comp_df = pd.DataFrame(rows)
+    comp_df.to_csv(output_dir / "cross_hardware_summary.csv", index=False)
+    
+    # Write Markdown
+    md_path = output_dir / "cross_hardware_comparison.md"
+    with open(md_path, "w") as f:
+        f.write("# CMI Cross-Hardware Scaling & GPU Acceleration Report\n\n")
+        f.write("Comparison of CMI coupling frameworks across:\n")
+        f.write("- **24 Ranks HetJob**: 1x `c23mm` CPU node (24 ranks) + 1x `c23g` GPU node (1x H100)\n")
+        f.write("- **96 Ranks 1-GPU**: 1x `c23g` node (96 ranks, 1x H100)\n")
+        f.write("- **96 Ranks 4-GPU**: 1x `c23g` node (96 ranks, 4x H100)\n\n")
+        f.write("## 1. Summary Comparison Table (Warm Step Median Duration in ms)\n\n")
+        f.write("| Framework / Configuration | 24 Ranks (1 CPU + 1 GPU) | 96 Ranks (1 Node, 1 GPU) | 96 Ranks (1 Node, 4 GPUs) |\n")
+        f.write("|---|---|---|---|\n")
+        for _, r in comp_df.iterrows():
+            h_str = f"{r['24 Ranks (1 CPU + 1 GPU) [ms]']:.2f} ms" if not np.isnan(r['24 Ranks (1 CPU + 1 GPU) [ms]']) else "—"
+            g1_str = f"{r['96 Ranks (1 Node, 1 GPU) [ms]']:.2f} ms" if not np.isnan(r['96 Ranks (1 Node, 1 GPU) [ms]']) else "—"
+            g4_str = f"{r['96 Ranks (1 Node, 4 GPUs) [ms]']:.2f} ms" if not np.isnan(r['96 Ranks (1 Node, 4 GPUs) [ms]']) else "—"
+            f.write(f"| **{r['Configuration']}** | {h_str} | {g1_str} | {g4_str} |\n")
+            
+        f.write("\n![Cross Hardware Grouped Comparison](fig_cross_hardware_comparison.png)\n")
+
+    # Grouped Bar Chart
+    plt.figure(figsize=(14, 7), dpi=300)
+    plt.style.use("seaborn-v0_8-whitegrid" if "seaborn-v0_8-whitegrid" in plt.style.available else "default")
+    
+    labels = [r["Configuration"] for r in rows if "Per-GPU" not in r["Configuration"]]
+    het_vals = [r["24 Ranks (1 CPU + 1 GPU) [ms]"] for r in rows if "Per-GPU" not in r["Configuration"]]
+    g1_vals = [r["96 Ranks (1 Node, 1 GPU) [ms]"] for r in rows if "Per-GPU" not in r["Configuration"]]
+    g4_vals = [r["96 Ranks (1 Node, 4 GPUs) [ms]"] for r in rows if "Per-GPU" not in r["Configuration"]]
+    
+    x = np.arange(len(labels))
+    width = 0.26
+    
+    plt.bar(x - width, het_vals, width, label="24 Ranks (1 CPU + 1 GPU)", color="#2b5c8f", edgecolor="black", alpha=0.9)
+    plt.bar(x, g1_vals, width, label="96 Ranks (1 Node, 1 GPU)", color="#d95f02", edgecolor="black", alpha=0.9)
+    plt.bar(x + width, g4_vals, width, label="96 Ranks (1 Node, 4 GPUs)", color="#2ca02c", edgecolor="black", alpha=0.9)
+    
+    plt.xticks(x, labels, rotation=25, ha="right", fontsize=11, fontweight="bold")
+    plt.ylabel("Warm ML Step Duration (ms)", fontsize=13, fontweight="bold")
+    plt.title("CMI Framework Scaling & Multi-GPU Acceleration Comparison\n(WaterCNN 1920x1080 Grid, 22 Timesteps)", fontsize=13, fontweight="bold", pad=15)
+    plt.legend(frameon=True, facecolor="white", framealpha=0.95, fontsize=11)
+    plt.grid(axis="y", linestyle="--", alpha=0.6)
+    
+    plt.tight_layout()
+    fig_path = output_dir / "fig_cross_hardware_comparison.png"
+    plt.savefig(fig_path, dpi=300)
+    plt.close()
+    print(f"Saved cross-hardware comparison report to: {output_dir}")
 
 def main():
     # 1. 24-rank HetJob Suite (1x CPU node + 1x GPU node)
     hetjob_jids = [3449953, 3449957, 3449961, 3449964, 3449970, 3449975, 3449978, 3450422]
-    generate_suite_report(
+    df_het = generate_suite_report(
         hetjob_jids,
         suite_name="24-Rank Heterogeneous CPU/GPU Allocation",
         hardware_desc="CLAIX-23 Heterogeneous (1x c23mm CPU Node with 24 Ranks + 1x c23g GPU Node with 1x NVIDIA H100)",
         output_dir=Path("results_24rank_hetjob_comparison")
     )
     
-    # 2. 96-core + 4-GPU Single Node Suite
-    single_node_jids = [3450490, 3450492, 3450494, 3450496, 3450498, 3450500, 3450503, 3450507]
-    generate_suite_report(
-        single_node_jids,
+    # 2. 96-core + 1-GPU Single Node Suite
+    single_node_1g_jids = [3504523, 3504529, 3504532, 3504535, 3504538, 3504541, 3504547, 3504551]
+    df_1g = generate_suite_report(
+        single_node_1g_jids,
+        suite_name="96-Core + 1-GPU Single Node Allocation",
+        hardware_desc="CLAIX-23 Single GPU Node (1x c23g Node with 96 CPU Cores, 1x NVIDIA H100 Active)",
+        output_dir=Path("results_96core_1gpu_comparison")
+    )
+
+    # 3. 96-core + 4-GPU Single Node Suite
+    single_node_4g_jids = [3504561, 3504563, 3504565, 3504567, 3504573, 3504577, 3504580, 3504584, 3504590]
+    df_4g = generate_suite_report(
+        single_node_4g_jids,
         suite_name="96-Core + 4-GPU Single Node Allocation",
         hardware_desc="CLAIX-23 Single GPU Node (1x c23g Node with 96 CPU Cores + 4x NVIDIA H100 GPUs)",
         output_dir=Path("results_96core_4gpu_comparison")
     )
+
+    # 4. Cross-Hardware Comparison
+    generate_cross_hardware_comparison(df_het, df_1g, df_4g, output_dir=Path("results_cross_hardware_comparison"))
 
 if __name__ == "__main__":
     main()

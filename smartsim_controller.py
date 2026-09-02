@@ -134,6 +134,15 @@ exp = Experiment(name=exp_dir, launcher="slurm")
 dbs = []
 if args.db_layout == "per-ml-node":
     db_hosts = db_nodelist.split(",") if db_nodelist else []
+    local_gpu_count = 1
+    if use_gpu:
+        try:
+            import torch
+            if torch.cuda.is_available() and torch.cuda.device_count() > 0:
+                local_gpu_count = torch.cuda.device_count()
+        except Exception:
+            local_gpu_count = 1
+
     for i in range(args.db_nodes):
         shard_port = args.port + i
         db_i = exp.create_database(
@@ -150,6 +159,11 @@ if args.db_layout == "per-ml-node":
         db_i.set_run_arg("export", "ALL")
         db_i.set_run_arg("overlap", None)
         db_i.set_run_arg("exact", None)
+        if use_gpu and local_gpu_count > 1:
+            gpu_idx = i % local_gpu_count
+            for entity in db_i.entities:
+                entity.run_settings.env_vars["CUDA_VISIBLE_DEVICES"] = str(gpu_idx)
+            print(f"  [SmartSim] DB shard_{i} (port {shard_port}) pinned to GPU {gpu_idx} (CUDA_VISIBLE_DEVICES={gpu_idx})", flush=True)
         if db_nodelist and env.get("SMARTSIM_PIN_DB_NODELIST", "0") == "1" and i < len(db_hosts):
             for entity in db_i.entities:
                 entity.run_settings.run_args["nodelist"] = db_hosts[i]
