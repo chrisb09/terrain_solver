@@ -850,7 +850,16 @@ if [[ "${USE_SCOREP}" == "1" ]]; then
   else
     export SCOREP_EXPERIMENT_DIRECTORY="${MINI_APP_DIR}/scorep_runs/${_scorep_job_name}_${RUN_ID}"
   fi
-  export SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY="${SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY:-false}"
+  # OTF2 tracing requires ALL ranks to share ONE experiment directory. With
+  # overwrite=false Score-P would rename the pre-created (metadata-only) dir,
+  # and 24+ ranks racing on that rename abort fatally. overwrite=true makes
+  # ranks delete-and-recreate only if the dir is not yet a valid experiment,
+  # then join the experiment created by the first rank.
+  if [[ "${SCOREP_ENABLE_TRACING_ENV:-false}" == "true" || "${SCOREP_ENABLE_TRACING_ENV:-false}" == "1" ]]; then
+    export SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY=true
+  else
+    export SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY="${SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY:-false}"
+  fi
   mkdir -p "$(dirname "${SCOREP_EXPERIMENT_DIRECTORY}")"
   rm -rf "${SCOREP_EXPERIMENT_DIRECTORY}"
   rm -rf "${SCOREP_EXPERIMENT_DIRECTORY}"_rank_*(N)
@@ -858,7 +867,7 @@ if [[ "${USE_SCOREP}" == "1" ]]; then
   cat <<EOF > "${SCOREP_EXPERIMENT_DIRECTORY}/run_metadata.json"
 {
   "model": "${MODEL_NAME}",
-  "model_path": "${MODEL_PATH}",
+  "model_path": "${MODEL_PATH:-}",
   "resolution": "${TARGET_WIDTH}x${TARGET_HEIGHT}",
   "batch_size": ${ML_BATCH_SIZE},
   "ranks": ${MPI_RANKS},
@@ -898,7 +907,7 @@ if [[ "${AIX_P2P_TIMELINE_ENV:-0}" == "1" || -n "${AIX_P2P_TIMELINE_DIR_ENV:-}" 
   cat <<EOF > "${AIX_P2P_TIMELINE_DIR}/timeline_metadata.json"
 {
   "model": "${MODEL_NAME}",
-  "model_path": "${MODEL_PATH}",
+  "model_path": "${MODEL_PATH:-}",
   "resolution": "${TARGET_WIDTH}x${TARGET_HEIGHT}",
   "batch_size": ${ML_BATCH_SIZE},
   "ranks": ${MPI_RANKS},
