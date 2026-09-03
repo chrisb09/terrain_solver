@@ -8,6 +8,9 @@ comparison figures for CMI multi-framework evaluation across hardware configurat
   2. 96-Core + 1-GPU Single Node Allocation (1x c23g node, single GPU)
   3. 96-Core + 4-GPU Single Node Allocation (1x c23g node, 4x NVIDIA H100)
   4. Cross-Hardware Grouped Comparison (Scaling & GPU acceleration effects)
+
+Produces both top-level suite summaries and dedicated per-library-configuration directories
+with detailed diagnostic plots and timing CSVs.
 """
 
 import os
@@ -15,7 +18,7 @@ import sys
 import re
 import subprocess
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Tuple
 import numpy as np
 import pandas as pd
 import matplotlib
@@ -26,12 +29,28 @@ def get_job_name_from_sacct(job_id: str) -> str:
     try:
         res = subprocess.run(["sacct", "-j", str(job_id), "--format=JobName%50", "--noheader"], capture_output=True, text=True)
         for line in res.stdout.strip().split("\n"):
-            name = line.strip()
-            if name and not name.endswith("+") and not name.startswith("batch") and not name.startswith("extern") and not name.startswith("zsh") and not name.startswith("solver") and not name.startswith("orchestrator") and not name.startswith("shard") and not name.startswith("python") and not name.startswith("phydll"):
-                return name
+            parts = line.strip().split()
+            if parts:
+                name = parts[-1]
+                if name and not name.endswith("+") and not name.startswith("batch") and not name.startswith("extern") and not name.startswith("zsh") and not name.startswith("solver") and not name.startswith("orchestrator") and not name.startswith("shard") and not name.startswith("python") and not name.startswith("phydll"):
+                    return name
     except Exception:
         pass
     return ""
+
+def get_config_folder_slug(cfg_label: str) -> str:
+    slug_map = {
+        "SmartSim Parallel (c=0)": "smartsim_c0",
+        "SmartSim Per-Node DB": "smartsim_per_node_db",
+        "SmartSim Per-GPU DB": "smartsim_per_gpu_db",
+        "SmartSim Chain 1 (c=1)": "smartsim_c1",
+        "SmartSim Chain 3 (c=3)": "smartsim_c3",
+        "AIxelerator Collective": "aix_collective",
+        "AIxelerator P2P": "aix_pipelined",
+        "PhyDLL C++": "phydll_cpp",
+        "PhyDLL Python": "phydll_py",
+    }
+    return slug_map.get(cfg_label, cfg_label.lower().replace(" ", "_").replace("(", "").replace(")", "").replace("=", ""))
 
 def parse_job_log(log_path: Path) -> Optional[Dict[str, Any]]:
     if not log_path.exists():
@@ -44,25 +63,25 @@ def parse_job_log(log_path: Path) -> Optional[Dict[str, Any]]:
     pm = re.search(r"CPP_ML_INTERFACE_PROVIDER from environment variable: (\w+)", text)
     provider = pm.group(1).upper() if pm else "UNKNOWN"
 
-    # Specific configuration label
+    # Specific configuration label from exact token matches
     cfg_label = "?"
     if "per_gpu_db" in job_name:
         cfg_label = "SmartSim Per-GPU DB"
-    elif "per_node_db" in job_name or "per-node" in job_name or "per_ml_node" in job_name:
+    elif "per_node_db" in job_name or "per_ml_node" in job_name:
         cfg_label = "SmartSim Per-Node DB"
-    elif "c0" in job_name:
+    elif "_c0_" in job_name or job_name.endswith("_c0"):
         cfg_label = "SmartSim Parallel (c=0)"
-    elif "c1" in job_name:
+    elif "_c1_" in job_name or job_name.endswith("_c1"):
         cfg_label = "SmartSim Chain 1 (c=1)"
-    elif "c3" in job_name:
+    elif "_c3_" in job_name or job_name.endswith("_c3"):
         cfg_label = "SmartSim Chain 3 (c=3)"
-    elif "p2p" in job_name:
+    elif "_p2p_" in job_name or job_name.endswith("_p2p"):
         cfg_label = "AIxelerator P2P"
-    elif "coll" in job_name or "collective" in job_name:
+    elif "_coll_" in job_name or "collective" in job_name:
         cfg_label = "AIxelerator Collective"
-    elif "cpp" in job_name:
+    elif "_cpp_" in job_name or "phydll_cpp" in job_name:
         cfg_label = "PhyDLL C++"
-    elif "py" in job_name:
+    elif "_py_" in job_name or "phydll_py" in job_name:
         cfg_label = "PhyDLL Python"
     else:
         # Fallback to text parsing
@@ -92,8 +111,9 @@ def parse_job_log(log_path: Path) -> Optional[Dict[str, Any]]:
         else:
             cfg_label = provider
 
-    # Extract step timing
+    # Extract all step timings in chronological order
     step_pattern = re.compile(r"STEP_TIMING step=(\d+) solver=(ML|Regular) step_ms=([\d\.]+) local_moved=([\d\.]+)")
+    all_steps = []
     ml_steps = []
     regular_steps = []
     
@@ -101,6 +121,16 @@ def parse_job_log(log_path: Path) -> Optional[Dict[str, Any]]:
         step_num = int(match.group(1))
         solver = match.group(2)
         step_ms = float(match.group(3))
+        local_moved = float(match.group(4))
+        
+        step_entry = {
+            "step": step_num,
+            "solver_type": solver,
+            "duration_ms": step_ms,
+            "local_moved": local_moved
+        }
+        all_steps.append(step_entry)
+        
         if solver == "ML":
             ml_steps.append((step_num, step_ms))
         else:
@@ -114,7 +144,7 @@ def parse_job_log(log_path: Path) -> Optional[Dict[str, Any]]:
     all_ml_steps = [s[1] for s in ml_steps]
     reg_steps = [s[1] for s in regular_steps]
     
-    # Memory and network metrics
+    # Memory metrics
     mem_max = None
     mem_m = re.search(r"MEM_USAGE_MAX rss_mb=([\d\.]+)", text)
     if mem_m:
@@ -130,21 +160,166 @@ def parse_job_log(log_path: Path) -> Optional[Dict[str, Any]]:
     if st_m:
         solve_time = float(st_m.group(1))
 
+    # Parse memory progression over steps if logged
+    mem_prog_pattern = re.compile(r"MEM_USAGE rank=0 label=after_\w+ step=(\d+) rss_mb=([\d\.]+)")
+    mem_steps = {}
+    for match in mem_prog_pattern.finditer(text):
+        st = int(match.group(1))
+        rss = float(match.group(2))
+        mem_steps[st] = rss
+
+    # Network metrics
+    ib0_rx, ib0_tx = None, None
+    ib_m = re.search(r"NET_USAGE if=ib0 rx_mb=([\d\.]+) tx_mb=([\d\.]+)", text)
+    if ib_m:
+        ib0_rx = float(ib_m.group(1))
+        ib0_tx = float(ib_m.group(2))
+
     return {
         "job_id": jid,
         "provider": provider,
         "label": cfg_label,
+        "folder_slug": get_config_folder_slug(cfg_label),
         "cold_ms": cold_step,
         "warm_ms": warm_steps,
         "all_ml_ms": all_ml_steps,
         "regular_ms": reg_steps,
+        "all_steps": all_steps,
         "mem_max_mb": mem_max,
         "mem_sum_mb": mem_sum,
+        "mem_steps": mem_steps,
+        "ib0_rx_mb": ib0_rx,
+        "ib0_tx_mb": ib0_tx,
         "solve_time_s": solve_time
     }
 
-def generate_suite_report(job_ids: List[int], suite_name: str, hardware_desc: str, output_dir: Path) -> Optional[pd.DataFrame]:
-    output_dir.mkdir(parents=True, exist_ok=True)
+def generate_individual_config_artifacts(data: Dict[str, Any], hardware_desc: str, config_dir: Path):
+    config_dir.mkdir(parents=True, exist_ok=True)
+    
+    # 1. Step Timings CSV
+    df_steps = pd.DataFrame(data["all_steps"])
+    csv_path = config_dir / "step_timings.csv"
+    df_steps.to_csv(csv_path, index=False)
+    
+    # 2. Config Summary Markdown Report
+    warm = np.array(data["warm_ms"])
+    med = np.median(warm) if len(warm) else 0.0
+    q25, q75 = np.percentile(warm, [25, 75]) if len(warm) else (0.0, 0.0)
+    iqr = q75 - q25
+    mean = np.mean(warm) if len(warm) else 0.0
+    std = np.std(warm, ddof=1) if len(warm) > 1 else 0.0
+    p95 = np.percentile(warm, 95) if len(warm) else 0.0
+    reg_mean = np.mean(data["regular_ms"]) if data["regular_ms"] else 0.0
+    
+    md_path = config_dir / "config_summary.md"
+    with open(md_path, "w") as f:
+        f.write(f"# Configuration Analysis: {data['label']}\n\n")
+        f.write(f"- **Framework / Provider**: `{data['provider']}`\n")
+        f.write(f"- **Slurm Job ID**: `{data['job_id']}`\n")
+        f.write(f"- **Hardware Environment**: {hardware_desc}\n")
+        f.write(f"- **Workload**: WaterCNN ($1920 \\times 1080$, 22 timesteps)\n\n")
+        
+        f.write("## 1. Timestep Timing Statistics\n\n")
+        f.write("| Metric | Duration (ms) |\n")
+        f.write("|---|---|\n")
+        f.write(f"| **Cold Start ML Step (Step 1)** | {data['cold_ms']:.2f} ms |\n")
+        f.write(f"| **Warm ML Step Median** | **{med:.2f} ms** |\n")
+        f.write(f"| **Warm ML Step IQR** | {iqr:.2f} ms |\n")
+        f.write(f"| **Warm ML Step Mean** | {mean:.2f} ms |\n")
+        f.write(f"| **Warm ML Step StdDev** | {std:.2f} ms |\n")
+        f.write(f"| **Warm ML Step 95th Percentile** | {p95:.2f} ms |\n")
+        f.write(f"| **Regular Numerical Step Avg** | {reg_mean:.2f} ms |\n")
+        f.write(f"| **Total Simulation Solve Time** | {data['solve_time_s']:.1f} s |\n\n")
+        
+        f.write("## 2. Resource Utilization\n\n")
+        f.write("| Metric | Value |\n")
+        f.write("|---|---|\n")
+        f.write(f"| **Peak RSS (Max Rank)** | {data['mem_max_mb']:.1f} MB |\n")
+        f.write(f"| **Peak RSS (Sum over Ranks)** | {data['mem_sum_mb']:.1f} MB |\n")
+        if data["ib0_rx_mb"] is not None:
+            f.write(f"| **InfiniBand Traffic (ib0 RX / TX)** | {data['ib0_rx_mb']:.2f} MB / {data['ib0_tx_mb']:.2f} MB |\n")
+        f.write("\n")
+        
+        f.write("## 3. Performance Visualizations\n\n")
+        f.write("### Timestep Progression (Cold Start vs Steady State)\n")
+        f.write("![Step Progression](fig_step_progression.png)\n\n")
+        f.write("### Warm Step Latency Distribution & Boxplot\n")
+        f.write("![Latency Distribution](fig_step_latency_distribution.png)\n\n")
+        if data["mem_steps"]:
+            f.write("### Memory Footprint Evolution\n")
+            f.write("![Memory Profile](fig_memory_profile.png)\n\n")
+
+    # 3. Figure: Step Progression (Cold Start vs ML Steady State vs Numerical)
+    plt.figure(figsize=(10, 5), dpi=300)
+    plt.style.use("seaborn-v0_8-whitegrid" if "seaborn-v0_8-whitegrid" in plt.style.available else "default")
+    
+    steps = [s["step"] for s in data["all_steps"]]
+    durs = [s["duration_ms"] for s in data["all_steps"]]
+    types = [s["solver_type"] for s in data["all_steps"]]
+    
+    colors = ["#d95f02" if t == "ML" else "#2b5c8f" for t in types]
+    plt.plot(steps, durs, color="#888888", linestyle="--", alpha=0.6, zorder=1)
+    
+    # Scatter points for ML and Regular
+    ml_s = [s for s, t in zip(steps, types) if t == "ML"]
+    ml_d = [d for d, t in zip(durs, types) if t == "ML"]
+    reg_s = [s for s, t in zip(steps, types) if t == "Regular"]
+    reg_d = [d for d, t in zip(durs, types) if t == "Regular"]
+    
+    plt.scatter(ml_s, ml_d, color="#d95f02", s=70, label="ML Coupled Step", zorder=3, edgecolor="black")
+    plt.scatter(reg_s, reg_d, color="#2b5c8f", s=45, label="Regular Numerical Step", zorder=2, alpha=0.8)
+    
+    plt.xlabel("Simulation Timestep", fontsize=11, fontweight="bold")
+    plt.ylabel("Step Wall Duration (ms)", fontsize=11, fontweight="bold")
+    plt.yscale("log")
+    plt.title(f"{data['label']} — Timestep Duration History\n(Job {data['job_id']})", fontsize=12, fontweight="bold")
+    plt.legend(frameon=True, facecolor="white", framealpha=0.9)
+    plt.tight_layout()
+    plt.savefig(config_dir / "fig_step_progression.png", dpi=300)
+    plt.close()
+
+    # 4. Figure: Warm Latency Distribution (Histogram + Boxplot)
+    if len(warm) > 0:
+        fig, (ax_box, ax_hist) = plt.subplots(2, 1, figsize=(9, 6), sharex=True, gridspec_kw={"height_ratios": [0.25, 0.75]}, dpi=300)
+        plt.style.use("seaborn-v0_8-whitegrid" if "seaborn-v0_8-whitegrid" in plt.style.available else "default")
+        
+        # Boxplot on top
+        ax_box.boxplot(warm, vert=False, widths=0.5, patch_artist=True,
+                       boxprops=dict(facecolor="#2ca02c", alpha=0.7, edgecolor="black"),
+                       medianprops=dict(color="black", linewidth=2.0))
+        ax_box.set_yticks([])
+        ax_box.set_title(f"{data['label']} — Warm ML Step Duration Distribution (N={len(warm)})", fontsize=12, fontweight="bold")
+        
+        # Histogram on bottom
+        ax_hist.hist(warm, bins=min(len(warm), 8), color="#2ca02c", alpha=0.8, edgecolor="black")
+        ax_hist.axvline(med, color="red", linestyle="--", linewidth=2.0, label=f"Median: {med:.2f} ms")
+        ax_hist.axvline(mean, color="blue", linestyle=":", linewidth=2.0, label=f"Mean: {mean:.2f} ms")
+        ax_hist.set_xlabel("Duration (ms)", fontsize=11, fontweight="bold")
+        ax_hist.set_ylabel("Frequency", fontsize=11, fontweight="bold")
+        ax_hist.legend(frameon=True, facecolor="white", framealpha=0.9)
+        
+        plt.tight_layout()
+        plt.savefig(config_dir / "fig_step_latency_distribution.png", dpi=300)
+        plt.close()
+
+    # 5. Figure: Memory Profile
+    if data["mem_steps"]:
+        plt.figure(figsize=(9, 4.5), dpi=300)
+        m_steps = sorted(data["mem_steps"].keys())
+        m_rss = [data["mem_steps"][s] for s in m_steps]
+        
+        plt.plot(m_steps, m_rss, marker="o", color="#7570b3", linewidth=2.2, markersize=6.0)
+        plt.xlabel("Simulation Timestep", fontsize=11, fontweight="bold")
+        plt.ylabel("Rank 0 Resident Memory (MB)", fontsize=11, fontweight="bold")
+        plt.title(f"{data['label']} — Memory Footprint Profile (Rank 0)", fontsize=12, fontweight="bold")
+        plt.tight_layout()
+        plt.savefig(config_dir / "fig_memory_profile.png", dpi=300)
+        plt.close()
+
+def generate_suite_report(job_ids: List[int], suite_name: str, hardware_desc: str, suite_dir: Path) -> Optional[pd.DataFrame]:
+    suite_dir.mkdir(parents=True, exist_ok=True)
+    summary_dir = suite_dir / "summary"
+    summary_dir.mkdir(parents=True, exist_ok=True)
     
     results = []
     for jid in job_ids:
@@ -152,6 +327,9 @@ def generate_suite_report(job_ids: List[int], suite_name: str, hardware_desc: st
         data = parse_job_log(log_path)
         if data:
             results.append(data)
+            # Generate detailed per-configuration directory and plots
+            cfg_dir = suite_dir / data["folder_slug"]
+            generate_individual_config_artifacts(data, hardware_desc, cfg_dir)
         else:
             print(f"Notice: Log for job {jid} is pending or not yet available.")
             
@@ -173,6 +351,7 @@ def generate_suite_report(job_ids: List[int], suite_name: str, hardware_desc: st
         rows.append({
             "Job ID": d["job_id"],
             "Configuration": d["label"],
+            "Folder": d["folder_slug"],
             "Cold Step (ms)": d["cold_ms"],
             "Warm Median (ms)": med,
             "Warm IQR (ms)": iqr,
@@ -187,12 +366,12 @@ def generate_suite_report(job_ids: List[int], suite_name: str, hardware_desc: st
     df = pd.DataFrame(rows)
     
     # Save CSV
-    csv_path = output_dir / "benchmark_summary.csv"
+    csv_path = summary_dir / "benchmark_summary.csv"
     df.to_csv(csv_path, index=False)
     print(f"Saved summary CSV to: {csv_path}")
 
     # Generate Markdown report
-    md_path = output_dir / "benchmark_summary.md"
+    md_path = summary_dir / "benchmark_summary.md"
     with open(md_path, "w") as f:
         f.write(f"# CMI Multi-Framework Benchmark Report: {suite_name}\n\n")
         f.write(f"**Hardware Environment**: {hardware_desc}\n\n")
@@ -200,10 +379,10 @@ def generate_suite_report(job_ids: List[int], suite_name: str, hardware_desc: st
         f.write("## 1. Executive Performance Summary\n\n")
         
         # Format table
-        f.write("| Job ID | Framework / Configuration | Warm Median (ms) | Warm IQR (ms) | Warm Mean (ms) | Warm StdDev (ms) | Cold Step (ms) | Total Solve Time (s) |\n")
-        f.write("|---|---|---|---|---|---|---|---|\n")
+        f.write("| Job ID | Framework / Configuration | Warm Median (ms) | Warm IQR (ms) | Warm Mean (ms) | Warm StdDev (ms) | Cold Step (ms) | Total Solve Time (s) | Detailed Artifacts |\n")
+        f.write("|---|---|---|---|---|---|---|---|---|\n")
         for _, r in df.iterrows():
-            f.write(f"| {r['Job ID']} | **{r['Configuration']}** | {r['Warm Median (ms)']:.2f} | {r['Warm IQR (ms)']:.2f} | {r['Warm Mean (ms)']:.2f} | {r['Warm StdDev (ms)']:.2f} | {r['Cold Step (ms)']:.1f} | {r['Total Solve Time (s)']:.1f} |\n")
+            f.write(f"| {r['Job ID']} | **{r['Configuration']}** | {r['Warm Median (ms)']:.2f} | {r['Warm IQR (ms)']:.2f} | {r['Warm Mean (ms)']:.2f} | {r['Warm StdDev (ms)']:.2f} | {r['Cold Step (ms)']:.1f} | {r['Total Solve Time (s)']:.1f} | [`../{r['Folder']}/`](../{r['Folder']}/config_summary.md) |\n")
         f.write("\n")
         
         # Memory table
@@ -274,7 +453,7 @@ def generate_suite_report(job_ids: List[int], suite_name: str, hardware_desc: st
                  ha="center", va="bottom", fontsize=10.5, fontweight="bold")
 
     plt.tight_layout()
-    fig1_path = output_dir / "fig_framework_warm_step_comparison.png"
+    fig1_path = summary_dir / "fig_framework_warm_step_comparison.png"
     plt.savefig(fig1_path, dpi=300)
     plt.close()
 
@@ -296,7 +475,7 @@ def generate_suite_report(job_ids: List[int], suite_name: str, hardware_desc: st
     plt.grid(True, which="both", linestyle="--", alpha=0.5)
     
     plt.tight_layout()
-    fig2_path = output_dir / "fig_step_by_step_progression.png"
+    fig2_path = summary_dir / "fig_step_by_step_progression.png"
     plt.savefig(fig2_path, dpi=300)
     plt.close()
     
@@ -356,8 +535,8 @@ def generate_cross_hardware_comparison(df_het: pd.DataFrame, df_1g: pd.DataFrame
         f.write("# CMI Cross-Hardware Scaling & GPU Acceleration Report\n\n")
         f.write("Comparison of CMI coupling frameworks across:\n")
         f.write("- **24 Ranks HetJob**: 1x `c23mm` CPU node (24 ranks) + 1x `c23g` GPU node (1x H100)\n")
-        f.write("- **96 Ranks 1-GPU**: 1x `c23g` node (96 ranks, 1x H100)\n")
-        f.write("- **96 Ranks 4-GPU**: 1x `c23g` node (96 ranks, 4x H100)\n\n")
+        f.write("- **96 Ranks 1-GPU**: 1x `c23g` node (96 ranks, 1x H100 active)\n")
+        f.write("- **96 Ranks 4-GPU**: 1x `c23g` node (96 ranks, 4x H100 active)\n\n")
         f.write("## 1. Summary Comparison Table (Warm Step Median Duration in ms)\n\n")
         f.write("| Framework / Configuration | 24 Ranks (1 CPU + 1 GPU) | 96 Ranks (1 Node, 1 GPU) | 96 Ranks (1 Node, 4 GPUs) |\n")
         f.write("|---|---|---|---|\n")
@@ -398,13 +577,15 @@ def generate_cross_hardware_comparison(df_het: pd.DataFrame, df_1g: pd.DataFrame
     print(f"Saved cross-hardware comparison report to: {output_dir}")
 
 def main():
+    base_results_dir = Path("results")
+    
     # 1. 24-rank HetJob Suite (1x CPU node + 1x GPU node)
     hetjob_jids = [3449953, 3449957, 3449961, 3449964, 3449970, 3449975, 3449978, 3450422]
     df_het = generate_suite_report(
         hetjob_jids,
         suite_name="24-Rank Heterogeneous CPU/GPU Allocation",
         hardware_desc="CLAIX-23 Heterogeneous (1x c23mm CPU Node with 24 Ranks + 1x c23g GPU Node with 1x NVIDIA H100)",
-        output_dir=Path("results_24rank_hetjob_comparison")
+        suite_dir=base_results_dir / "24rank_hetjob"
     )
     
     # 2. 96-core + 1-GPU Single Node Suite
@@ -413,7 +594,7 @@ def main():
         single_node_1g_jids,
         suite_name="96-Core + 1-GPU Single Node Allocation",
         hardware_desc="CLAIX-23 Single GPU Node (1x c23g Node with 96 CPU Cores, 1x NVIDIA H100 Active)",
-        output_dir=Path("results_96core_1gpu_comparison")
+        suite_dir=base_results_dir / "96core_1gpu"
     )
 
     # 3. 96-core + 4-GPU Single Node Suite
@@ -422,11 +603,11 @@ def main():
         single_node_4g_jids,
         suite_name="96-Core + 4-GPU Single Node Allocation",
         hardware_desc="CLAIX-23 Single GPU Node (1x c23g Node with 96 CPU Cores + 4x NVIDIA H100 GPUs)",
-        output_dir=Path("results_96core_4gpu_comparison")
+        suite_dir=base_results_dir / "96core_4gpu"
     )
 
     # 4. Cross-Hardware Comparison
-    generate_cross_hardware_comparison(df_het, df_1g, df_4g, output_dir=Path("results_cross_hardware_comparison"))
+    generate_cross_hardware_comparison(df_het, df_1g, df_4g, output_dir=base_results_dir / "cross_hardware_comparison")
 
 if __name__ == "__main__":
     main()
