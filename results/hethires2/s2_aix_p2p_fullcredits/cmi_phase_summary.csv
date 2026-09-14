@@ -1,0 +1,51 @@
+Callpath,Region,Is_Lifecycle,Rank_Mean (ms),Controller_Rank0 (ms),Max_Rank (ms),Min_Rank (ms),Std_Rank (ms),Self (ms),Visits/Step,Active_Ranks,Total_Ranks
+terrain_solver,terrain_solver,True,23582.460000000003,21363.9,32456.699999999997,21363.9,4437.119999999998,2461.9022,1.0,5,5
+terrain_solver -> solver_main_loop,solver_main_loop,True,20029.239999999998,20029.3,20029.399999999998,20028.9,0.18547236990948182,95.10316,1.0,5,5
+terrain_solver -> solver_setup,solver_setup,True,1046.3660000000002,1046.6100000000001,1046.64,1046.13,0.21638853943773384,518.8206,1.0,5,5
+terrain_solver -> solver_main_loop -> solver_step_ml_warmup,solver_step_ml_warmup,True,405.16220000000004,403.62,406.212,403.62,0.9563807609942875,29.27102,1.0,5,5
+terrain_solver -> solver_main_loop -> solver_step_ml_warmup -> inference,inference,True,375.891,375.101,377.113,375.101,0.8072280966368656,0.04068382,1.0,5,5
+terrain_solver -> solver_main_loop -> solver_step_ml_warmup -> inference -> p2p_pipelined_exchange,p2p_pipelined_exchange,True,375.8318,375.025,377.048,375.025,0.8095374975873576,56.89082704,1.0,5,5
+terrain_solver -> solver_setup -> MPI_Allreduce,MPI_Allreduce,True,339.426144,426.197,426.197,4.00472,167.71812177026948,339.426144,50.0,5,5
+terrain_solver -> solver_main_loop -> solver_step_ml_warmup -> inference -> p2p_pipelined_exchange -> MPI_Send,MPI_Send,True,267.4378,326.67400000000004,345.419,0.0,134.05146429547125,267.4378,0.8,4,5
+terrain_solver -> solver_main_loop -> solver_step_ml_steady,solver_step_ml_steady,False,172.74419999999998,172.389,173.34499999999997,172.181,0.4185629701729363,0.015845322000000002,1.0,5,5
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call,solver_ml_provider_call,False,172.7278,172.315,173.343,172.179,0.4315717321604827,0.002862904,1.0,5,5
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_provider_inference,app_provider_inference,False,144.346,143.386,145.431,143.386,0.8617765371603026,0.000998116,1.0,5,5
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_provider_inference -> aix_library_static_step,aix_library_static_step,False,144.345,143.385,145.43,143.385,0.8617765371603026,0.0005103884,1.0,5,5
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_provider_inference -> aix_library_static_step -> aix_inference,aix_inference,False,144.3446,143.38400000000001,145.43,143.38400000000001,0.8617933859110267,0.008008264000000001,1.0,5,5
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_provider_inference -> aix_library_static_step -> aix_inference -> inference,inference,False,144.33659999999998,143.376,145.423,143.376,0.862071133955889,0.006326513999999999,1.0,5,5
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_provider_inference -> aix_library_static_step -> aix_inference -> inference -> p2p_pipelined_exchange,p2p_pipelined_exchange,False,144.32819999999998,143.368,145.414,143.368,0.8618450904889988,10.79762296,1.0,5,5
+terrain_solver -> solver_setup -> MPI_Bcast,MPI_Bcast,True,106.30116190000001,0.0238095,134.323,0.0238095,53.148755534710745,106.30116190000001,3.0,5,5
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_provider_inference -> aix_library_static_step -> aix_inference -> inference -> p2p_pipelined_exchange -> MPI_Send,MPI_Send,False,80.00619999999999,94.34200000000001,110.626,0.0,40.55193798772138,80.00619999999999,0.8,4,5
+terrain_solver -> solver_teardown,solver_teardown,True,44.96704,35.3054,81.72970000000001,35.1381,18.388170898553234,44.8116,1.0,5,5
+terrain_solver -> solver_setup -> MPI_Scatterv,MPI_Scatterv,True,39.4299,10.679400000000001,48.8784,10.679400000000001,14.437406976046635,39.4299,2.0,5,5
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_provider_inference -> aix_library_static_step -> aix_inference -> inference -> p2p_pipelined_exchange -> MPI_Recv,MPI_Recv,False,35.21998,49.001000000000005,52.3148,0.0,18.697591374548757,35.21998,2.4,4,5
+terrain_solver -> solver_main_loop -> solver_step_ml_warmup -> inference -> p2p_pipelined_exchange -> MPI_Recv,MPI_Recv,True,33.0507,48.302400000000006,55.7992,0.0,19.266440469375755,33.0507,2.4,4,5
+terrain_solver -> solver_setup -> MPI_Barrier,MPI_Barrier,True,26.409819040000006,0.0730952,35.052600000000005,0.0730952,13.280623647860295,26.409819040000006,3.0,5,5
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_prepare_input,app_prepare_input,False,25.98266,26.3161,26.322499999999998,25.101599999999998,0.46801214770559135,25.98266,1.0,5,5
+terrain_solver -> solver_main_loop -> solver_step_ml_warmup -> inference -> p2p_pipelined_exchange -> MPI_Testsome,MPI_Testsome,True,17.69206,0.0,88.4603,0.0,35.38412,17.69206,101.4,1,5
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_provider_inference -> aix_library_static_step -> aix_inference -> inference -> p2p_pipelined_exchange -> MPI_Testsome,MPI_Testsome,False,17.53172,0.0,87.6586,0.0,35.06344,17.53172,121.612,1,5
+terrain_solver -> solver_main_loop -> solver_step_compute,solver_step_compute,False,17.2351,14.4485,18.600600000000004,14.4485,1.542538420915344,17.2351,1.01,5,5
+terrain_solver -> solver_setup -> MPI_Gatherv,MPI_Gatherv,True,14.221119999999999,12.791200000000002,18.4258,11.4007,2.485095400502765,14.221119999999999,2.0,5,5
+terrain_solver -> solver_main_loop -> MPI_Allreduce,MPI_Allreduce,False,4.531428,7.7724400000000005,7.7724400000000005,2.9437,1.7718146835535598,4.531428,36.86,5,5
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_finalize_output,app_finalize_output,False,2.396544,2.60969,2.60969,2.2084400000000004,0.14044969584872719,2.396544,1.0,5,5
+terrain_solver -> solver_setup -> MPI_Waitall,MPI_Waitall,True,1.19232126,2.27734,2.27734,0.0347333,0.7997710788511863,1.19232126,1.0,5,5
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_provider_inference -> aix_library_static_step -> aix_inference -> inference -> p2p_pipelined_exchange -> MPI_Waitall,MPI_Waitall,False,0.7574599999999999,0.0,3.7873,0.0,1.5149199999999998,0.7574599999999999,0.6,1,5
+terrain_solver -> solver_main_loop -> solver_step_ml_warmup -> inference -> p2p_pipelined_exchange -> MPI_Waitall,MPI_Waitall,True,0.7380539999999999,0.0,3.69027,0.0,1.4761079999999998,0.7380539999999999,0.6,1,5
+terrain_solver -> solver_main_loop -> MPI_Bcast,MPI_Bcast,False,0.5378610979999999,0.005558489999999999,0.698106,0.005558489999999999,0.2667853516020894,0.5378610979999999,2.04,5,5
+terrain_solver -> solver_setup -> MPI_Gather,MPI_Gather,True,0.27671352,1.17597,1.17597,0.0132886,0.45203284156446594,0.27671352,6.0,5,5
+terrain_solver -> solver_teardown -> MPI_Reduce,MPI_Reduce,True,0.155448958,0.17705600000000002,0.537803,0.00589619,0.20072514687460924,0.155448958,10.0,5,5
+terrain_solver -> solver_main_loop -> MPI_Waitall,MPI_Waitall,False,0.13273928000000002,0.18440399999999998,0.18440399999999998,0.09374240000000002,0.03637151331789206,0.13273928000000002,2.02,5,5
+terrain_solver -> solver_setup -> MPI_Allgather,MPI_Allgather,True,0.10917078,0.0591238,0.17588,0.0303971,0.057366236437137834,0.10917078,2.0,5,5
+terrain_solver -> solver_setup -> MPI_Reduce,MPI_Reduce,True,0.08451146600000001,0.127715,0.142523,0.007735239999999999,0.06257756138323053,0.08451146600000001,2.0,5,5
+terrain_solver -> solver_main_loop -> MPI_Gatherv,MPI_Gatherv,False,0.07227626,0.058126000000000004,0.09201890000000001,0.058126000000000004,0.012575504308710645,0.07227626,0.01,5,5
+terrain_solver -> solver_setup -> MPI_Isend,MPI_Isend,True,0.047226840000000006,0.0392695,0.0632638,0.0367057,0.010112776302203069,0.047226840000000006,4.0,5,5
+terrain_solver -> solver_setup -> MPI_Irecv,MPI_Irecv,True,0.0462758,0.0496505,0.0506009,0.0396267,0.003932097521679747,0.0462758,4.0,5,5
+terrain_solver -> solver_main_loop -> solver_step_ml_warmup -> inference -> p2p_pipelined_exchange -> MPI_Isend,MPI_Isend,True,0.021218,0.0,0.10608999999999999,0.0,0.042436,0.021218,2.4,1,5
+terrain_solver -> solver_main_loop -> MPI_Isend,MPI_Isend,False,0.020196199999999997,0.0385704,0.0385704,0.00759048,0.011620610585617265,0.020196199999999997,8.08,5,5
+terrain_solver -> solver_main_loop -> solver_step_ml_warmup -> inference -> aix_collective_setup,aix_collective_setup,True,0.018306479999999997,0.0230819,0.0230819,0.015529500000000002,0.003091113300026384,0.018306479999999997,1.0,5,5
+terrain_solver -> solver_main_loop -> MPI_Irecv,MPI_Irecv,False,0.015196479999999998,0.0146284,0.0194058,0.0134732,0.0021480340531751354,0.015196479999999998,8.08,5,5
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_provider_inference -> aix_library_static_step -> aix_inference -> inference -> p2p_pipelined_exchange -> MPI_Isend,MPI_Isend,False,0.01412034,0.0,0.0706017,0.0,0.028240680000000004,0.01412034,2.4,1,5
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_provider_inference -> aix_library_static_step -> aix_inference -> inference -> aix_collective_setup,aix_collective_setup,False,0.001922246,0.0018828,0.0021376800000000003,0.00176747,0.00012678214710281575,0.001922246,1.0,5,5
+terrain_solver -> solver_main_loop -> solver_step_ml_warmup -> inference -> p2p_pipelined_exchange -> MPI_Irecv,MPI_Irecv,True,0.001393524,0.0,0.00696762,0.0,0.002787048,0.001393524,0.8,1,5
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_provider_inference -> aix_library_static_step -> aix_inference -> inference -> p2p_pipelined_exchange -> MPI_Irecv,MPI_Irecv,False,0.001175688,0.0,0.00587844,0.0,0.002351376,0.001175688,0.8,1,5
+terrain_solver -> solver_main_loop -> MPI_Gather,MPI_Gather,False,0.00078691442,0.000826628,0.00287643,5.6580900000000006e-05,0.0010845479864869576,0.00078691442,0.01,5,5

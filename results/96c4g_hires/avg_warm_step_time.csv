@@ -1,0 +1,13 @@
+Config,AvgWarmStep_Mean_Ranks_ms
+aix_coll,53.774
+aix_p2p_fullcredits,62.497
+aix_p2p,66.182
+smartsim_per_gpu_db,139.114
+smartsim_c0,234.483
+smartsim_per_node_db,236.582
+smartsim_c3,237.409
+smartsim_c0_tpq4,244.056
+smartsim_c0_batch20m,260.927
+smartsim_c0_batch20m_tpq4,283.640
+smartsim_c1,593.287
+phydll_cpp,1881.671

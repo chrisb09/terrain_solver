@@ -1,0 +1,74 @@
+Callpath,Region,Is_Lifecycle,Rank_Mean (ms),Controller_Rank0 (ms),Max_Rank (ms),Min_Rank (ms),Std_Rank (ms),Self (ms),Visits/Step,Active_Ranks,Total_Ranks
+terrain_solver,terrain_solver,True,134891.52000000002,140504.0,140515.0,0.0,27534.616390456576,533.18912,0.96,24,25
+terrain_solver -> solver_main_loop,solver_main_loop,True,134047.64,139633.0,139633.0,0.0,27362.359936058147,46.017448,0.96,24,25
+terrain_solver -> solver_main_loop -> solver_step_ml_warmup,solver_step_ml_warmup,True,2212.0104,2303.89,2304.6099999999997,0.0,451.5247921120611,55.333784,0.96,24,25
+terrain_solver -> solver_main_loop -> solver_step_ml_warmup -> MPI_Waitall,MPI_Waitall,True,2119.1244,2169.62,2232.2000000000003,0.0,433.00112436879425,2119.1244,3.84,24,25
+terrain_solver -> solver_main_loop -> solver_step_ml_steady,solver_step_ml_steady,False,1309.5759999999998,1364.39,1364.39,0.0,267.3160916518121,0.008835800400000001,0.96,24,25
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call,solver_ml_provider_call,False,1309.5664,1364.2500000000002,1364.2500000000002,0.0,267.314128468811,0.008394988400000001,0.96,24,25
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_provider_inference,app_provider_inference,False,1293.0603999999998,1346.8500000000001,1347.12,0.0,263.944860642976,0.0041800935999999995,0.96,24,25
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_provider_inference -> phydll_library_static_step,phydll_library_static_step,False,1293.0568,1346.8500000000001,1347.12,0.0,263.94412541627065,0.024803496,0.96,24,25
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_provider_inference -> phydll_library_static_step -> phydll_recv,phydll_recv,False,999.1736,1040.91,1040.91,0.0,203.95546507764874,2.3288683999999997,0.96,24,25
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_provider_inference -> phydll_library_static_step -> phydll_recv -> MPI_Waitall,MPI_Waitall,False,993.6496,1035.0,1037.6399999999999,0.0,202.8312267375021,993.6496,1.92,24,25
+terrain_solver -> solver_setup,solver_setup,True,276.87584,288.59200000000004,288.919,0.0,56.51720721456785,92.48154400000001,0.96,24,25
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_provider_inference -> phydll_library_static_step -> phydll_send,phydll_send,False,258.44847999999996,268.54200000000003,269.82800000000003,0.0,52.75635728601436,0.046083224,0.96,24,25
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_provider_inference -> phydll_library_static_step -> phydll_send -> MPI_Waitall,MPI_Waitall,False,231.52816,242.21800000000002,256.204,0.0,48.22822611017744,231.52816,1.92,24,25
+terrain_solver -> solver_setup -> MPI_Bcast,MPI_Bcast,True,67.125272,19.948400000000003,85.7864,0.0,19.38210517584754,67.125272,6.72,24,25
+phydll_dl_client,phydll_dl_client,False,60.5528,0.0,1513.82,0.0,296.64692499360245,6.0344,0.0004,1,25
+terrain_solver -> solver_setup -> MPI_Scatterv,MPI_Scatterv,True,44.39889600000001,9.9299,50.308699999999995,0.0,11.795683972758171,44.39889600000001,1.92,24,25
+terrain_solver -> solver_main_loop -> solver_step_ml_warmup -> MPI_Barrier,MPI_Barrier,True,37.459936,65.05080000000001,100.68100000000001,0.0,20.190644196040505,37.459936,42.24,24,25
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_provider_inference -> phydll_library_static_step -> phydll_prepack,phydll_prepack,False,34.423492,36.1726,36.1906,0.0,7.030726822166822,34.423492,0.96,24,25
+terrain_solver -> solver_teardown,solver_teardown,True,33.977295999999996,34.8365,35.5612,0.0,6.936581155150137,33.511552,0.96,24,25
+terrain_solver -> solver_setup -> MPI_Barrier,MPI_Barrier,True,33.114362,3.82245,38.508,0.0,9.355596499606854,33.114362,10.56,24,25
+phydll_dl_client -> dl_recv,dl_recv,False,28.79832,0.0,719.958,0.0,141.08237889877532,18.45232,0.04,1,25
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_provider_inference -> phydll_library_static_step -> phydll_send -> MPI_Barrier,MPI_Barrier,False,26.790804,26.1778,49.533300000000004,0.0,10.999754007921451,26.790804,38.4,24,25
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_prepare_input,app_prepare_input,False,15.142259999999998,16.1233,16.1233,0.0,3.0924706945741622,15.142259999999998,0.96,24,25
+terrain_solver -> solver_setup -> MPI_Allreduce,MPI_Allreduce,True,14.967849600000001,26.4817,26.4817,0.0,4.642642547619173,14.967849600000001,45.12,24,25
+terrain_solver -> solver_setup -> MPI_Gatherv,MPI_Gatherv,True,12.225766,10.997399999999999,18.129800000000003,0.0,3.8612973483107984,12.225766,1.92,24,25
+terrain_solver -> solver_setup -> MPI_Waitall,MPI_Waitall,True,11.944294084000001,0.271312,23.6086,0.0,9.564986951255586,11.944294084000001,1.92,24,25
+phydll_dl_client -> dl_recv -> MPI_Waitall,MPI_Waitall,False,10.286800000000001,0.0,257.17,0.0,50.394822172123995,10.286800000000001,0.08,1,25
+phydll_dl_client -> dl_frame_copy,dl_frame_copy,False,9.292359999999999,0.0,232.309,0.0,45.523081012497386,9.292359999999999,0.04,1,25
+terrain_solver -> solver_main_loop -> solver_step_compute,solver_step_compute,False,5.3242988,5.24641,5.84464,0.0,1.1088950870314829,5.3242988,0.9696000000000001,24,25
+phydll_dl_client -> dl_input_unpack,dl_input_unpack,False,4.7804400000000005,0.0,119.51100000000001,0.0,23.419277491980832,4.7804400000000005,0.04,1,25
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_provider_inference -> phydll_library_static_step -> phydll_recv -> MPI_Barrier,MPI_Barrier,False,3.1906924,3.2487899999999996,5.80978,0.0,1.3257245516836142,3.1906924,3.84,24,25
+phydll_dl_client -> dl_h2d,dl_h2d,False,3.1235079999999997,0.0,78.0877,0.0,15.302001615002398,3.1235079999999997,0.04,1,25
+phydll_dl_client -> dl_input_allocate,dl_input_allocate,False,2.798676,0.0,69.9669,0.0,13.710656310746907,2.798676,0.04,1,25
+phydll_dl_client -> MPI_Bcast,MPI_Bcast,False,2.676132,0.0,66.9033,0.0,13.110315768667665,2.676132,0.0424,1,25
+terrain_solver -> solver_main_loop -> MPI_Allreduce,MPI_Allreduce,False,1.9505223999999999,2.11089,2.4827500000000002,0.0,0.46080668979762,1.9505223999999999,35.3856,24,25
+phydll_dl_client -> dl_torch_forward,dl_torch_forward,False,1.379796,0.0,34.4949,0.0,6.759592298266516,1.379796,0.04,1,25
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_finalize_output,app_finalize_output,False,1.3555576,1.26026,1.4771500000000002,0.0,0.28220537212859714,1.3555576,0.96,24,25
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_provider_inference -> phydll_library_static_step -> phydll_unpack,phydll_unpack,False,0.98563136,1.17669,1.1908800000000002,0.0,0.20697030811280737,0.98563136,0.96,24,25
+terrain_solver -> solver_main_loop -> MPI_Bcast,MPI_Bcast,False,0.827261216,0.010399400000000001,0.967442,0.0,0.24413558773045715,0.827261216,1.9584000000000001,24,25
+phydll_dl_client -> dl_send_output,dl_send_output,False,0.7379800000000001,0.0,18.4495,0.0,3.6153488807582597,9.349239999999999e-05,0.04,1,25
+phydll_dl_client -> dl_send_output -> dl_send,dl_send,False,0.737888,0.0,18.4472,0.0,3.614898174645588,0.39664119999999997,0.04,1,25
+phydll_dl_client -> dl_output_reorder,dl_output_reorder,False,0.41795600000000005,0.0,10.4489,0.0,2.047557869869372,0.41795600000000005,0.04,1,25
+phydll_dl_client -> dl_send_output -> dl_send -> MPI_Waitall,MPI_Waitall,False,0.3325772,0.0,8.314430000000002,0.0,1.6292888801670995,0.3325772,0.08,1,25
+phydll_dl_client -> dl_output_allocate,dl_output_allocate,False,0.32238479999999997,0.0,8.05962,0.0,1.5793565216584127,0.32238479999999997,0.04,1,25
+terrain_solver -> solver_setup -> MPI_Gather,MPI_Gather,True,0.3216847,1.53254,1.53254,0.0,0.4454444915741076,0.3216847,1.92,24,25
+terrain_solver -> solver_teardown -> MPI_Barrier,MPI_Barrier,True,0.32021004,0.525605,0.525605,0.0,0.09291438427820742,0.32021004,2.88,24,25
+terrain_solver -> solver_setup -> MPI_Isend,MPI_Isend,True,0.207957956,0.0249229,1.05493,0.0,0.21440495528615394,0.207957956,4.8,24,25
+phydll_dl_client -> MPI_Waitall,MPI_Waitall,False,0.1201644,0.0,3.00411,0.0,0.5886829304953898,0.1201644,0.002,1,25
+terrain_solver -> solver_main_loop -> MPI_Waitall,MPI_Waitall,False,0.11242514799999999,0.16081900000000002,0.18104599999999998,0.0,0.039493427007886966,0.11242514799999999,1.9392000000000003,24,25
+terrain_solver -> solver_teardown -> MPI_Reduce,MPI_Reduce,True,0.102289356,0.0884981,0.26634,0.0,0.05569112751157463,0.102289356,9.6,24,25
+terrain_solver -> solver_main_loop -> MPI_Gatherv,MPI_Gatherv,False,0.082297776,0.08565669999999999,0.126156,0.0,0.030167127277091265,0.082297776,0.0096,24,25
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_provider_inference -> phydll_library_static_step -> phydll_send -> MPI_Isend,MPI_Isend,False,0.07495002799999999,0.0799138,0.09064090000000001,0.0,0.01705204275513101,0.07495002799999999,34.56,24,25
+terrain_solver -> solver_main_loop -> solver_step_ml_warmup -> MPI_Isend,MPI_Isend,True,0.07015244000000001,0.0607314,0.13366,0.0,0.023402985575178222,0.07015244000000001,34.56,24,25
+phydll_dl_client -> dl_d2h,dl_d2h,False,0.0690636,0.0,1.72659,0.0,0.3383411595993606,0.0690636,0.04,1,25
+phydll_dl_client -> dl_recv -> MPI_Irecv,MPI_Irecv,False,0.057226,0.0,1.43065,0.0,0.2803490000410203,0.057226,34.56,1,25
+terrain_solver -> solver_setup -> MPI_Irecv,MPI_Irecv,True,0.051779836,0.04938,0.0638181,0.0,0.011139654813426849,0.051779836,3.84,24,25
+terrain_solver -> solver_teardown -> MPI_Bcast,MPI_Bcast,True,0.0432441232,0.0029047599999999997,0.152007,0.0,0.049415752022632035,0.0432441232,0.96,24,25
+terrain_solver -> solver_setup -> MPI_Send,MPI_Send,True,0.036396564,0.0376752,0.0561609,0.0,0.012005420602074048,0.036396564,1.92,24,25
+terrain_solver -> solver_main_loop -> solver_step_ml_warmup -> MPI_Bcast,MPI_Bcast,True,0.0133783952,0.00449524,0.0380857,0.0,0.009512110656134786,0.0133783952,0.96,24,25
+terrain_solver -> solver_main_loop -> MPI_Irecv,MPI_Irecv,False,0.012630044,0.018437600000000002,0.018437600000000002,0.0,0.0028292299189821954,0.012630044,7.756800000000001,24,25
+terrain_solver -> solver_main_loop -> solver_step_ml_warmup -> MPI_Irecv,MPI_Irecv,True,0.009335658,0.00929143,0.0133876,0.0,0.0028998763799624287,0.009335658,1.92,24,25
+terrain_solver -> solver_main_loop -> MPI_Isend,MPI_Isend,False,0.0088567756,0.00926098,0.010211300000000001,0.0,0.0018575675917329739,0.0088567756,7.756800000000001,24,25
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_provider_inference -> phydll_library_static_step -> phydll_send -> MPI_Bcast,MPI_Bcast,False,0.008583338800000001,0.00347923,0.0253085,0.0,0.006870270110569639,0.008583338800000001,0.96,24,25
+phydll_dl_client -> dl_send_output -> dl_send -> MPI_Isend,MPI_Isend,False,0.00837664,0.0,0.209416,0.0,0.04103698751797456,0.00837664,1.92,1,25
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_provider_inference -> phydll_library_static_step -> phydll_recv -> MPI_Irecv,MPI_Irecv,False,0.005145977999999999,0.007608709999999999,0.007608709999999999,0.0,0.0012332236311034589,0.005145977999999999,1.92,24,25
+phydll_dl_client -> dl_recv -> MPI_Barrier,MPI_Barrier,False,0.001983632,0.0,0.0495908,0.0,0.009717772474912963,0.001983632,1.52,1,25
+phydll_dl_client -> MPI_Irecv,MPI_Irecv,False,0.000965336,0.0,0.0241334,0.0,0.0047291612606786835,0.000965336,0.3552,1,25
+phydll_dl_client -> MPI_Barrier,MPI_Barrier,False,0.00034464719999999997,0.0,0.00861618,0.0,0.0016884195625578849,0.00034464719999999997,0.1012,1,25
+phydll_dl_client -> dl_send_output -> dl_send -> MPI_Barrier,MPI_Barrier,False,0.000291112,0.0,0.0072778,0.0,0.0014261517160021932,0.000291112,0.16,1,25
+phydll_dl_client -> MPI_Recv,MPI_Recv,False,0.000169348,0.0,0.0042337,0.0,0.0008296323779216913,0.000169348,0.0192,1,25
+phydll_dl_client -> MPI_Isend,MPI_Isend,False,0.0001018328,0.0,0.00254582,0.0,0.0004988767981577816,0.0001018328,0.0192,1,25
+terrain_solver -> solver_main_loop -> MPI_Gather,MPI_Gather,False,9.512761600000002e-05,0.00047972400000000006,0.00047972400000000006,0.0,9.650599107919748e-05,9.512761600000002e-05,0.0096,24,25
+phydll_dl_client -> MPI_Allgather,MPI_Allgather,False,2.67276e-06,0.0,6.6819e-05,0.0,1.3093796409842332e-05,2.67276e-06,0.0004,1,25

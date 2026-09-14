@@ -1,0 +1,34 @@
+Callpath,Region,Is_Lifecycle,Rank_Mean (ms),Controller_Rank0 (ms),Max_Rank (ms),Min_Rank (ms),Std_Rank (ms),Self (ms),Visits/Step,Active_Ranks,Total_Ranks
+terrain_solver,terrain_solver,True,34655.875,34325.8,35632.8,34311.5,303.53138840983166,2107.006770833333,1.0,96,96
+terrain_solver -> solver_main_loop,solver_main_loop,True,30055.019791666666,30054.8,30056.5,30054.0,0.4292968552531262,84.00060208333333,1.0,96,96
+terrain_solver -> solver_setup,solver_setup,True,2463.0771874999996,2464.29,2464.29,2461.2799999999997,0.4743234285208462,2177.3933333333334,1.0,96,96
+terrain_solver -> solver_main_loop -> solver_step_ml_warmup,solver_step_ml_warmup,True,875.3808541666667,806.224,954.039,804.8779999999999,45.3007391353375,875.3808541666667,1.0,96,96
+terrain_solver -> solver_main_loop -> solver_step_ml_steady,solver_step_ml_steady,False,236.58208333333334,231.013,242.315,231.013,2.167741589125011,0.002063496666666667,1.0,96,96
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call,solver_ml_provider_call,False,236.57997916666665,230.992,242.313,230.992,2.1682893073571403,0.004454868333333333,1.0,96,96
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_provider_inference,app_provider_inference,False,234.92780208333332,229.616,240.28,229.616,2.0990206229125814,0.0026396653125000005,1.0,96,96
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_provider_inference -> smartsim_library_static_step,smartsim_library_static_step,False,234.92521875000003,229.61200000000002,240.279,229.61200000000002,2.099223542979267,0.10062292916666667,1.0,96,96
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_provider_inference -> smartsim_library_static_step -> smartsim_put_tensor,smartsim_put_tensor,False,195.13881249999997,188.646,205.531,186.21300000000002,4.159080257682431,195.13881249999997,2.0,96,96
+terrain_solver -> solver_setup -> MPI_Scatterv,MPI_Scatterv,True,91.15161354166668,37.3313,96.7922,37.3313,6.193084330670444,91.15161354166668,2.0,96,96
+terrain_solver -> solver_setup -> MPI_Bcast,MPI_Bcast,True,73.98969569479168,0.046686700000000005,79.1356,0.046686700000000005,7.931235322026211,73.98969569479168,3.0,96,96
+terrain_solver -> solver_setup -> MPI_Barrier,MPI_Barrier,True,62.74012979166667,0.06856,67.6571,0.06856,6.824923767329442,62.74012979166667,3.0,96,96
+terrain_solver -> solver_main_loop -> MPI_Allreduce,MPI_Allreduce,False,51.73040312500001,58.8488,58.8488,44.826,2.420293022482553,51.73040312500001,36.86000000000001,96,96
+terrain_solver -> solver_setup -> MPI_Allreduce,MPI_Allreduce,True,36.24309791666667,226.416,226.416,18.356,37.19181571063378,36.24309791666667,47.0,96,96
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_provider_inference -> smartsim_library_static_step -> smartsim_run_model,smartsim_run_model,False,34.330259375,35.0928,38.5539,30.036,1.9096315569359035,34.330259375,1.0,96,96
+terrain_solver -> solver_teardown,solver_teardown,True,30.77196041666667,29.754099999999998,31.4238,29.3677,0.4355328650723844,30.509875,1.0,96,96
+terrain_solver -> solver_setup -> MPI_Gatherv,MPI_Gatherv,True,19.131720833333333,15.459,26.4327,11.3693,4.357453218789729,19.131720833333333,2.0,96,96
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_provider_inference -> smartsim_library_static_step -> smartsim_unpack_tensor,smartsim_unpack_tensor,False,5.353435312500001,5.720889999999999,8.528509999999999,3.06152,1.0140019020897193,5.353435312500001,1.0,96,96
+terrain_solver -> solver_setup -> MPI_Waitall,MPI_Waitall,True,2.071871766666667,0.0334324,10.1935,0.0255419,2.6659447091916806,2.071871766666667,1.0,96,96
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_prepare_input,app_prepare_input,False,1.525565104166667,1.2612,1.89438,1.14844,0.19320322936070664,1.525565104166667,1.0,96,96
+terrain_solver -> solver_main_loop -> solver_step_compute,solver_step_compute,False,1.2121728854166665,0.775068,1.87162,0.707643,0.24877638501087804,1.2121728854166665,1.01,96,96
+terrain_solver -> solver_main_loop -> MPI_Bcast,MPI_Bcast,False,0.8896267395833332,0.019836,1.18313,0.019836,0.13282371769067364,0.8896267395833332,2.0399999999999996,96,96
+terrain_solver -> solver_main_loop -> MPI_Waitall,MPI_Waitall,False,0.40507503020833335,0.41593699999999995,0.9500160000000001,0.0310603,0.23424335014109618,0.40507503020833335,2.02,96,96
+terrain_solver -> solver_teardown -> MPI_Reduce,MPI_Reduce,True,0.26209012708333335,0.10941300000000001,2.0953299999999997,0.0169448,0.39003287770079514,0.26209012708333335,10.0,96,96
+terrain_solver -> solver_setup -> MPI_Gather,MPI_Gather,True,0.22553951249999998,1.7867899999999999,1.7867899999999999,0.023549499999999998,0.38894466624939383,0.22553951249999998,2.0,96,96
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_finalize_output,app_finalize_output,False,0.1221491625,0.110343,0.194275,0.09437,0.020320490434853407,0.1221491625,1.0,96,96
+terrain_solver -> solver_setup -> MPI_Isend,MPI_Isend,True,0.09145937395833334,0.035460000000000005,0.113968,0.035460000000000005,0.009921551121299077,0.09145937395833334,4.0,96,96
+terrain_solver -> solver_main_loop -> MPI_Gatherv,MPI_Gatherv,False,0.0876347375,0.0734287,0.12436399999999999,0.0525726,0.020707642853466417,0.0876347375,0.009999999999999998,96,96
+terrain_solver -> solver_setup -> MPI_Irecv,MPI_Irecv,True,0.03832754479166666,0.057155199999999996,0.07583140000000001,0.027874299999999998,0.00753942050465515,0.03832754479166666,4.0,96,96
+terrain_solver -> solver_main_loop -> MPI_Isend,MPI_Isend,False,0.030473943749999996,0.027216499999999998,0.034205099999999995,0.0270965,0.0017399306324662113,0.030473943749999996,8.08,96,96
+terrain_solver -> solver_main_loop -> MPI_Irecv,MPI_Irecv,False,0.018757979166666668,0.0188155,0.0262417,0.0176036,0.0009535607217071386,0.018757979166666668,8.08,96,96
+terrain_solver -> solver_main_loop -> solver_step_ml_steady -> solver_ml_provider_call -> app_provider_inference -> smartsim_library_static_step -> smartsim_chunk_plan,smartsim_chunk_plan,False,0.0020402042708333335,0.00282628,0.0033194099999999996,0.0012045,0.000491838855020424,0.0020402042708333335,1.0,96,96
+terrain_solver -> solver_main_loop -> MPI_Gather,MPI_Gather,False,0.0001377033510416667,0.0007545620000000001,0.0007545620000000001,3.23143e-05,0.00015247096222095524,0.0001377033510416667,0.009999999999999998,96,96

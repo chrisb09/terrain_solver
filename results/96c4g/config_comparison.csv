@@ -1,0 +1,9 @@
+config,step_total_ms,pre_mean_ms,inference_mean_ms,post_mean_ms,other_mean_ms
+aix_coll,26.169,9.155,0.430,16.575,0.009
+aix_p2p,29.994,1.027,0.010,0.036,28.922
+phydll_cpp,452.296,3.038,0.018,0.153,449.088
+smartsim_c0,96.846,72.962,20.998,2.880,0.006
+smartsim_c1,231.957,4.586,3.379,0.762,223.230
+smartsim_c3,106.795,6.125,4.612,1.397,94.661
+smartsim_per_gpu_db,109.943,46.806,52.967,10.164,0.006
+smartsim_per_node_db,99.949,72.620,22.780,4.544,0.006
