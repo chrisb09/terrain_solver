@@ -1,0 +1,3 @@
+run_id,provider,dbmode,model,res,jobid,rc
+cal_24c1g_giantmlp270_aix_shared,aix,shared,benchmark_giant_mlp,480x270,4517385,0
+cal_24c1g_giantmlp270_smartsim_shared,smartsim,shared,benchmark_giant_mlp,480x270,4517385,0

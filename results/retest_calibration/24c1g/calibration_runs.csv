@@ -1,0 +1,5 @@
+run_id,provider,dbmode,model,res,jobid,rc
+cal_24c1g_watercnn8k_aix_shared,aix,shared,watercnn,7680x4320,4517148,0
+cal_24c1g_watercnn8k_smartsim_shared,smartsim,shared,watercnn,7680x4320,4517148,0
+cal_24c1g_giantmlp270_aix_shared,aix,shared,benchmark_giant_mlp,480x270,4517148,1
+cal_24c1g_giantmlp270_smartsim_shared,smartsim,shared,benchmark_giant_mlp,480x270,4517148,1

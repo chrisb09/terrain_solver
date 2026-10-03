@@ -1,0 +1,10 @@
+run_id_cell,layout,comm,rc
+retest_96c4g_watercnn8k_default_coll_r1,default,coll,0
+retest_96c4g_watercnn8k_default_p2p1_r1,default,p2p1,0
+retest_96c4g_watercnn8k_default_p2p24_r1,default,p2p24,0
+retest_96c4g_watercnn8k_affine_coll_r1,affine,coll,0
+retest_96c4g_watercnn8k_affine_p2p1_r1,affine,p2p1,0
+retest_96c4g_watercnn8k_affine_p2p24_r1,affine,p2p24,0
+retest_96c4g_watercnn8k_numa_coll_r1,numa,coll,0
+retest_96c4g_watercnn8k_numa_p2p1_r1,numa,p2p1,0
+retest_96c4g_watercnn8k_numa_p2p24_r1,numa,p2p24,0

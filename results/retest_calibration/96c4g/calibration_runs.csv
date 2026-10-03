@@ -1,0 +1,7 @@
+run_id,provider,dbmode,model,res,jobid,rc
+cal_96c4g_watercnn8k_aix_shared,aix,shared,watercnn,7680x4320,4517149,0
+cal_96c4g_watercnn8k_smartsim_shared,smartsim,shared,watercnn,7680x4320,4517149,0
+cal_96c4g_watercnn8k_smartsim_pergpu,smartsim,pergpu,watercnn,7680x4320,4517149,0
+cal_96c4g_giantmlp270_aix_shared,aix,shared,benchmark_giant_mlp,480x270,4517149,1
+cal_96c4g_giantmlp270_smartsim_shared,smartsim,shared,benchmark_giant_mlp,480x270,4517149,1
+cal_96c4g_giantmlp270_smartsim_pergpu,smartsim,pergpu,benchmark_giant_mlp,480x270,4517149,1

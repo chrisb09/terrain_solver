@@ -1,0 +1,3 @@
+run_id_case,dbmode,rc
+retest_smartsim_96p96c4g_watercnn8k_shared_c0_r3,shared_c0,0
+retest_smartsim_96p96c4g_watercnn8k_pergpu_c0_r3,pergpu_c0,0

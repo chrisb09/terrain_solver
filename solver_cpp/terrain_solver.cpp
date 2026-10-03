@@ -96,6 +96,9 @@ struct Config {
     int ml_nodes = -1;
     std::string ml_db_layout = "";
     int ml_batch_size = 50000;
+    int ml_db_batch_size = 0;
+    int ml_db_min_batch_size = 0;
+    int ml_db_min_batch_timeout = 0;
     std::string ml_interface = "auto";
     std::string aix_communication_mode = "collective";
     bool force_terrain_upload_each_step = false;
@@ -169,6 +172,9 @@ static void usage() {
         << "  --ml-nodes <int>                 Number of ML/DB nodes for CPP-ML provider\n"
         << "  --db-layout <shared|per-ml-node> Database layout for SmartSim provider (default: shared)\n"
         << "  --ml-batch-size <int>            Max per-rank ML batch size (default: 50000)\n"
+        << "  --ml-db-batch-size <int>         RedisAI BATCHSIZE for auto-batching of AI.RUN calls (default: 0 = off)\n"
+        << "  --ml-db-min-batch-size <int>     RedisAI MINBATCHSIZE (default: 0 = execute queued calls immediately)\n"
+        << "  --ml-db-min-batch-timeout <int>  RedisAI MINBATCHTIMEOUT in ms, requires min-batch-size (default: 0)\n"
         << "  --ml-interface <auto|cpp|smartsim|aix|none>\n"
         << "                                   ML interface selection (default: auto)\n"
         << "  --aix-communication-mode <collective|pipelined>\n"
@@ -286,11 +292,14 @@ static MPI_Comm g_solver_comm = MPI_COMM_WORLD;
 static ProcessMemoryUsage read_process_memory_usage() {
     ProcessMemoryUsage usage;
     std::ifstream status("/proc/self/status");
-    std::string key;
-    long value = 0;
-    std::string unit;
-
-    while (status >> key >> value >> unit) {
+    std::string line;
+    while (std::getline(status, line)) {
+        std::istringstream fields(line);
+        std::string key;
+        long value = 0;
+        if (!(fields >> key >> value)) {
+            continue;
+        }
         if (key == "VmRSS:") {
             usage.vm_rss_kb = value;
         } else if (key == "VmHWM:") {
@@ -303,9 +312,6 @@ static ProcessMemoryUsage read_process_memory_usage() {
     if (usage.vm_rss_kb < 0 || usage.vm_hwm_kb < 0) {
         struct rusage ru {};
         if (getrusage(RUSAGE_SELF, &ru) == 0) {
-            if (usage.vm_rss_kb < 0) {
-                usage.vm_rss_kb = ru.ru_maxrss;
-            }
             if (usage.vm_hwm_kb < 0) {
                 usage.vm_hwm_kb = ru.ru_maxrss;
             }
@@ -324,8 +330,29 @@ static double bytes_to_mb(long long bytes) {
 }
 
 static bool mem_verbose_enabled() {
-    const char* raw = std::getenv("MLCOUPLING_MEM_LOG_VERBOSE");
-    return raw != nullptr && raw[0] == '1';
+    static const bool enabled = []() {
+        const char* raw = std::getenv("MLCOUPLING_MEM_LOG_VERBOSE");
+        return raw != nullptr && raw[0] == '1';
+    }();
+    return enabled;
+}
+
+// Optional diagnostic: run the cross-rank memory collectives even when verbose
+// logging is off, so the pre-fix behavior can be reproduced for A/B tests.
+// Disabled by default: with verbose off this makes log_memory_usage() a
+// complete no-op (no /proc read, no MPI, no print).
+static bool mem_collective_enabled() {
+    static const bool enabled = (get_env_int("MLCOUPLING_MEM_LOG_COLLECTIVE", 0) != 0);
+    return enabled;
+}
+
+// Step-timing synchronization mode (global makespan + per-rank work spread).
+//   0 = off (historical rank-local timer, no fences)
+//   1 = barrier-bracketed adds per-step rank-min/max reduction (default)
+//   2 = barrier-bracketed makespan only (no extra rank reductions)
+static int step_timing_sync_mode() {
+    static const int mode = get_env_int("MLCOUPLING_STEP_TIMING_SYNC", 1);
+    return mode;
 }
 
 static void log_memory_usage(int rank,
@@ -333,9 +360,16 @@ static void log_memory_usage(int rank,
                              int step = -1,
                              long long chunk = -1,
                              bool collective = true) {
+    const bool verbose = mem_verbose_enabled();
+    const bool do_collect = collective && (verbose || mem_collective_enabled());
+    if (!verbose && !do_collect) {
+        // Fully disabled: skip even the local /proc read so timed regions carry
+        // no memory-logging overhead and no global synchronization.
+        return;
+    }
     const ProcessMemoryUsage usage = read_process_memory_usage();
     g_mem_tracker.update(usage);
-    if (collective && g_solver_comm != MPI_COMM_NULL) {
+    if (do_collect && g_solver_comm != MPI_COMM_NULL) {
         const long long local_rss = usage.vm_rss_kb >= 0 ? usage.vm_rss_kb : 0;
         const long long local_hwm = usage.vm_hwm_kb >= 0 ? usage.vm_hwm_kb : 0;
         const long long local_vm = usage.vm_size_kb >= 0 ? usage.vm_size_kb : 0;
@@ -363,7 +397,7 @@ static void log_memory_usage(int rank,
                                    sum_hwm, all_have_hwm != 0,
                                    sum_vm, all_have_vm != 0);
     }
-    if (!mem_verbose_enabled()) {
+    if (!verbose) {
         return;
     }
     std::ostringstream oss;
@@ -992,6 +1026,7 @@ static Config parse_args(int argc, char** argv, int rank, int total_ranks) {
                     arg == "--input-hdf5" || arg == "--output-hdf5" ||
                     arg == "--steps" || arg == "--device" ||
                     arg == "--gpus-per-node" || arg == "--ml-nodes" || arg == "--db-layout" || arg == "--ml-batch-size" ||
+                    arg == "--ml-db-batch-size" || arg == "--ml-db-min-batch-size" || arg == "--ml-db-min-batch-timeout" ||
                     arg == "--save-every" || arg == "--save-mode" || arg == "--triangular-scale" || arg == "--chunk-size" || arg == "--io-mode" ||
                     arg == "--mpi-sync-mode" || arg == "--hdf5-xfer-mode" || arg == "--rank-grid-x" || arg == "--rank-grid-z" || arg == "--clamp-epsilon") {
             require(i + 1 < argc, "Missing value for argument: " + arg);
@@ -1033,6 +1068,12 @@ static Config parse_args(int argc, char** argv, int rank, int total_ranks) {
                 cfg.ml_db_layout = value;
             } else if (arg == "--ml-batch-size") {
                 cfg.ml_batch_size = std::stoi(value);
+            } else if (arg == "--ml-db-batch-size") {
+                cfg.ml_db_batch_size = std::stoi(value);
+            } else if (arg == "--ml-db-min-batch-size") {
+                cfg.ml_db_min_batch_size = std::stoi(value);
+            } else if (arg == "--ml-db-min-batch-timeout") {
+                cfg.ml_db_min_batch_timeout = std::stoi(value);
             } else if (arg == "--input-hdf5") {
                 cfg.input_hdf5 = value;
             } else if (arg == "--output-hdf5") {
@@ -1086,6 +1127,17 @@ static Config parse_args(int argc, char** argv, int rank, int total_ranks) {
         require(cfg.triangular_scale >= 1, "--triangular-scale must be >= 1.");
         require(cfg.chunk_size > 0, "--chunk-size must be > 0.");
         require(cfg.ml_batch_size > 0, "--ml-batch-size must be > 0.");
+        require(cfg.ml_db_batch_size >= 0, "--ml-db-batch-size must be >= 0.");
+        require(cfg.ml_db_min_batch_size >= 0, "--ml-db-min-batch-size must be >= 0.");
+        require(cfg.ml_db_min_batch_timeout >= 0, "--ml-db-min-batch-timeout must be >= 0.");
+        if (cfg.ml_db_min_batch_size > 0) {
+            require(cfg.ml_db_batch_size > 0,
+                    "--ml-db-min-batch-size requires --ml-db-batch-size > 0.");
+        }
+        if (cfg.ml_db_min_batch_timeout > 0) {
+            require(cfg.ml_db_min_batch_size > 0,
+                    "--ml-db-min-batch-timeout requires --ml-db-min-batch-size > 0 (RedisAI rule).");
+        }
         require(cfg.rank_grid_x >= 0, "--rank-grid-x must be >= 0.");
         require(cfg.rank_grid_z >= 0, "--rank-grid-z must be >= 0.");
     }
@@ -3554,7 +3606,24 @@ int main(int argc, char** argv) {
                     cpp_ml_overrides.emplace("library.model_path", cfg.model_path);
                     cpp_ml_overrides.emplace("library.model_name", provider_model_name);
                     cpp_ml_overrides.emplace("library.num_gpus", static_cast<int64_t>(cfg.gpus_per_node));
-                    cpp_ml_overrides.emplace("library.batch_size", static_cast<int64_t>(0)); // 0 disables the max batch limit
+                    // RedisAI auto-batching of concurrent AI.RUN calls: when a
+                    // call starts executing, the device queue is swept for
+                    // batchable calls (same model, matching trailing dims) and
+                    // they are merged into one forward, up to BATCHSIZE
+                    // samples. With MINBATCHSIZE=0 the batch is always ready
+                    // immediately (executes with whatever is queued); with
+                    // MINBATCHSIZE>0 the run waits for MINBATCHSIZE samples or
+                    // MINBATCHTIMEOUT ms. RedisAI rejects MINBATCHTIMEOUT
+                    // without MINBATCHSIZE. Batching is per device queue, i.e.
+                    // per model.GPU:N with set_model_from_file_multigpu.
+                    // Client-side chunking is governed separately by
+                    // --ml-batch-size.
+                    cpp_ml_overrides.emplace("library.batch_size",
+                                             static_cast<int64_t>(cfg.ml_db_batch_size));
+                    cpp_ml_overrides.emplace("library.min_batch_size",
+                                             static_cast<int64_t>(cfg.ml_db_min_batch_size));
+                    cpp_ml_overrides.emplace("library.min_batch_timeout",
+                                             static_cast<int64_t>(cfg.ml_db_min_batch_timeout));
                 }
                 if (cpp_ml_provider_is_smartsim) {
                     if (cfg.ml_nodes > 0) {
@@ -3761,9 +3830,16 @@ int main(int argc, char** argv) {
 
                 double moved_this_step_local = 0.0;
 
-                auto start_this_step = std::chrono::steady_clock::now();
                 const bool use_ml_step = ((step % 2) == 0) && use_ml_interface;
-                
+                const int timing_sync = step_timing_sync_mode();
+                const bool sync_ranks = timing_sync != 0 && g_solver_comm != MPI_COMM_NULL;
+                const bool rank_stats = timing_sync == 1 && use_ml_step;
+
+                if (sync_ranks) {
+                    MPI_Barrier(g_solver_comm);
+                }
+                auto start_this_step = std::chrono::steady_clock::now();
+
                 if (use_ml_step) {
                     if (step == 2) {
                         SCOREP_USER_REGION_BEGIN(handle_solver_step_ml_warmup, "solver_step_ml_warmup", SCOREP_USER_REGION_TYPE_COMMON)
@@ -3835,8 +3911,21 @@ int main(int argc, char** argv) {
                 }
                 log_memory_usage(world_rank, use_ml_step ? "after_ml_solver_step" : "after_regular_solver_step", step);
 
+                auto local_end_this_step = std::chrono::steady_clock::now();
+                long long rank_min_us = -1;
+                long long rank_max_us = -1;
+                if (rank_stats) {
+                    const long long local_us =
+                        std::chrono::duration_cast<std::chrono::microseconds>(local_end_this_step - start_this_step).count();
+                    MPI_Reduce(&local_us, &rank_min_us, 1, MPI_LONG_LONG, MPI_MIN, 0, g_solver_comm);
+                    MPI_Reduce(&local_us, &rank_max_us, 1, MPI_LONG_LONG, MPI_MAX, 0, g_solver_comm);
+                }
+                if (sync_ranks) {
+                    MPI_Barrier(g_solver_comm);
+                }
+                const auto end_this_step = std::chrono::steady_clock::now();
+
                 if (world_rank == 0) {
-                    const auto end_this_step = std::chrono::steady_clock::now();
                     const auto step_ms = std::chrono::duration_cast<std::chrono::nanoseconds>(end_this_step - start_this_step).count();
                     std::cout << "Step " << step << ", " << (use_ml_step ? "ML" : "Regular")
                               << ", local moved: " << moved_this_step_local
@@ -3844,8 +3933,12 @@ int main(int argc, char** argv) {
                     std::cout << "STEP_TIMING step=" << step
                               << " solver=" << (use_ml_step ? "ML" : "Regular")
                               << " step_ms=" << step_ms / 1e6
-                              << " local_moved=" << moved_this_step_local
-                              << std::endl;
+                              << " local_moved=" << moved_this_step_local;
+                    if (rank_min_us >= 0) {
+                        std::cout << " rank_min_ms=" << rank_min_us / 1000.0
+                                  << " rank_max_ms=" << rank_max_us / 1000.0;
+                    }
+                    std::cout << std::endl;
                 }
 
                 bool do_save = false;

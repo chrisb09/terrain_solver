@@ -1,0 +1,3 @@
+run_id_case,dbmode,rc
+retest_smartsim_96p96c4g_giantmlp288_shared_c0_r2,shared_c0,0
+retest_smartsim_96p96c4g_giantmlp288_pergpu_c0_r2,pergpu_c0,0
