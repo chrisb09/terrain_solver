@@ -143,19 +143,25 @@ if args.db_layout == "per-ml-node":
         except Exception:
             local_gpu_count = 1
 
+    omit_threads = env.get("SMARTSIM_OMIT_THREADS", "0") == "1"
+    omit_set_cpus = env.get("SMARTSIM_OMIT_SET_CPUS", "0") == "1"
+
     for i in range(args.db_nodes):
         shard_port = args.port + i
-        db_i = exp.create_database(
-            port=shard_port,
-            interface="ib0",
-            batch=False,
-            single_cmd=False,
-            db_nodes=1,
-            db_identifier=f"shard_{i}",
-            intra_op_threads=intra_op_threads,
-            inter_op_threads=inter_op_threads,
-            threads_per_queue=threads_per_queue,
-        )
+        db_kwargs = {
+            "port": shard_port,
+            "interface": "ib0",
+            "batch": False,
+            "single_cmd": False,
+            "db_nodes": 1,
+            "db_identifier": f"shard_{i}",
+        }
+        if not omit_threads:
+            db_kwargs["intra_op_threads"] = intra_op_threads
+            db_kwargs["inter_op_threads"] = inter_op_threads
+            db_kwargs["threads_per_queue"] = threads_per_queue
+
+        db_i = exp.create_database(**db_kwargs)
         db_i.set_run_arg("export", "ALL")
         db_i.set_run_arg("overlap", None)
         db_i.set_run_arg("exact", None)
@@ -171,19 +177,26 @@ if args.db_layout == "per-ml-node":
             db_i.set_run_arg("exclude", db_exclude_node)
         if args.het_group is not None and (env.get("SLURM_HET_SIZE") or env.get("SLURM_JOB_NUM_NODES_HET_GROUP_0")):
             db_i.set_run_arg("het-group", args.het_group)
-        db_i.set_cpus(max(1, args.cpu_cores_per_node))
+        if not omit_set_cpus:
+            db_i.set_cpus(max(1, args.cpu_cores_per_node))
         dbs.append(db_i)
 else:
-    db = exp.create_database(
-        port=args.port,
-        interface="ib0",
-        batch=False,
-        single_cmd=False,
-        db_nodes=args.db_nodes,
-        intra_op_threads=intra_op_threads,
-        inter_op_threads=inter_op_threads,
-        threads_per_queue=threads_per_queue,
-    )
+    omit_threads = env.get("SMARTSIM_OMIT_THREADS", "0") == "1"
+    omit_set_cpus = env.get("SMARTSIM_OMIT_SET_CPUS", "0") == "1"
+
+    db_kwargs = {
+        "port": args.port,
+        "interface": "ib0",
+        "batch": False,
+        "single_cmd": False,
+        "db_nodes": args.db_nodes,
+    }
+    if not omit_threads:
+        db_kwargs["intra_op_threads"] = intra_op_threads
+        db_kwargs["inter_op_threads"] = inter_op_threads
+        db_kwargs["threads_per_queue"] = threads_per_queue
+
+    db = exp.create_database(**db_kwargs)
     db.set_run_arg("export", "ALL")
     if db_nodelist and env.get("SMARTSIM_PIN_DB_NODELIST", "0") == "1":
         db_hosts = db_nodelist.split(",")
@@ -198,7 +211,8 @@ else:
         db.set_run_arg("exclude", db_exclude_node)
     if args.het_group is not None and (env.get("SLURM_HET_SIZE") or env.get("SLURM_JOB_NUM_NODES_HET_GROUP_0")):
         db.set_run_arg("het-group", args.het_group)
-    db.set_cpus(max(1, args.cpu_cores_per_node))
+    if not omit_set_cpus:
+        db.set_cpus(max(1, args.cpu_cores_per_node))
     dbs.append(db)
 
 import traceback

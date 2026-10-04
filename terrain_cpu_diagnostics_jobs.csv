@@ -1,0 +1,7 @@
+suite,model,job_id
+aix,watercnn,4617648
+aix,giant,4617644
+phydll,watercnn,4617647
+phydll,giant,4617645
+smartsim,watercnn,4617649
+smartsim,giant,4617646
