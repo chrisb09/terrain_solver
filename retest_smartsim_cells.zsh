@@ -5,6 +5,13 @@
 #                 (4-GPU configs only)
 # Models/res identical to the AIx retest: watercnn8k (7680x4320, chunk 60) or
 # giantmlp288 (480x288, chunk 16). Writes results/retest_smartsim/<model>/<cfg>/.
+#
+# DB execution settings (applied to all runs in this retest):
+#   SMARTSIM_THREADS_PER_QUEUE=1  -- one GPU execution worker; controller default
+#                                    was previously cpu_cores/8=3 for GPU runs.
+#   ML_DB_BATCH_SIZE_ENV          -- opportunistic RedisAI request coalescing up to
+#                                    BATCH samples (model-specific); no minimum size
+#                                    or timeout set, so coalescing is best-effort only.
 set -uo pipefail
 
 MINI_APP_DIR="/hpcwork/ro092286/smartsim/mini_app"
@@ -49,6 +56,10 @@ export TOTAL_STEPS_ENV="${STEPS}"
 export SAVE_EVERY_ENV="${SAVE}"
 export CHUNK_SIZE_ENV="${CHUNK}"
 export ML_INFERENCE_CPU_CORES_ENV=24
+# RedisAI DB execution settings -- must be set before the driver sources the
+# controller so the controller reads these on startup.
+export SMARTSIM_THREADS_PER_QUEUE_ENV=1
+export ML_DB_BATCH_SIZE_ENV="${BATCH}"   # opportunistic coalescing cap, model-specific
 export FORCE_FRESH_RUN_ENV=1
 export OVERWRITE_OUTPUT_ENV=1
 export SKIP_RENDERING_ENV=1

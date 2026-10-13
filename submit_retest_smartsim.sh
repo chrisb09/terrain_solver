@@ -6,12 +6,16 @@
 #   repeats: 3
 # Reuses the AIx retest sbatch allocations, with RUNNER_ENV selecting the
 # SmartSim runner.
+#
+# DB settings applied via retest_smartsim_cells.zsh:
+#   SMARTSIM_THREADS_PER_QUEUE_ENV=1   (opportunistic batching, TPQ=1)
+#   ML_DB_BATCH_SIZE_ENV=<model cap>   (500k Giant MLP, 20M WaterCNN)
 set -euo pipefail
 cd "$(dirname "$0")"
 
 N="${1:-3}"
 RUNNER="/hpcwork/ro092286/smartsim/mini_app/retest_smartsim_cells.zsh"
-JOBIDS_FILE="results/retest_smartsim/jobids.txt"
+JOBIDS_FILE="results/retest_smartsim/jobids_tpq1_batch.txt"
 mkdir -p results/retest_smartsim
 : > "${JOBIDS_FILE}"
 

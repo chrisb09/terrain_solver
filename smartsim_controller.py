@@ -24,16 +24,18 @@ parser.add_argument("--cpu_cores_per_node", type=int, default=1, help="Number of
 parser.add_argument("--het_group", default=None, type=str, help="Heterogeneous group to run the database on (if using slurm launcher)")
 parser.add_argument("--hostname_file", default=None, type=str, help="File to write the database hostname to")
 parser.add_argument("--db_layout", default="shared", choices=["shared", "per-ml-node"], help="Database layout mode: 'shared' (single/clustered DB) or 'per-ml-node' (N independent standalone DBs)")
+parser.add_argument("--interface", default=env.get("SMARTSIM_INTERFACE", "ib0"), help="Network interface for database (e.g. 'lo' or 'ib0')")
 args = parser.parse_args()
 
 ##### Print out the configuration for this run
-print("Experiment configuration:")
-print(f"  Database nodes: {args.db_nodes}")
-print(f"  Database layout: {args.db_layout}")
-print(f"  Use GPU: {args.use_gpu}")
-print(f"  CPU cores per node for database: {args.cpu_cores_per_node}")
-print(f"  Heterogeneous group: {args.het_group}")
-print(f"  Hostname file: {args.hostname_file}")
+print("Experiment configuration:", flush=True)
+print(f"  Database nodes: {args.db_nodes}", flush=True)
+print(f"  Database layout: {args.db_layout}", flush=True)
+print(f"  Network interface: {args.interface}", flush=True)
+print(f"  Use GPU: {args.use_gpu}", flush=True)
+print(f"  CPU cores per node for database: {args.cpu_cores_per_node}", flush=True)
+print(f"  Heterogeneous group: {args.het_group}", flush=True)
+print(f"  Hostname file: {args.hostname_file}", flush=True)
 
 use_gpu = args.use_gpu
 
@@ -50,21 +52,24 @@ intra_op_threads = positive_env_int("SMARTSIM_INTRA_OP_THREADS", 8)
 inter_op_threads = positive_env_int("SMARTSIM_INTER_OP_THREADS", 1)
 threads_per_queue = positive_env_int(
     "SMARTSIM_THREADS_PER_QUEUE",
-    min(8, args.cpu_cores_per_node // 8) if args.cpu_cores_per_node >= 8 else 1,
+    # GPU concurrency is tuned separately from CPU intra-op parallelism.
+    1 if use_gpu else (min(8, args.cpu_cores_per_node // 8)
+                       if args.cpu_cores_per_node >= 8 else 1),
 )
 
-print(f"Using device: {'GPU' if use_gpu else 'CPU'} (device={device}, python_exe={sys.executable}, queue={queue})")
+print(f"Using device: {'GPU' if use_gpu else 'CPU'} (device={device}, python_exe={sys.executable}, queue={queue})", flush=True)
 print(
     "Database model execution settings: "
     f"intra_op_threads={intra_op_threads}, inter_op_threads={inter_op_threads}, "
-    f"threads_per_queue={threads_per_queue}"
+    f"threads_per_queue={threads_per_queue}",
+    flush=True
 )
 db_nodelist = env.get("SMARTSIM_DB_NODELIST", "")
 db_exclude_node = env.get("SMARTSIM_DB_EXCLUDE_NODE", "")
 if db_nodelist:
-    print(f"Database node list: {db_nodelist}")
+    print(f"Database node list: {db_nodelist}", flush=True)
 if db_exclude_node:
-    print(f"Database excludes solver node: {db_exclude_node}")
+    print(f"Database excludes solver node: {db_exclude_node}", flush=True)
 
 if use_gpu:
     env.setdefault("CUDA_LAUNCH_BLOCKING", "1")
@@ -103,6 +108,12 @@ if use_gpu:
 env["SMARTSIM_WLM_TRIALS"] = "60"
 
 from smartsim.experiment import Experiment
+from smartsim.database.orchestrator import Orchestrator
+
+
+class SingleNodeOrchestrator(Orchestrator):
+    def _get_db_hosts(self):
+        return list(dict.fromkeys(super()._get_db_hosts()))
 
 # Strip Score-P environment variables before creating the experiment.
 # The srun command uses `--export ALL` which propagates the full environment;
@@ -132,8 +143,10 @@ if os.path.exists(exp_dir):
 exp = Experiment(name=exp_dir, launcher="slurm")
 
 dbs = []
+db_hosts = db_nodelist.split(",") if db_nodelist else []
+is_single_node = len(db_hosts) <= 1 and (not db_nodelist or len(db_hosts) < args.db_nodes)
+
 if args.db_layout == "per-ml-node":
-    db_hosts = db_nodelist.split(",") if db_nodelist else []
     local_gpu_count = 1
     if use_gpu:
         try:
@@ -142,6 +155,13 @@ if args.db_layout == "per-ml-node":
                 local_gpu_count = torch.cuda.device_count()
         except Exception:
             local_gpu_count = 1
+        # Het jobs: the controller process runs on the c23mm group node
+        # (torch sees no GPUs there), so the shard GPU pinning would fall
+        # back to 1. Allow the job script to pass the GPU count explicitly.
+        env_gpu_count = int(env.get("SMARTSIM_DB_GPU_COUNT", "0") or 0)
+        if env_gpu_count > 0:
+            local_gpu_count = env_gpu_count
+            print(f"  [SmartSim] GPU pinning count override: {local_gpu_count} (SMARTSIM_DB_GPU_COUNT)", flush=True)
 
     omit_threads = env.get("SMARTSIM_OMIT_THREADS", "0") == "1"
     omit_set_cpus = env.get("SMARTSIM_OMIT_SET_CPUS", "0") == "1"
@@ -150,7 +170,7 @@ if args.db_layout == "per-ml-node":
         shard_port = args.port + i
         db_kwargs = {
             "port": shard_port,
-            "interface": "ib0",
+            "interface": args.interface,
             "batch": False,
             "single_cmd": False,
             "db_nodes": 1,
@@ -186,7 +206,7 @@ else:
 
     db_kwargs = {
         "port": args.port,
-        "interface": "ib0",
+        "interface": args.interface,
         "batch": False,
         "single_cmd": False,
         "db_nodes": args.db_nodes,
@@ -198,8 +218,27 @@ else:
 
     db = exp.create_database(**db_kwargs)
     db.set_run_arg("export", "ALL")
+    db.set_run_arg("overlap", None)
+    db.set_run_arg("exact", None)
+
+    if is_single_node and args.db_nodes > 1:
+        # On a single node allocation, all shards run on the same host.
+        # SmartSim defaults all shards to the same port which causes port conflicts.
+        # Assign distinct sequential ports to each shard entity.
+        for i, entity in enumerate(db.entities):
+            shard_port = args.port + i
+            entity.ports = [shard_port]
+            entity.run_settings.exe_args = [
+                f"+port={shard_port}" if arg.startswith("+port=") else arg
+                for arg in entity.run_settings.exe_args
+            ]
+            print(f"  [SmartSim] Configured single-node clustered shard {i} on port {shard_port} with {args.cpu_cores_per_node} cores", flush=True)
+
+        db.ports = [args.port + i for i in range(args.db_nodes)]
+        # Deduplicate hostnames using picklable SingleNodeOrchestrator for create_cluster
+        db.__class__ = SingleNodeOrchestrator
+
     if db_nodelist and env.get("SMARTSIM_PIN_DB_NODELIST", "0") == "1":
-        db_hosts = db_nodelist.split(",")
         db_settings = [entity.run_settings for entity in db.entities]
         if len(db_hosts) != args.db_nodes or len(db_settings) != args.db_nodes:
             raise RuntimeError(
@@ -308,6 +347,14 @@ if args.hostname_file is not None:
         f.write(",".join(address))
 
 print(f"Wrote database hostname to file: {args.hostname_file}", flush=True)
+
+if env.get("SMARTSIM_DB_AFFINITY_CAPTURE") == "1":
+    # Best-effort observation runs after endpoints are published, never gates the solver.
+    try:
+        from smartsim_db_affinity import start_capture
+        start_capture(address, args.het_group, env)
+    except Exception as exc:
+        print(f"Warning: DB affinity capture could not start: {exc}", flush=True)
 
 
 # Wait until there's a file indicating the solver is done, then stop the database and clean up the experiment.

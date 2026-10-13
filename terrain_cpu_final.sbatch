@@ -22,6 +22,7 @@ DATASET_ID=${DATASET_ID:-final}
 case $MODE in
     performance) STEPS=${STEPS:-22}; CONFIGS=${CONFIGS:-AIx PHYDLL_CPP SS_DEFAULT SS_TPQ1_I96_B96 SS_TPQ12_I8_B96 SS_TPQ96_I1_B96} ;;
     memory) STEPS=${STEPS:-6}; CONFIGS=${CONFIGS:-SS_TPQ1_I96_B96 SS_TPQ12_I8_B96 PHYDLL_CPP} ;;
+    timing) STEPS=${STEPS:-22}; CONFIGS=${CONFIGS:-AIx SS_DEFAULT SS_TPQ1_I96_B96 SS_TPQ12_I8_B96 SS_TPQ96_I1_B96} ;;
     *) exit 1 ;;
 esac
 [[ $STEPS =~ ^[0-9]+$ ]] && (( STEPS >= 6 && STEPS % 2 == 0 )) || exit 1
@@ -67,9 +68,18 @@ for command in mpirun timeout ldd; do command -v "$command" > /dev/null; done
 export LD_LIBRARY_PATH="/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/CUDA/12.4.0/stubs/lib64:${LD_LIBRARY_PATH:-}"
 export CMI_DIR=$CPP_DIR SMARTSIM_PAPI_ROOT=$CPP_DIR/tmp/opencode/papi-7.2.0-install
 export SMARTSIM_SCOREP_ROOT=$CPP_DIR/tmp/opencode/scorep-8.4-papi72-install
-source "$CPP_DIR/env_scorep.sh"
-export SCOREP_ENABLE_PROFILING=true SCOREP_ENABLE_TRACING=false SCOREP_METRIC_PAPI=
-export SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY=false
+if [[ $MODE == timing ]]; then
+    [[ -z ${TERRAIN_RETEST_BUILD:-} ]] || exit 1
+    export TERRAIN_DB_LIBRARY_PATH=$LD_LIBRARY_PATH
+    source "$MINI_APP_DIR/terrain_cpu_plain_gate.sh"
+else
+    source "$CPP_DIR/env_scorep.sh"
+    if [[ -n ${TERRAIN_RETEST_BUILD:-} ]]; then
+        source "$MINI_APP_DIR/terrain_phydll_retest_gate.sh"
+    fi
+    export SCOREP_ENABLE_PROFILING=true SCOREP_ENABLE_TRACING=false SCOREP_METRIC_PAPI=
+    export SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY=false
+fi
 export MLCOUPLING_MEM_LOG_VERBOSE=0 MLCOUPLING_MEM_LOG_COLLECTIVE=0 MLCOUPLING_STEP_TIMING_SYNC=1
 export PHYDLL_IO_LOG=0 PHYDLL_IO_LOG_BARRIERS=0 PHYDLL_TELEMETRY=0 SMARTSIM_FLAG_TELEMETRY=0
 export HDF5_USE_FILE_LOCKING=FALSE SR_MODEL_TIMEOUT=900000 SR_CMD_TIMEOUT=900000 SR_SOCKET_TIMEOUT=900000
@@ -125,6 +135,19 @@ files = [library, source, Path(os.environ['SOLVER_BIN']), Path(os.environ['PHYDL
          mini / 'terrain_memory_sampler.py', mini / 'smartsim_controller.py', mini / 'pin_wrapper.sh']
 files += [mini / 'train_models/model_a' / f'{os.environ["MODEL"]}{suffix}_cpu.pt' for suffix in ('', '_split')]
 files += [mini / name for name in ('config.toml', 'config_aix.toml', 'config_phydll.toml')]
+if os.environ['MODE'] == 'timing':
+    build = Path(os.environ['TERRAIN_PLAIN_BUILD'])
+    provenance = Path(os.environ['TERRAIN_PLAIN_PROVENANCE'])
+    files += [build / 'BUILD_READY', build / 'CMakeCache.txt', build / 'compile_commands.json',
+              provenance / 'source.sha256', provenance / 'binaries.sha256',
+              mini / 'terrain_cpu_plain_gate.sh', mini / 'terrain_cpu_missing.sbatch',
+              mini / 'config_terrain_phydll_false.toml', mini / 'config_terrain_phydll_true.toml']
+if os.environ.get('TERRAIN_RETEST_BUILD'):
+    build = Path(os.environ['TERRAIN_RETEST_BUILD'])
+    files += [Path(os.environ['TERRAIN_PHYDLL_CONFIG']), build / 'BUILD_READY',
+              build / 'provenance/source.sha256', build / 'provenance/binaries.sha256',
+              mini / 'terrain_phydll_retest.sbatch', mini / 'terrain_phydll_retest_gate.sh',
+              mini / 'validate_terrain_phydll_profile.py']
 hashes = {str(p.resolve()): sha(p) for p in files}
 (root / 'inputs.sha256').write_text(''.join(f'{h}  {p}\n' for p, h in hashes.items()))
 (root / 'provenance.json').write_text(json.dumps(dict(inputs=hashes, phydll_default_logging=0,
@@ -134,7 +157,11 @@ hashes = {str(p.resolve()): sha(p) for p in files}
     internal_mem_verbose=0, internal_mem_collective=0, telemetry=0, timing_sync=1,
     solver_ranks=96, rank_grid='12x8', db_min_batch=0, db_timeout=0,
     policy='final_total_per_queue_except_default_and_TPQ96',
-    helper_python=sys.executable, environment=dict(os.environ)), indent=2) + '\n')
+    helper_python=sys.executable, environment=dict(os.environ),
+    retest_build=os.environ.get('TERRAIN_RETEST_BUILD', ''),
+    plain_build=os.environ.get('TERRAIN_PLAIN_BUILD', '') if os.environ['MODE'] == 'timing' else '',
+    scorep=int(os.environ['MODE'] != 'timing'),
+    solver_readiness_wait=os.environ.get('TERRAIN_READINESS', 'false')), indent=2) + '\n')
 PY
 env | sort > "$ROOT/allocation.env"
 sha256sum "$ROOT/allocation.env" > "$ROOT/environment.sha256"
@@ -223,9 +250,16 @@ row = dict(model=os.environ['MODEL'], rep=int(os.environ['REP']), config=d.name,
     environment_sha256=str(d / 'environment.sha256'),
     run_environment_sha256=hashlib.sha256(run_environment.read_bytes()).hexdigest() if run_environment.is_file() else '',
     mean_step_ms='', step4_ms='', rank_min_ms='', rank_max_ms='')
+if os.environ.get('TERRAIN_RETEST_BUILD'):
+    row['solver_readiness_wait'] = os.environ['TERRAIN_READINESS']
+    row['retest_build'] = os.environ['TERRAIN_RETEST_BUILD']
+if os.environ['MODE'] == 'timing':
+    row['solver_readiness_wait'] = os.environ.get('TERRAIN_READINESS', 'false') if d.name == 'PHYDLL_CPP' else ''
+    row['plain_build'] = os.environ['TERRAIN_PLAIN_BUILD']
+    row['scorep'] = 0
 if status == 'SUCCESS':
     timings(d / 'solver.log', row['steps'])
-    if row['mode'] == 'performance':
+    if row['mode'] in ('performance', 'timing'):
         values = []
         for line in (d / 'solver.log').read_text().splitlines():
             if line.startswith('STEP_TIMING '):
@@ -255,6 +289,11 @@ exports=(-x LD_LIBRARY_PATH -x SCOREP_EXPERIMENT_DIRECTORY -x SCOREP_ENABLE_PROF
     -x SCOREP_ENABLE_TRACING -x SCOREP_METRIC_PAPI -x SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY
     -x MLCOUPLING_MEM_LOG_VERBOSE -x MLCOUPLING_MEM_LOG_COLLECTIVE -x MLCOUPLING_STEP_TIMING_SYNC
     -x PHYDLL_IO_LOG -x PHYDLL_IO_LOG_BARRIERS -x PHYDLL_TELEMETRY -x SMARTSIM_FLAG_TELEMETRY)
+if [[ $MODE == timing ]]; then
+    exports=(-x LD_LIBRARY_PATH -x MLCOUPLING_MEM_LOG_VERBOSE -x MLCOUPLING_MEM_LOG_COLLECTIVE
+        -x MLCOUPLING_STEP_TIMING_SYNC -x PHYDLL_IO_LOG -x PHYDLL_IO_LOG_BARRIERS
+        -x PHYDLL_TELEMETRY -x SMARTSIM_FLAG_TELEMETRY)
+fi
 for config in $CONFIGS; do
     unset MLCOUPLING_INTRA_OP_THREADS MLCOUPLING_INTER_OP_THREADS PHYDLL_DL_COUNT PHYDLL_DL_FIELD_COUNT SSDB TERRAIN_MEMORY_TOKEN
     dir=$RUN_ROOT/$config
@@ -266,6 +305,8 @@ for config in $CONFIGS; do
     case $config in
         PHYDLL_CPP)
             cfg=config_phydll.toml; intra=1; expected_dl=96
+            [[ -z ${TERRAIN_RETEST_BUILD:-} ]] || cfg=$TERRAIN_PHYDLL_CONFIG
+            [[ $MODE != timing ]] || cfg=$TERRAIN_PHYDLL_CONFIG
             export MLCOUPLING_INTRA_OP_THREADS=1 MLCOUPLING_INTER_OP_THREADS=1 PHYDLL_DL_COUNT=1 PHYDLL_DL_FIELD_COUNT=1
             extra+=(-x MLCOUPLING_INTRA_OP_THREADS -x MLCOUPLING_INTER_OP_THREADS -x PHYDLL_DL_COUNT -x PHYDLL_DL_FIELD_COUNT) ;;
         SS_*)
@@ -284,6 +325,7 @@ for config in $CONFIGS; do
             port=$((7100 + SLURM_JOB_ID % 1000)) ;;
     esac
     export SCOREP_EXPERIMENT_DIRECTORY=$dir/scorep
+    [[ $MODE != timing ]] || unset SCOREP_EXPERIMENT_DIRECTORY
     active=1; t0=$SECONDS
     if [[ $MODE == memory ]]; then
         export TERRAIN_MEMORY_TOKEN=terrain_cpu_final_${SLURM_JOB_ID}_${task}_${config}
@@ -311,6 +353,12 @@ for config in $CONFIGS; do
         printf '%q ' "${controller[@]}" > "$dir/controller_command.sh"
         (
             cd "$dir"
+            # RedisAI must resolve its own Torch backend, not the solver's libtorch.
+            if [[ $MODE == timing ]]; then
+                export LD_LIBRARY_PATH=$TERRAIN_DB_LIBRARY_PATH
+                env | sort > controller.env
+                sha256sum controller.env > controller_environment.sha256
+            fi
             read -r stat < /proc/self/stat
             read -ra fields <<< "${stat##*) }"
             printf '%s\n' "${fields[19]}" > controller_start
@@ -332,9 +380,11 @@ for config in $CONFIGS; do
         solver_cmd=("$MINI_APP_DIR/pin_wrapper.sh" "$SOLVER_BIN")
         dl_cmd=("$MINI_APP_DIR/pin_wrapper.sh" "$PHYDLL_DL_CLIENT")
     fi
+    config_path=$cfg
+    [[ $config_path == /* ]] || config_path=$MINI_APP_DIR/$config_path
     command=(timeout --kill-after=30 "$RUN_TIMEOUT" mpirun --bind-to none --report-bindings --oversubscribe
         "${exports[@]}" "${extra[@]}" -n 96 "${solver_cmd[@]}" "${common[@]}"
-        --model-path "$model_path" --model-io-layout "$layout" --cpp-ml-config "$MINI_APP_DIR/$cfg" --output-hdf5 "$dir/traj.h5")
+        --model-path "$model_path" --model-io-layout "$layout" --cpp-ml-config "$config_path" --output-hdf5 "$dir/traj.h5")
     if [[ $config == SS_* ]]; then
         command+=(--ml-db-batch-size "$db_batch" --ml-db-min-batch-size 0 --ml-db-min-batch-timeout 0)
     elif [[ $config == PHYDLL_CPP ]]; then
@@ -350,12 +400,23 @@ for config in $CONFIGS; do
     if (( rc == 0 )); then
         "$HELPER_PYTHON" "$MINI_APP_DIR/terrain_cpu_diagnostics.py" --validate-log "$dir/solver.log" --steps "$STEPS" < /dev/null || rc=1
         if [[ $MODE == memory ]]; then
-            "$HELPER_PYTHON" "$MINI_APP_DIR/terrain_cpu_diagnostics.py" --validate-memory "$dir/memory_summary.json" < /dev/null || rc=1
+            "$HELPER_PYTHON" "$MINI_APP_DIR/terrain_cpu_diagnostics.py" --validate-memory "$dir/memory_summary.json" \
+                --memory-config "$config" --solver-ranks 96 < /dev/null || rc=1
         fi
     fi
     shopt -s nullglob
     profiles=("$dir"/scorep/*.cubex)
-    (( ${#profiles[@]} == 1 )) || rc=1
+    if [[ $MODE == timing ]]; then
+        [[ ! -e $dir/scorep && ! -e $dir/memory_samples.csv && ! -e $dir/memory_summary.json ]] || rc=1
+        sha256sum --check --quiet "$TERRAIN_PLAIN_PROVENANCE/binaries.sha256" > "$dir/build_binary_check.txt" || rc=1
+    else
+        (( ${#profiles[@]} == 1 )) || rc=1
+    fi
+    if [[ -n ${TERRAIN_RETEST_BUILD:-} && $rc == 0 ]]; then
+        "$HELPER_PYTHON" "$MINI_APP_DIR/validate_terrain_phydll_profile.py" "${profiles[0]}" "$STEPS" \
+            > "$dir/profile_validation.json" || rc=1
+        sha256sum --check "$TERRAIN_RETEST_BUILD/provenance/binaries.sha256" > "$dir/build_binary_check.txt" || rc=1
+    fi
     status=SUCCESS; (( rc == 0 )) || status=FAILED_rc_$rc
     record
     printf '%s %s wall=%ss\n' "$config" "$status" "$wall"

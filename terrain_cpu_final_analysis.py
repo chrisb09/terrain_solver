@@ -249,6 +249,8 @@ def collect(roots, mode, reps, steady_steps, ranks=96, expected_provenance=None)
         manifests.update((root / mode).glob('job_*/*/rep[0-9]*/results.csv'))
     rows, seen, tokens, checked_inputs = [], set(), set(), set()
     for manifest in sorted(manifests):
+        if (manifest.parent / 'SUPERSEDED.json').exists():
+            raise ValueError(f'{manifest}: superseded Slurm-failed task; select unaffected job roots and its clean replacement explicitly')
         entries = read_csv(manifest)
         if not entries or not FIELDS <= entries[0].keys():
             raise ValueError(f'{manifest}: required fields: {sorted(FIELDS)}')
@@ -300,8 +302,8 @@ def collect(roots, mode, reps, steady_steps, ranks=96, expected_provenance=None)
                 row['memory_csv_sha256'] = source(manifest.parent / entry['config'] / 'memory_samples.csv')['sha256']
             rows.append(row)
     configs = set(ORDER) if mode == 'performance' else {r['config'] for r in rows}
-    if mode == 'memory' and not {'TPQ1_I96', 'TPQ12_I8'} <= configs <= {'TPQ1_I96', 'TPQ12_I8', 'PHYDLL_CPP'}:
-        raise ValueError('Memory requires TPQ1 and TPQ12, optionally PHYDLL_CPP only')
+    if mode == 'memory' and not configs <= {'AIx', 'SS_DEFAULT', 'TPQ96_I1', 'TPQ1_I96', 'TPQ12_I8', 'PHYDLL_CPP'}:
+        raise ValueError('Memory requires a supported final-runner configuration subset')
     expected = {(m, c, str(r)) for m in MODELS for c in configs for r in range(1, reps + 1)}
     if seen != expected:
         raise ValueError(f'Coverage: expected {len(expected)} runs; missing={sorted(expected-seen)}, unexpected={sorted(seen-expected)}')

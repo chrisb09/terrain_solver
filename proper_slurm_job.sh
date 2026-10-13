@@ -865,26 +865,55 @@ if [[ "${USE_SCOREP}" == "1" ]]; then
   _scorep_job_name="${SLURM_JOB_NAME:-scorep_job}"
   _scorep_job_name="${_scorep_job_name//[^A-Za-z0-9_.-]/_}"
   # install.sh pre-sets this under ${SMARTSIM_ROOT_DIR}; keep mini-app profiles local.
+  # Unique per-run directory name (RUN_ID suffix): with a fixed tag, a repeated
+  # attempt classifies the leftover dir as a "previous experiment" and races on
+  # rename/creation, which aborts fatally (SCOREP_Tracing assert).
   if [[ -n "${SCOREP_DIR_TAG_ENV:-}" ]]; then
-    export SCOREP_EXPERIMENT_DIRECTORY="${MINI_APP_DIR}/scorep_runs/${SCOREP_DIR_TAG_ENV}"
+    _scorep_dir_name="${SCOREP_DIR_TAG_ENV}_${RUN_ID}"
   else
-    export SCOREP_EXPERIMENT_DIRECTORY="${MINI_APP_DIR}/scorep_runs/${_scorep_job_name}_${RUN_ID}"
+    _scorep_dir_name="${_scorep_job_name}_${RUN_ID}"
   fi
-  # OTF2 tracing requires ALL ranks to share ONE experiment directory. With
-  # overwrite=false Score-P would rename the pre-created (metadata-only) dir,
-  # and 24+ ranks racing on that rename abort fatally. overwrite=true makes
-  # ranks delete-and-recreate only if the dir is not yet a valid experiment,
-  # then join the experiment created by the first rank.
+  _scorep_tracing=false
   if [[ "${SCOREP_ENABLE_TRACING_ENV:-false}" == "true" || "${SCOREP_ENABLE_TRACING_ENV:-false}" == "1" ]]; then
-    export SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY=true
-  else
-    export SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY="${SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY:-false}"
+    _scorep_tracing=true
   fi
-  mkdir -p "$(dirname "${SCOREP_EXPERIMENT_DIRECTORY}")"
-  rm -rf "${SCOREP_EXPERIMENT_DIRECTORY}"
-  rm -rf "${SCOREP_EXPERIMENT_DIRECTORY}"_rank_*(N)
-  mkdir -p "${SCOREP_EXPERIMENT_DIRECTORY}"
-  cat <<EOF > "${SCOREP_EXPERIMENT_DIRECTORY}/run_metadata.json"
+  if [[ "${USE_PYTHON_DL_CLIENT:-0}" == "1" && "${PHYDLL_PY_SCOREP_WRAPPER:-0}" == "1" && "${USE_SCOREP}" == "1" ]]; then
+    # STRUCTURAL LIMITATION (confirmed by hang in jobs 3707238/3708403): with
+    # Score-P-MPI-instrumented solver ranks, EVERY process in MPI_COMM_WORLD
+    # must participate in Score-P's init: SCOREP_Ipc_Init does PMPI_Comm_dup +
+    # a node-id Allgather over the whole world, and with tracing the init AND
+    # finalize additionally run a world-wide clock ping-pong
+    # (scorep_clock_synchronization_mpp_ipc.c, tsc is never "global"). A
+    # Python DL client under standard mpi4py (scorep --mpp=none) never joins
+    # these collectives, so all 96 solver ranks block inside MPI_Init - in
+    # profiling AND tracing mode. No phydll_py case with a Score-P solver has
+    # ever produced data. Fixes would be: Score-P-instrumented mpi4py for the
+    # client (or LD_AUDIT interposition via libscorep_rtld_audit.so).
+    # Fail fast instead of deadlocking until the job's time limit.
+    echo "ERROR: phydll_py + Score-P solver is structurally impossible: the Python DL client (standard mpi4py) cannot join Score-P's world-wide init collectives (PMPI_Comm_dup/Allgather, clock sync). The solver ranks would deadlock inside MPI_Init in profiling AND tracing mode." >&2
+    echo "       Options: run this case without the Score-P python wrapper (plain client still deadlocks against the instrumented solver!), use the C++ DL client (phydll_cpp works), or build Score-P-instrumented mpi4py / use LD_AUDIT for the client." >&2
+    exit 1
+  fi
+  # Clean up stale experiment dirs from previous attempts BEFORE any rank starts
+  # (single batch-script process, so this is race-free).
+  mkdir -p "${MINI_APP_DIR}/scorep_runs"
+  rm -rf "${MINI_APP_DIR}/scorep_runs/${_scorep_dir_name}"
+  rm -rf "${MINI_APP_DIR}/scorep_runs/${_scorep_dir_name}"_rank_*(N)
+  if [[ "${_scorep_tracing}" == "true" ]]; then
+    # OTF2 tracing: ALL ranks share ONE experiment directory on the work
+    # filesystem (DL clients may run on a different node than the solver, so a
+    # node-local path is not an option here). Use the recipe that worked until
+    # Aug 8 at 24 ranks: unique per-run dir, SCOREP_OVERWRITE_EXPERIMENT_
+    # DIRECTORY=true, and a pre-created EMPTY directory. Never pre-create a
+    # metadata-only dir: later ranks classify it as a stale experiment and
+    # race on rename/creation, aborting fatally on parallel filesystems.
+    export SCOREP_EXPERIMENT_DIRECTORY="${MINI_APP_DIR}/scorep_runs/${_scorep_dir_name}"
+    mkdir -p "${SCOREP_EXPERIMENT_DIRECTORY}"
+    export SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY=true
+    # Write run metadata only AFTER the run (trap) - never into a live dir.
+    _scorep_write_tracing_metadata() {
+      if [[ -f "${SCOREP_EXPERIMENT_DIRECTORY}/scorep.cfg" ]]; then
+        cat <<EOF > "${SCOREP_EXPERIMENT_DIRECTORY}/run_metadata.json"
 {
   "model": "${MODEL_NAME}",
   "model_path": "${MODEL_PATH:-}",
@@ -897,6 +926,29 @@ if [[ "${USE_SCOREP}" == "1" ]]; then
   "job_id": "${SLURM_JOB_ID:-$$}"
 }
 EOF
+      fi
+    }
+    trap _scorep_write_tracing_metadata EXIT
+  else
+    # Profiling-only: ranks write independent per-rank dirs (<tag>_rank_N via
+    # solver_wrapper.sh), so the pre-created base dir is never contested.
+    export SCOREP_EXPERIMENT_DIRECTORY="${MINI_APP_DIR}/scorep_runs/${_scorep_dir_name}"
+    export SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY="${SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY:-false}"
+    mkdir -p "${SCOREP_EXPERIMENT_DIRECTORY}"
+    cat <<EOF > "${SCOREP_EXPERIMENT_DIRECTORY}/run_metadata.json"
+{
+  "model": "${MODEL_NAME}",
+  "model_path": "${MODEL_PATH:-}",
+  "resolution": "${TARGET_WIDTH}x${TARGET_HEIGHT}",
+  "batch_size": ${ML_BATCH_SIZE},
+  "ranks": ${MPI_RANKS},
+  "total_steps": ${TOTAL_STEPS},
+  "warmup_steps": 2,
+  "provider": "${CPP_ML_INTERFACE_PROVIDER:-SMARTSIM}",
+  "job_id": "${SLURM_JOB_ID:-$$}"
+}
+EOF
+  fi
 fi
 
 if [[ "${AIX_DIAGNOSTICS_ENV:-0}" == "1" ]]; then
@@ -1887,7 +1939,11 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
         export SCOREP_ENABLE_TRACING=false
       fi
       export SCOREP_TOTAL_MEMORY=524288K  # 512M per rank; prevents pre-MPI-init trace buffer flush
-      export SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY=true
+      # NOTE: SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY is deliberately NOT set here.
+      # The SCOREP setup block earlier in this script already applied the correct
+      # policy (unset for shared OTF2 tracing so ranks join the dir created by
+      # rank 0; false for profiling-only runs). Forcing it to true here made every
+      # rank clobber the shared tracing directory at startup.
       export ENABLE_SCOREP_USER=1
       # Match prior successful Score-P smoke-test config: disable memory recording
       # (which adds massive overhead on every malloc/free interception) and PAPI metrics.
@@ -1924,10 +1980,14 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
         SCOREP_BIN_DIR="$(dirname "$(command -v scorep-config)")"
         SCOREP_PYTHONPATH="${CMI_DIR}/extern/python/${RUNTIME_DEVICE}/lib/python3.9/site-packages"
         _py_exp_dir="${SCOREP_EXPERIMENT_DIRECTORY}_py_client"
-        if [[ "${SCOREP_ENABLE_TRACING:-false}" == "true" || "${SCOREP_ENABLE_TRACING:-false}" == "1" ]]; then
-          _py_exp_dir="${SCOREP_EXPERIMENT_DIRECTORY}"
-        fi
-        DL_CLIENT_CMD=("env" "ENABLE_SCOREP_USER=1" "SCOREP_EXPERIMENT_DIRECTORY=${_py_exp_dir}" "SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY=true" "SMARTSIM_PAPI_ROOT=${SMARTSIM_PAPI_ROOT}" "SMARTSIM_SCOREP_ROOT=${SMARTSIM_SCOREP_ROOT}" "PATH=${SCOREP_BIN_DIR}:$PATH" "PYTHONPATH=${SCOREP_PYTHONPATH}:${PYTHONPATH:-}" "${PY_ENV}/bin/python3" "-m" "scorep" "--keep-files" "--instrumenter-type=dummy" "--noinstrumenter" "--mpp=none" "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/phydll_dl_client.py")
+        _py_overwrite="SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY=true"
+        # NOTE: the Python DL client can NEVER join the solver's shared
+        # experiment dir, neither in profiling nor in tracing mode. Score-P has
+        # no "join existing dir" path: an existing user-specified dir is fatal
+        # with overwrite=false (:301 "exists and overwriting is disabled"), and
+        # with overwrite=true the client would rename the solver's live
+        # experiment away. Single-process client => own dir, always.
+        DL_CLIENT_CMD=("env" "ENABLE_SCOREP_USER=1" "SCOREP_EXPERIMENT_DIRECTORY=${_py_exp_dir}" "${_py_overwrite}" "SMARTSIM_PAPI_ROOT=${SMARTSIM_PAPI_ROOT}" "SMARTSIM_SCOREP_ROOT=${SMARTSIM_SCOREP_ROOT}" "PATH=${SCOREP_BIN_DIR}:$PATH" "PYTHONPATH=${SCOREP_PYTHONPATH}:${PYTHONPATH:-}" "${PY_ENV}/bin/python3" "-m" "scorep" "--keep-files" "--instrumenter-type=dummy" "--noinstrumenter" "--mpp=none" "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/phydll_dl_client.py")
       else
         DL_CLIENT_CMD=("${PY_ENV}/bin/python3" "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/phydll_dl_client.py")
       fi

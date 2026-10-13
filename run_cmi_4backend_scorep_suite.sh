@@ -78,9 +78,13 @@ submit_backend_job "CMI_aix_watercnn_10step" \
 submit_backend_job "CMI_phydll_cpp_watercnn_10step" \
     "USE_SMARTSIM=0,USE_CPP_ML_INTERFACE=1,ML_INTERFACE_ENV=cpp,CPP_ML_INTERFACE_PROVIDER_ENV=PHYDLL,CPP_ML_CONFIG_ENV=config_phydll.toml,MPI_RANKS_ENV=24,RANK_GRID_X_ENV=6,RANK_GRID_Z_ENV=4,USE_PYTHON_DL_CLIENT=0,SCOREP_DIR_TAG_ENV=cmi_watercnn_phydll_cpp"
 
-# 5. CMI PhyDLL Python Client
-submit_backend_job "CMI_phydll_py_watercnn_10step" \
-    "USE_SMARTSIM=0,USE_CPP_ML_INTERFACE=1,ML_INTERFACE_ENV=cpp,CPP_ML_INTERFACE_PROVIDER_ENV=PHYDLL,CPP_ML_CONFIG_ENV=config_phydll.toml,MPI_RANKS_ENV=24,RANK_GRID_X_ENV=6,RANK_GRID_Z_ENV=4,USE_PYTHON_DL_CLIENT=1,PHYDLL_PY_SCOREP_WRAPPER=1,SCOREP_DIR_TAG_ENV=cmi_watercnn_phydll_py"
+# 5. CMI PhyDLL Python Client — EXCLUDED (structural Score-P limitation, Sep 2026):
+#    the Python client (standard mpi4py, scorep --mpp=none) cannot join Score-P's
+#    world-wide init collectives (PMPI_Comm_dup/Allgather) or the clock ping-pong,
+#    so the instrumented solver ranks deadlock inside MPI_Init in profiling AND
+#    tracing mode. See the fail-fast guard in proper_slurm_job.sh.
+# submit_backend_job "CMI_phydll_py_watercnn_10step" \
+#     "USE_SMARTSIM=0,USE_CPP_ML_INTERFACE=1,ML_INTERFACE_ENV=cpp,CPP_ML_INTERFACE_PROVIDER_ENV=PHYDLL,CPP_ML_CONFIG_ENV=config_phydll.toml,MPI_RANKS_ENV=24,RANK_GRID_X_ENV=6,RANK_GRID_Z_ENV=4,USE_PYTHON_DL_CLIENT=1,PHYDLL_PY_SCOREP_WRAPPER=1,SCOREP_DIR_TAG_ENV=cmi_watercnn_phydll_py"
 
 echo ""
 echo "=== All CMI backend Score-P jobs submitted successfully ==="

@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/bin/bash
 
 
 ############################
@@ -119,7 +119,7 @@ if [[ -z "${ML_INTERFACE_MODE}" ]]; then
     ML_INTERFACE_MODE="auto"
   fi
 fi
-ML_INTERFACE_MODE_LOWER="${ML_INTERFACE_MODE:l}"
+ML_INTERFACE_MODE_LOWER="${ML_INTERFACE_MODE,,}"
 if [[ "${ML_INTERFACE_MODE_LOWER}" == "auto" ]]; then
   if (( USE_DIRECT_AIX == 1 )); then
     ML_INTERFACE_RESOLVED="aix"
@@ -176,7 +176,7 @@ MODEL_STAGE_FALLBACK_TO_SHARED=1
 MODEL_STAGE_SOLVER_GROUP=1
 MODEL_STAGE_DB_GROUP=1
 if [[ "${USE_CPP_ML_INTERFACE}" -eq 1 ]]; then
-  _cpp_provider="${CPP_ML_INTERFACE_PROVIDER:u}"
+  _cpp_provider="${CPP_ML_INTERFACE_PROVIDER^^}"
   if [[ "${_cpp_provider}" == "PHYDLL" ]]; then
     MODEL_STAGE_SOLVER_GROUP=0
   elif [[ "${_cpp_provider}" == "AIX" ]]; then
@@ -190,7 +190,7 @@ MODEL_IO_LAYOUT="split_3x3"
 MODEL_INPUTS=""
 MODEL_OUTPUTS=""
 if [[ "${USE_CPP_ML_INTERFACE}" -eq 1 ]]; then
-  _cpp_provider="${CPP_ML_INTERFACE_PROVIDER:u}"
+  _cpp_provider="${CPP_ML_INTERFACE_PROVIDER^^}"
   if [[ "${_cpp_provider}" == "AIX" || "${_cpp_provider}" == "PHYDLL" ]]; then
     MODEL_IO_LAYOUT="flat_contiguous"
     MODEL_ARTIFACT_MANIFEST="${MODEL_ARTIFACT_MANIFEST%_split.json}_flat.json"
@@ -233,21 +233,29 @@ _db_gpus_on_node_var="SLURM_GPUS_ON_NODE_HET_GROUP_${DB_HET_GROUP}"
 _db_tres_per_task_var="SLURM_TRES_PER_TASK_HET_GROUP_${DB_HET_GROUP}"
 _db_tres_per_node_var="SLURM_TRES_PER_NODE_HET_GROUP_${DB_HET_GROUP}"
 
-DB_PHYSICAL_NODES="${(P)_db_nodes_var:-${SLURM_JOB_NUM_NODES:-1}}"
+DB_PHYSICAL_NODES="${!_db_nodes_var}"
+DB_PHYSICAL_NODES="${DB_PHYSICAL_NODES:-${SLURM_JOB_NUM_NODES:-1}}"
 DB_NODES="${DB_NODES_ENV:-${DB_PHYSICAL_NODES}}"
-DB_LAYOUT="${DB_LAYOUT_ENV:-${(P)_db_layout_var:-shared}}"
+DB_LAYOUT="${DB_LAYOUT_ENV:-shared}"
 if [[ "${DB_LAYOUT}" != "per-ml-node" && "${DB_LAYOUT}" != "shared" ]]; then
   DB_LAYOUT="shared"
 fi
 export MLCOUPLING_SMARTSIM_DB_LAYOUT="${DB_LAYOUT}"
-ML_INFERENCE_CPU_CORES="${ML_INFERENCE_CPU_CORES_ENV:-${(P)_db_cpus_per_task_var:-${SLURM_CPUS_PER_TASK:-1}}}"
+ML_INFERENCE_CPU_CORES="${!_db_cpus_per_task_var}"
+ML_INFERENCE_CPU_CORES="${ML_INFERENCE_CPU_CORES_ENV:-${ML_INFERENCE_CPU_CORES:-${SLURM_CPUS_PER_TASK:-1}}}"
 
-_gpus_per_node_raw="${(P)_db_gpus_per_node_var:-${SLURM_GPUS_PER_NODE:-}}"
-_gpus_per_task_raw="${(P)_db_gpus_per_task_var:-${SLURM_GPUS_PER_TASK:-}}"
-_db_ntasks_per_node_raw="${(P)_db_ntasks_per_node_var:-${SLURM_NTASKS_PER_NODE:-1}}"
-_gpus_on_node_raw="${(P)_db_gpus_on_node_var:-${SLURM_GPUS_ON_NODE:-}}"
-_db_tres_per_task_raw="${(P)_db_tres_per_task_var:-${SLURM_TRES_PER_TASK:-}}"
-_db_tres_per_node_raw="${(P)_db_tres_per_node_var:-${SLURM_TRES_PER_NODE:-}}"
+_gpus_per_node_raw="${!_db_gpus_per_node_var}"
+_gpus_per_node_raw="${_gpus_per_node_raw:-${SLURM_GPUS_PER_NODE:-}}"
+_gpus_per_task_raw="${!_db_gpus_per_task_var}"
+_gpus_per_task_raw="${_gpus_per_task_raw:-${SLURM_GPUS_PER_TASK:-}}"
+_db_ntasks_per_node_raw="${!_db_ntasks_per_node_var}"
+_db_ntasks_per_node_raw="${_db_ntasks_per_node_raw:-${SLURM_NTASKS_PER_NODE:-1}}"
+_gpus_on_node_raw="${!_db_gpus_on_node_var}"
+_gpus_on_node_raw="${_gpus_on_node_raw:-${SLURM_GPUS_ON_NODE:-}}"
+_db_tres_per_task_raw="${!_db_tres_per_task_var}"
+_db_tres_per_task_raw="${_db_tres_per_task_raw:-${SLURM_TRES_PER_TASK:-}}"
+_db_tres_per_node_raw="${!_db_tres_per_node_var}"
+_db_tres_per_node_raw="${_db_tres_per_node_raw:-${SLURM_TRES_PER_NODE:-}}"
 
 _gpus_per_node_raw="${_gpus_per_node_raw%%\(*}"
 _gpus_per_node_raw="${_gpus_per_node_raw%%,*}"
@@ -267,47 +275,60 @@ _db_ntasks_per_node_raw="${_db_ntasks_per_node_raw%%,*}"
 _gpus_on_node_raw="${_gpus_on_node_raw%%\(*}"
 _gpus_on_node_raw="${_gpus_on_node_raw%%,*}"
 
-if [[ "${_gpus_per_task_raw}" != <-> ]] && [[ "${_db_tres_per_task_raw}" =~ 'gres/gpu[:=]([0-9]+)' ]]; then
-  _gpus_per_task_raw="${match[1]}"
+if [[ ! "${_gpus_per_task_raw}" =~ ^[0-9]+$ ]] && [[ "${_db_tres_per_task_raw}" =~ gres/gpu[:=]([0-9]+) ]]; then
+  _gpus_per_task_raw="${BASH_REMATCH[1]}"
 fi
-if [[ "${_gpus_per_node_raw}" != <-> ]] && [[ "${_db_tres_per_node_raw}" =~ 'gres/gpu[:=]([0-9]+)' ]]; then
-  _gpus_per_node_raw="${match[1]}"
+if [[ ! "${_gpus_per_node_raw}" =~ ^[0-9]+$ ]] && [[ "${_db_tres_per_node_raw}" =~ gres/gpu[:=]([0-9]+) ]]; then
+  _gpus_per_node_raw="${BASH_REMATCH[1]}"
 fi
 
-if [[ "${_gpus_per_task_raw}" != <-> ]] && [[ "${_gpus_per_node_raw}" != <-> ]] && command -v scontrol >/dev/null 2>&1; then
+if [[ ! "${_gpus_per_task_raw}" =~ ^[0-9]+$ ]] && [[ ! "${_gpus_per_node_raw}" =~ ^[0-9]+$ ]] && command -v scontrol >/dev/null 2>&1; then
   _db_component_job_id="${SLURM_JOB_ID}+${DB_HET_GROUP}"
   _db_scontrol_job="$(scontrol show job "${_db_component_job_id}" 2>/dev/null || true)"
   if [[ -n "${_db_scontrol_job}" ]]; then
-    if [[ "${_gpus_per_task_raw}" != <-> ]] && [[ "${_db_scontrol_job}" =~ 'TresPerTask=[^[:space:]]*gres/gpu[:=]([0-9]+)' ]]; then
-      _gpus_per_task_raw="${match[1]}"
+    if [[ ! "${_gpus_per_task_raw}" =~ ^[0-9]+$ ]] && [[ "${_db_scontrol_job}" =~ TresPerTask=[^[:space:]]*gres/gpu[:=]([0-9]+) ]]; then
+      _gpus_per_task_raw="${BASH_REMATCH[1]}"
     fi
-    if [[ "${_gpus_per_node_raw}" != <-> ]] && [[ "${_db_scontrol_job}" =~ 'TresPerNode=[^[:space:]]*gres/gpu[:=]([0-9]+)' ]]; then
-      _gpus_per_node_raw="${match[1]}"
+    if [[ ! "${_gpus_per_node_raw}" =~ ^[0-9]+$ ]] && [[ "${_db_scontrol_job}" =~ TresPerNode=[^[:space:]]*gres/gpu[:=]([0-9]+) ]]; then
+      _gpus_per_node_raw="${BASH_REMATCH[1]}"
     fi
-    if [[ "${_gpus_on_node_raw}" != <-> ]] && [[ "${_db_scontrol_job}" =~ 'gres/gpu=([0-9]+)' ]]; then
-      _gpus_on_node_raw="${match[1]}"
+    if [[ ! "${_gpus_on_node_raw}" =~ ^[0-9]+$ ]] && [[ "${_db_scontrol_job}" =~ gres/gpu=([0-9]+) ]]; then
+      _gpus_on_node_raw="${BASH_REMATCH[1]}"
     fi
   fi
 fi
 
-if [[ "${_gpus_per_node_raw}" == <-> ]]; then
+if [[ "${_gpus_per_node_raw}" =~ ^[0-9]+$ ]]; then
   GPUS_PER_NODE="${_gpus_per_node_raw}"
-elif [[ "${_gpus_per_task_raw}" == <-> ]] && [[ "${_db_ntasks_per_node_raw}" == <-> ]]; then
+elif [[ "${_gpus_per_task_raw}" =~ ^[0-9]+$ ]] && [[ "${_db_ntasks_per_node_raw}" =~ ^[0-9]+$ ]]; then
   GPUS_PER_NODE=$(( _gpus_per_task_raw * _db_ntasks_per_node_raw ))
-elif [[ "${_gpus_on_node_raw}" == <-> ]]; then
+elif [[ "${_gpus_on_node_raw}" =~ ^[0-9]+$ ]]; then
   GPUS_PER_NODE="${_gpus_on_node_raw}"
 else
   GPUS_PER_NODE=0
 fi
 
-if [[ "${DB_NODES}" != <-> ]] || [[ "${DB_NODES}" -lt 1 ]]; then
+if [[ ! "${DB_NODES}" =~ ^[0-9]+$ ]] || [[ "${DB_NODES}" -lt 1 ]]; then
   DB_NODES=1
 fi
-if [[ "${ML_INFERENCE_CPU_CORES}" != <-> ]] || [[ "${ML_INFERENCE_CPU_CORES}" -lt 1 ]]; then
+if [[ ! "${ML_INFERENCE_CPU_CORES}" =~ ^[0-9]+$ ]] || [[ "${ML_INFERENCE_CPU_CORES}" -lt 1 ]]; then
   ML_INFERENCE_CPU_CORES=1
 fi
-if [[ "${GPUS_PER_NODE}" != <-> ]] || [[ "${GPUS_PER_NODE}" -lt 0 ]]; then
+if [[ ! "${GPUS_PER_NODE}" =~ ^[0-9]+$ ]] || [[ "${GPUS_PER_NODE}" -lt 0 ]]; then
   GPUS_PER_NODE=0
+fi
+
+# Per-scenario overrides for multi-scenario wrappers (hh2): force the GPU
+# count used for solver/provider decisions, independent of the allocation.
+if [[ -n "${GPUS_PER_NODE_ENV:-}" ]]; then
+  GPUS_PER_NODE="${GPUS_PER_NODE_ENV}"
+  echo "Using GPUS_PER_NODE from environment variable: ${GPUS_PER_NODE}"
+fi
+
+_solver_step_gpus_args=""
+if [[ -n "${SOLVER_STEP_GPUS_ENV:-}" ]]; then
+  _solver_step_gpus_args="--gpus=${SOLVER_STEP_GPUS_ENV}"
+  echo "Solver step GPU restriction: ${_solver_step_gpus_args}"
 fi
 
 TOTAL_GPU_COUNT=0
@@ -316,7 +337,7 @@ if (( GPUS_PER_NODE > 0 )); then
   TOTAL_GPU_COUNT=$(( GPUS_PER_NODE * DB_NODES ))
 fi
 
-echo "DB_HET_GROUP=${DB_HET_GROUP} Slurm raw vars: ${_db_gpus_per_node_var}='${(P)_db_gpus_per_node_var:-${SLURM_GPUS_PER_NODE:-}}', ${_db_gpus_per_task_var}='${(P)_db_gpus_per_task_var:-${SLURM_GPUS_PER_TASK:-}}', ${_db_tres_per_task_var}='${(P)_db_tres_per_task_var:-${SLURM_TRES_PER_TASK:-}}', ${_db_ntasks_per_node_var}='${(P)_db_ntasks_per_node_var:-${SLURM_NTASKS_PER_NODE:-}}', ${_db_gpus_on_node_var}='${(P)_db_gpus_on_node_var:-${SLURM_GPUS_ON_NODE:-}}' -> parsed: gpus_per_task=${_gpus_per_task_raw}, gpus_per_node=${_gpus_per_node_raw}, gpus_on_node=${_gpus_on_node_raw}; computed GPUS_PER_NODE=${GPUS_PER_NODE}, DB_NODES=${DB_NODES}, ML_INFERENCE_CPU_CORES=${ML_INFERENCE_CPU_CORES}; TOTAL_GPU_COUNT=${TOTAL_GPU_COUNT}"
+echo "DB_HET_GROUP=${DB_HET_GROUP} Slurm raw vars: ${_db_gpus_per_node_var}='${!_db_gpus_per_node_var}', ${_db_gpus_per_task_var}='${!_db_gpus_per_task_var}', ${_db_tres_per_task_var}='${!_db_tres_per_task_var}', ${_db_ntasks_per_node_var}='${!_db_ntasks_per_node_var}', ${_db_gpus_on_node_var}='${!_db_gpus_on_node_var}' -> parsed: gpus_per_task=${_gpus_per_task_raw}, gpus_per_node=${_gpus_per_node_raw}, gpus_on_node=${_gpus_on_node_raw}; computed GPUS_PER_NODE=${GPUS_PER_NODE}, DB_NODES=${DB_NODES}, ML_INFERENCE_CPU_CORES=${ML_INFERENCE_CPU_CORES}; TOTAL_GPU_COUNT=${TOTAL_GPU_COUNT}"
 
 USE_GPU=$(( GPUS_PER_NODE > 0 ? 1 : 0 ))
 
@@ -392,19 +413,21 @@ _solver_nodes_var="SLURM_JOB_NUM_NODES_HET_GROUP_${SOLVER_HET_GROUP}"
 _solver_ntasks_var="SLURM_NTASKS_HET_GROUP_${SOLVER_HET_GROUP}"
 _solver_ntasks_per_node_var="SLURM_NTASKS_PER_NODE_HET_GROUP_${SOLVER_HET_GROUP}"
 
-_nodes="${(P)_solver_nodes_var:-${SLURM_JOB_NUM_NODES:-1}}"
+_nodes="${!_solver_nodes_var}"
+_nodes="${_nodes:-${SLURM_JOB_NUM_NODES:-1}}"
 if [[ -z "${SLURM_HET_SIZE:-}" ]] && [[ "${USE_SMARTSIM:-0}" -eq 1 || ( "${USE_CPP_ML_INTERFACE:-0}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:-}" == "SMARTSIM" ) ]]; then
   _nodes=$(( _nodes - DB_NODES ))
   if [[ "${_nodes}" -lt 1 ]]; then
     _nodes=1
   fi
 fi
-_ntasks_per_node_raw="${(P)_solver_ntasks_per_node_var:-${SLURM_NTASKS_PER_NODE:-}}"
+_ntasks_per_node_raw="${!_solver_ntasks_per_node_var}"
+_ntasks_per_node_raw="${_ntasks_per_node_raw:-${SLURM_NTASKS_PER_NODE:-}}"
 _cpus_per_task="${SLURM_CPUS_PER_TASK:-1}"
 
 # Prefer Slurm's already-computed task count for the selected solver het-group.
-if [[ -n "${(P)_solver_ntasks_var:-}" ]]; then
-  MPI_RANKS="${(P)_solver_ntasks_var}"
+if [[ -n "${!_solver_ntasks_var}" ]]; then
+  MPI_RANKS="${!_solver_ntasks_var}"
 elif [[ -n "${SLURM_NTASKS:-}" ]] && [[ -z "${SLURM_HET_SIZE:-}" ]]; then
   MPI_RANKS="${SLURM_NTASKS}"
 else
@@ -418,25 +441,33 @@ fi
 SOLVER_SRUN_EXTRA_ARGS=""
 if [[ -z "${SLURM_HET_SIZE:-}" ]] && [[ "${USE_SMARTSIM:-0}" -eq 1 || ( "${USE_CPP_ML_INTERFACE:-0}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:-}" == "SMARTSIM" ) ]]; then
   if [[ -n "${SLURM_JOB_NODELIST:-}" ]]; then
-    hosts=("${(@f)$(scontrol show hostnames "${SLURM_JOB_NODELIST}")}")
+    _hosts_out="$(scontrol show hostnames "${SLURM_JOB_NODELIST}")"
+    mapfile -t hosts <<< "${_hosts_out}"
     if [[ "${SMARTSIM_DEDICATED_DB_NODES_ENV:-0}" == "1" ]]; then
       if [[ "${#hosts[@]}" -lt $(( DB_NODES + 1 )) ]]; then
         echo "SMARTSIM_DEDICATED_DB_NODES_ENV=1 requires ${DB_NODES} DB nodes plus one solver node." >&2
         exit 1
       fi
       db_hosts=("${hosts[@]:0:$DB_NODES}")
-      export SMARTSIM_DB_NODELIST="${(j:,:)db_hosts}"
-      SOLVER_SRUN_EXTRA_ARGS="--nodelist=${hosts[$((DB_NODES + 1))]}"
-      export SMARTSIM_DB_EXCLUDE_NODE="${hosts[$((DB_NODES + 1))]}"
-      echo "Dedicated SmartSim DB nodes: ${SMARTSIM_DB_NODELIST}; solver node: ${hosts[$((DB_NODES + 1))]}"
+      export SMARTSIM_DB_NODELIST="$(IFS=,; echo "${db_hosts[*]}")"
+      SOLVER_SRUN_EXTRA_ARGS="--nodelist=${hosts[DB_NODES]}"
+      export SMARTSIM_DB_EXCLUDE_NODE="${hosts[DB_NODES]}"
+      echo "Dedicated SmartSim DB nodes: ${SMARTSIM_DB_NODELIST}; solver node: ${hosts[DB_NODES]}"
     elif [[ "${#hosts[@]}" -ge 2 ]]; then
-      SOLVER_SRUN_EXTRA_ARGS="--nodelist=${hosts[2]}"
-      echo "SmartSim active on ${#hosts[@]} nodes. Pinning solver srun to node: ${hosts[2]}"
+      SOLVER_SRUN_EXTRA_ARGS="--nodelist=${hosts[1]}"
+      echo "SmartSim active on ${#hosts[@]} nodes. Pinning solver srun to node: ${hosts[1]}"
     elif [[ "${#hosts[@]}" -eq 1 ]]; then
       SOLVER_SRUN_EXTRA_ARGS="--overlap --exact"
       echo "Single-node SmartSim allocation. Using overlap/exact for solver step."
     fi
   fi
+fi
+
+# Optional deterministic CPU binding for the solver step (e.g. SOLVER_CPU_BIND_ENV=cores).
+# Needed for rank/NUMA placement experiments (AIx GPU-affine and NUMA-local grouping).
+if [[ -n "${SOLVER_CPU_BIND_ENV:-}" ]]; then
+  SOLVER_SRUN_EXTRA_ARGS+=" --cpu-bind=${SOLVER_CPU_BIND_ENV}"
+  echo "Solver CPU binding: --cpu-bind=${SOLVER_CPU_BIND_ENV}"
 fi
 
 # Ensure _ntasks_per_node is populated for the job name template
@@ -457,7 +488,7 @@ if [[ -n "${RANK_GRID_X_ENV:-}" ]] && [[ -n "${RANK_GRID_Z_ENV:-}" ]]; then
   MPI_RANKS="${_ntasks_per_node_num}"
 fi
 
-echo "Calculated MPI_RANKS=${MPI_RANKS} from _nodes=${_nodes}, _ntasks_per_node=${_ntasks_per_node}, SLURM_NTASKS=${SLURM_NTASKS}, and _solver_ntasks_var=${(P)_solver_ntasks_var:-}"
+echo "Calculated MPI_RANKS=${MPI_RANKS} from _nodes=${_nodes}, _ntasks_per_node=${_ntasks_per_node}, SLURM_NTASKS=${SLURM_NTASKS:-}, and _solver_ntasks_var=${!_solver_ntasks_var}"
 IO_MODE="rank0_gather"     # parallel_hdf5, rank0_gather
 MPI_SYNC_MODE="none"        # none, step, report
 HDF5_XFER_MODE="independent" # collective, independent (independent is more robust on this stack at high ranks)
@@ -623,7 +654,7 @@ elif [[ "${USE_SCOREP}" == "1" ]]; then
 fi
 if [[ "${PROFILE_VALIDATION_ENV:-0}" == "1" ]]; then
   _profile_provider="${PROFILE_PROVIDER_ENV:-${CPP_ML_INTERFACE_PROVIDER}}"
-  if [[ "${CPP_ML_INTERFACE_PROVIDER:u}" != "${_profile_provider:u}" ]]; then
+  if [[ "${CPP_ML_INTERFACE_PROVIDER^^}" != "${_profile_provider^^}" ]]; then
     echo "Error: profiling validation requested provider '${_profile_provider}', but selected '${CPP_ML_INTERFACE_PROVIDER}'." >&2
     exit 1
   fi
@@ -637,7 +668,7 @@ if [[ "${PROFILE_VALIDATION_ENV:-0}" == "1" ]]; then
   fi
   echo "PROFILE_VALIDATION provider=${CPP_ML_INTERFACE_PROVIDER} scorep=${USE_SCOREP} fresh=true"
 fi
-if [[ "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:u}" == "PHYDLL" ]]; then
+if [[ "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER^^}" == "PHYDLL" ]]; then
   _phydll_cache="solver_cpp/${COMPILE_OUTPUT_PATH}/CMakeCache.txt"
   if [[ "${SKIP_COMPILE}" -eq 1 && ! -x "solver_cpp/${COMPILE_OUTPUT_PATH}/terrain_solver" ]]; then
     echo "PhyDLL provider requested but solver binary is missing; forcing compilation."
@@ -689,7 +720,7 @@ if [[ -n "${CPP_ML_CONFIG_ENV:-}" ]]; then
 fi
 
 if [[ -z "${CPP_ML_CONFIG}" ]]; then
-  _cpp_provider="${CPP_ML_INTERFACE_PROVIDER:u}"
+  _cpp_provider="${CPP_ML_INTERFACE_PROVIDER^^}"
   if [[ "${_cpp_provider}" == "AIX" ]]; then
     CPP_ML_CONFIG="config_aix.toml"
   elif [[ "${_cpp_provider}" == "PHYDLL" ]]; then
@@ -762,6 +793,139 @@ cd /hpcwork/ro092286/smartsim/ || exit
 
 MINI_APP_DIR="/hpcwork/ro092286/smartsim/mini_app"
 
+SMARTSIM_STARTUP_TIMEOUT="${SMARTSIM_STARTUP_TIMEOUT_ENV:-300}"
+SMARTSIM_SHUTDOWN_TIMEOUT="${SMARTSIM_SHUTDOWN_TIMEOUT_ENV:-120}"
+for _timeout_var in SMARTSIM_STARTUP_TIMEOUT SMARTSIM_SHUTDOWN_TIMEOUT; do
+  if [[ ! "${!_timeout_var}" =~ ^[1-9][0-9]*$ ]]; then
+    echo "${_timeout_var}_ENV must be a positive integer (seconds)." >&2
+    exit 1
+  fi
+done
+if (( SMARTSIM_SHUTDOWN_TIMEOUT < 30 )); then
+  echo "SMARTSIM_SHUTDOWN_TIMEOUT_ENV must be at least 30 seconds for escalation." >&2
+  exit 1
+fi
+DRIVER_PID=""
+NV_DMON_PID=""
+SMARTSIM_STEP_PREFIX="ss-${SLURM_JOB_ID:-local}-$$-${RANDOM}-"
+SMARTSIM_CLEANUP_ACTIVE=0
+SMARTSIM_CLEANUP_FAILED=0
+
+_smartsim_owned_steps() {
+  local listing step name query_timeout="${1:-5}"
+  listing="$(timeout --kill-after=1s "${query_timeout}s" squeue --steps --noheader \
+    --jobs "${SLURM_JOB_ID}" --format='%i|%j')" || return 1
+  while IFS='|' read -r step name; do
+    step="${step//[[:space:]]/}"
+    name="${name//[[:space:]]/}"
+    # squeue is allocation-scoped; never pass batch/extern or a bare job ID.
+    if [[ "${name}" == "${SMARTSIM_STEP_PREFIX}"* && "${step}" =~ ^[0-9]+(\+[0-9]+)?\.[0-9]+$ ]]; then
+      printf '%s\n' "${step}"
+    fi
+  done <<< "${listing}"
+}
+
+_smartsim_cleanup() {
+  (( SMARTSIM_CLEANUP_ACTIVE )) || return "${SMARTSIM_CLEANUP_FAILED}"
+  local deadline=$((SECONDS + SMARTSIM_SHUTDOWN_TIMEOUT))
+  local term_at=$((deadline - 20)) kill_at=$((deadline - 10))
+  local steps remaining command_timeout term_sent=0 kill_sent=0 query_ok=0
+  local -a step_ids=()
+  echo "Stopping SmartSim controller and owned DB steps (budget ${SMARTSIM_SHUTDOWN_TIMEOUT}s)..."
+  printf 'Done\n' > "${MINI_APP_DIR}/close_driver_${RUN_ID}.txt" || true
+  while (( SECONDS < deadline )); do
+    remaining=$((deadline - SECONDS - 1))
+    (( remaining > 0 )) || break
+    command_timeout=$((remaining < 5 ? remaining : 5))
+    if steps="$(_smartsim_owned_steps "${command_timeout}")"; then
+      query_ok=1
+      if [[ -z "${steps}" ]] && ! kill -0 "${DRIVER_PID}" 2>/dev/null; then
+        wait "${DRIVER_PID}" 2>/dev/null || true
+        DRIVER_PID=""
+        SMARTSIM_CLEANUP_ACTIVE=0
+        rm -f "${MINI_APP_DIR}/${DB_HOSTNAME_FILE}" "${MINI_APP_DIR}/close_driver_${RUN_ID}.txt"
+        return 0
+      fi
+    else
+      query_ok=0
+      steps=""
+    fi
+    if (( SECONDS >= term_at && ! term_sent )); then
+      kill -TERM "${DRIVER_PID}" 2>/dev/null || true
+      term_sent=1
+    fi
+    step_ids=()
+    if [[ -n "${steps}" ]]; then
+      mapfile -t step_ids <<< "${steps}"
+    fi
+    remaining=$((deadline - SECONDS - 1))
+    (( remaining > 0 )) || break
+    command_timeout=$((remaining < 3 ? remaining : 3))
+    if (( SECONDS >= kill_at )); then
+      if (( ! kill_sent )); then
+        kill -KILL "${DRIVER_PID}" 2>/dev/null || true
+        kill_sent=1
+      fi
+      if (( ${#step_ids[@]} )); then
+        timeout --kill-after=1s "${command_timeout}s" scancel --signal=KILL "${step_ids[@]}" || true
+      fi
+    elif (( term_sent && ${#step_ids[@]} )); then
+      timeout --kill-after=1s "${command_timeout}s" scancel --signal=TERM "${step_ids[@]}" || true
+    fi
+    sleep 1
+  done
+  kill -KILL "${DRIVER_PID}" 2>/dev/null || true
+  SMARTSIM_CLEANUP_ACTIVE=0
+  SMARTSIM_CLEANUP_FAILED=1
+  echo "ERROR: SmartSim cleanup could not confirm shutdown (Slurm query_ok=${query_ok}); do not continue the campaign." >&2
+  return 1
+}
+
+_launcher_exit() {
+  local rc=$?
+  trap - EXIT
+  trap '' INT TERM HUP
+  set +e
+  # Campaign launchers must abort on 125 rather than try another condition.
+  _smartsim_cleanup || rc=125
+  if [[ -n "${NV_DMON_PID:-}" ]]; then
+    kill "${NV_DMON_PID}" 2>/dev/null || true
+    if [[ -n "${SCOREP_EXPERIMENT_DIRECTORY:-}" ]]; then
+      cp "${MINI_APP_DIR}/logs/redis_gpu_${RUN_ID}.log" "${SCOREP_EXPERIMENT_DIRECTORY}/" 2>/dev/null || true
+    fi
+  fi
+  if declare -F _scorep_archive_tracing >/dev/null; then
+    _scorep_archive_tracing
+  fi
+  exit "${rc}"
+}
+trap _launcher_exit EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+trap 'exit 129' HUP
+
+########## NIC traffic sampling (background, 1 Hz) ##########
+# Samples cumulative rx/tx bytes+packets of every non-loopback interface on
+# every allocated node (ib0/eth0/...) into one shared CSV. Background srun
+# steps / processes are reaped automatically when the job ends.
+if [[ "${NIC_SAMPLING_ENV:-1}" == "1" ]]; then
+  mkdir -p logs
+  NIC_CSV="${MINI_APP_DIR}/logs/nic_traffic_${RUN_ID}.csv"
+  echo "NIC traffic sampling -> ${NIC_CSV} (1 Hz)"
+  if [[ -n "${SLURM_HET_SIZE:-}" || -n "${SLURM_JOB_NUM_NODES_HET_GROUP_0:-}" ]]; then
+    for _grp in 0 1; do
+      _gnodes_var="SLURM_JOB_NUM_NODES_HET_GROUP_${_grp}"
+      _gnodes="${!_gnodes_var-}"
+      _gnodes="${_gnodes:-1}"
+      srun --overlap --exact --ntasks-per-node=1 --nodes="${_gnodes}" \
+        $(get_srun_het_flag "${_grp}") \
+        "${MINI_APP_DIR}/nic_sampler.sh" "${NIC_CSV}" 1 >/dev/null 2>&1 &
+    done
+  else
+    bash "${MINI_APP_DIR}/nic_sampler.sh" "${NIC_CSV}" 1 >/dev/null 2>&1 &
+  fi
+fi
+
 export SMARTSIM_RUNTIME_ROOT
 
 if (( USE_GPU == 1 )); then
@@ -801,7 +965,7 @@ module -t list
 # causing PMIx collective timeouts and UCX worker address exchange failures
 # between c23mm (CPU) and c23g (GPU) het-groups. These MUST be set AFTER
 # the module load because modules may reset OMPI_MCA values.
-if [[ "${CPP_ML_INTERFACE_PROVIDER:u}" == "PHYDLL" || "${PHYDLL_SAFE_MPI_ENV:-0}" == "1" ]] || ( [[ -n "${SLURM_HET_SIZE:-}" ]] && (( ${USE_SCOREP:-0} )) ); then
+if [[ "${CPP_ML_INTERFACE_PROVIDER^^}" == "PHYDLL" || "${PHYDLL_SAFE_MPI_ENV:-0}" == "1" ]] || ( [[ -n "${SLURM_HET_SIZE:-}" ]] && (( ${USE_SCOREP:-0} )) ); then
   export OMPI_MCA_pml=ob1
   export OMPI_MCA_btl=self,vader,tcp
   export PMIX_MCA_gds=hash
@@ -845,26 +1009,62 @@ if [[ "${USE_SCOREP}" == "1" ]]; then
   _scorep_job_name="${SLURM_JOB_NAME:-scorep_job}"
   _scorep_job_name="${_scorep_job_name//[^A-Za-z0-9_.-]/_}"
   # install.sh pre-sets this under ${SMARTSIM_ROOT_DIR}; keep mini-app profiles local.
+  # Unique per-run directory name (RUN_ID suffix): with a fixed tag, a repeated
+  # attempt classifies the leftover dir as a "previous experiment" and races on
+  # rename/creation, which aborts fatally (SCOREP_Tracing assert).
   if [[ -n "${SCOREP_DIR_TAG_ENV:-}" ]]; then
-    export SCOREP_EXPERIMENT_DIRECTORY="${MINI_APP_DIR}/scorep_runs/${SCOREP_DIR_TAG_ENV}"
+    _scorep_dir_name="${SCOREP_DIR_TAG_ENV}_${RUN_ID}"
   else
-    export SCOREP_EXPERIMENT_DIRECTORY="${MINI_APP_DIR}/scorep_runs/${_scorep_job_name}_${RUN_ID}"
+    _scorep_dir_name="${_scorep_job_name}_${RUN_ID}"
   fi
-  # OTF2 tracing requires ALL ranks to share ONE experiment directory. With
-  # overwrite=false Score-P would rename the pre-created (metadata-only) dir,
-  # and 24+ ranks racing on that rename abort fatally. overwrite=true makes
-  # ranks delete-and-recreate only if the dir is not yet a valid experiment,
-  # then join the experiment created by the first rank.
+  _scorep_tracing=false
   if [[ "${SCOREP_ENABLE_TRACING_ENV:-false}" == "true" || "${SCOREP_ENABLE_TRACING_ENV:-false}" == "1" ]]; then
-    export SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY=true
-  else
-    export SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY="${SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY:-false}"
+    _scorep_tracing=true
   fi
-  mkdir -p "$(dirname "${SCOREP_EXPERIMENT_DIRECTORY}")"
-  rm -rf "${SCOREP_EXPERIMENT_DIRECTORY}"
-  rm -rf "${SCOREP_EXPERIMENT_DIRECTORY}"_rank_*(N)
-  mkdir -p "${SCOREP_EXPERIMENT_DIRECTORY}"
-  cat <<EOF > "${SCOREP_EXPERIMENT_DIRECTORY}/run_metadata.json"
+  if [[ "${USE_PYTHON_DL_CLIENT:-0}" == "1" && "${PHYDLL_PY_SCOREP_WRAPPER:-0}" == "1" && "${USE_SCOREP}" == "1" ]]; then
+    # STRUCTURAL LIMITATION (confirmed by hang in jobs 3707238/3708403): with
+    # Score-P-MPI-instrumented solver ranks, EVERY process in MPI_COMM_WORLD
+    # must participate in Score-P's init: SCOREP_Ipc_Init does PMPI_Comm_dup +
+    # a node-id Allgather over the whole world, and with tracing the init AND
+    # finalize additionally run a world-wide clock ping-pong
+    # (scorep_clock_synchronization_mpp_ipc.c, tsc is never "global"). A
+    # Python DL client under standard mpi4py (scorep --mpp=none) never joins
+    # these collectives, so all 96 solver ranks block inside MPI_Init - in
+    # profiling AND tracing mode. No phydll_py case with a Score-P solver has
+    # ever produced data. Fixes would be: Score-P-instrumented mpi4py for the
+    # client (or LD_AUDIT interposition via libscorep_rtld_audit.so).
+    # Fail fast instead of deadlocking until the job's time limit.
+    echo "ERROR: phydll_py + Score-P solver is structurally impossible: the Python DL client (standard mpi4py) cannot join Score-P's world-wide init collectives (PMPI_Comm_dup/Allgather, clock sync). The solver ranks would deadlock inside MPI_Init in profiling AND tracing mode." >&2
+    echo "       Options: run this case without the Score-P python wrapper (plain client still deadlocks against the instrumented solver!), use the C++ DL client (phydll_cpp works), or build Score-P-instrumented mpi4py / use LD_AUDIT for the client." >&2
+    exit 1
+  fi
+  # Clean up stale experiment dirs from previous attempts BEFORE any rank starts
+  # (single batch-script process, so this is race-free).
+  mkdir -p "${MINI_APP_DIR}/scorep_runs"
+  rm -rf "${MINI_APP_DIR}/scorep_runs/${_scorep_dir_name}"
+  rm -rf "${MINI_APP_DIR}/scorep_runs/${_scorep_dir_name}"_rank_*
+  if [[ "${_scorep_tracing}" == "true" ]]; then
+    # OTF2 tracing: ALL ranks share ONE experiment directory. Score-P
+    # serializes init with a create/rename handshake that is not atomic on the
+    # parallel work filesystem: every tracing attempt since Sep 3 (at 24 and
+    # 96 ranks alike) aborted fatally on SCOREP_Tracing asserts. Two fixes are
+    # combined here: (1) the recipe that worked until Aug 8 - overwrite=true
+    # plus a pre-created EMPTY directory (a metadata file would make later
+    # ranks classify the dir as a stale experiment); (2) this is a single-node
+    # job, so the shared dir lives on node-local /tmp with truly atomic
+    # mkdir/rename. The finished experiment is copied back to scorep_runs/ at
+    # exit (see trap below), so traces survive on the work filesystem.
+    _SCOREP_ARCHIVE_DIR="${MINI_APP_DIR}/scorep_runs/${_scorep_dir_name}"
+    export SCOREP_EXPERIMENT_DIRECTORY="/tmp/${USER:-$(id -un)}/scorep_runs/${_scorep_dir_name}"
+    rm -rf "${SCOREP_EXPERIMENT_DIRECTORY}"
+    mkdir -p "${SCOREP_EXPERIMENT_DIRECTORY}"
+    export SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY=true
+    # Archive on every exit path: write run metadata only AFTER the solver
+    # finished (never pre-create it into a live experiment dir), then copy the
+    # experiment back from node-local storage to the work filesystem.
+    _scorep_archive_tracing() {
+      if [[ -f "${SCOREP_EXPERIMENT_DIRECTORY}/scorep.cfg" ]]; then
+        cat <<EOF > "${SCOREP_EXPERIMENT_DIRECTORY}/run_metadata.json"
 {
   "model": "${MODEL_NAME}",
   "model_path": "${MODEL_PATH:-}",
@@ -873,10 +1073,54 @@ if [[ "${USE_SCOREP}" == "1" ]]; then
   "ranks": ${MPI_RANKS},
   "total_steps": ${TOTAL_STEPS},
   "warmup_steps": 2,
+  "workgroups": ${GPUS_PER_NODE},
   "provider": "${CPP_ML_INTERFACE_PROVIDER:-SMARTSIM}",
   "job_id": "${SLURM_JOB_ID:-$$}"
 }
 EOF
+        mkdir -p "$(dirname "${_SCOREP_ARCHIVE_DIR}")"
+        rm -rf "${_SCOREP_ARCHIVE_DIR}"
+        if cp -r "${SCOREP_EXPERIMENT_DIRECTORY}" "${_SCOREP_ARCHIVE_DIR}"; then
+          echo "Score-P tracing experiment archived: ${_SCOREP_ARCHIVE_DIR}"
+        else
+          echo "WARNING: Score-P experiment copy-back failed; raw dir remains at ${SCOREP_EXPERIMENT_DIRECTORY}" >&2
+        fi
+        # The Python DL client writes its own experiment next to the shared dir
+        # (see the DL_CLIENT_CMD block); archive it too so it is not lost.
+        if [[ -d "${SCOREP_EXPERIMENT_DIRECTORY}_py_client" ]]; then
+          rm -rf "${_SCOREP_ARCHIVE_DIR}_py_client"
+          if cp -r "${SCOREP_EXPERIMENT_DIRECTORY}_py_client" "${_SCOREP_ARCHIVE_DIR}_py_client"; then
+            echo "Score-P py-client experiment archived: ${_SCOREP_ARCHIVE_DIR}_py_client"
+          else
+            echo "WARNING: py-client copy-back failed; raw dir remains at ${SCOREP_EXPERIMENT_DIRECTORY}_py_client" >&2
+          fi
+        fi
+      else
+        echo "Score-P tracing experiment dir has no scorep.cfg (nothing to archive)."
+      fi
+    }
+    # The launcher EXIT trap calls this after SmartSim cleanup.
+  else
+    # Profiling-only: ranks write independent per-rank dirs (<tag>_rank_N via
+    # solver_wrapper.sh), so the pre-created base dir is never contested.
+    export SCOREP_EXPERIMENT_DIRECTORY="${MINI_APP_DIR}/scorep_runs/${_scorep_dir_name}"
+    export SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY="${SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY:-false}"
+    mkdir -p "${SCOREP_EXPERIMENT_DIRECTORY}"
+    cat <<EOF > "${SCOREP_EXPERIMENT_DIRECTORY}/run_metadata.json"
+{
+  "model": "${MODEL_NAME}",
+  "model_path": "${MODEL_PATH:-}",
+  "resolution": "${TARGET_WIDTH}x${TARGET_HEIGHT}",
+  "batch_size": ${ML_BATCH_SIZE},
+  "ranks": ${MPI_RANKS},
+  "total_steps": ${TOTAL_STEPS},
+  "warmup_steps": 2,
+  "workgroups": ${GPUS_PER_NODE},
+  "provider": "${CPP_ML_INTERFACE_PROVIDER:-SMARTSIM}",
+  "job_id": "${SLURM_JOB_ID:-$$}"
+}
+EOF
+  fi
 fi
 
 if [[ "${AIX_DIAGNOSTICS_ENV:-0}" == "1" ]]; then
@@ -913,15 +1157,45 @@ if [[ "${AIX_P2P_TIMELINE_ENV:-0}" == "1" || -n "${AIX_P2P_TIMELINE_DIR_ENV:-}" 
   "ranks": ${MPI_RANKS},
   "total_steps": ${TOTAL_STEPS},
   "warmup_steps": 2,
+  "workgroups": ${GPUS_PER_NODE},
   "job_id": "${SLURM_JOB_ID:-$$}"
 }
 EOF
   echo "AIx P2P timeline enabled: dir=${AIX_P2P_TIMELINE_DIR}"
 fi
 
+# AIx pipelined-mode initial credits (collectiveCommunication.cpp reads the var
+# via getenv; srun --export=ALL delivers it to every solver rank).
+if [[ -n "${AIX_P2P_INITIAL_CREDITS_ENV:-}" ]]; then
+  export AIX_P2P_INITIAL_CREDITS="${AIX_P2P_INITIAL_CREDITS_ENV}"
+  echo "AIx P2P initial credits: ${AIX_P2P_INITIAL_CREDITS}"
+fi
+
+# RedisAI auto-batching params for the SmartSim provider (terrain_solver
+# --ml-db-*; passed to every solver launch below).
+ML_DB_ARGS=()
+if [[ -n "${ML_DB_BATCH_SIZE_ENV:-}" ]]; then
+  ML_DB_ARGS+=(--ml-db-batch-size "${ML_DB_BATCH_SIZE_ENV}")
+fi
+if [[ -n "${ML_DB_MIN_BATCH_SIZE_ENV:-}" ]]; then
+  ML_DB_ARGS+=(--ml-db-min-batch-size "${ML_DB_MIN_BATCH_SIZE_ENV}")
+fi
+if [[ -n "${ML_DB_MIN_BATCH_TIMEOUT_ENV:-}" ]]; then
+  ML_DB_ARGS+=(--ml-db-min-batch-timeout "${ML_DB_MIN_BATCH_TIMEOUT_ENV}")
+fi
+if [[ "${#ML_DB_ARGS[@]}" -gt 0 ]]; then
+  echo "ML DB batching args: ${ML_DB_ARGS[*]}"
+fi
+# SmartSim orchestrator RedisAI THREADS_PER_QUEUE (run-queue worker threads
+# per DB process; smartsim_controller.py default is min(8, cores//8)).
+if [[ -n "${SMARTSIM_THREADS_PER_QUEUE_ENV:-}" ]]; then
+  export SMARTSIM_THREADS_PER_QUEUE="${SMARTSIM_THREADS_PER_QUEUE_ENV}"
+  echo "SmartSim DB THREADS_PER_QUEUE: ${SMARTSIM_THREADS_PER_QUEUE}"
+fi
+
 # TensorFlow GPU backend in RedisAI may require an explicit CUDA data dir for XLA JIT
 # (e.g. Rsqrt JIT failures when libdevice is not found).
-_backend_req_upper="${MODEL_BACKEND:u}"
+_backend_req_upper="${MODEL_BACKEND^^}"
 if (( USE_GPU == 1 )) && [[ "${_backend_req_upper}" == "TF" || "${_backend_req_upper}" == "TENSORFLOW" || "${_backend_req_upper}" == "TFLITE" ]]; then
   _xla_cuda_root="${EBROOTCUDA:-}"
 
@@ -967,7 +1241,7 @@ else
   RUNTIME_DEVICE="smartsim_cpu"
   PY_ENV="${SMARTSIM_RUNTIME_ROOT}/${RUNTIME_DEVICE}"
 fi
-EXTERNAL_DIR="/hpcwork/thes2181/mini_app"
+EXTERNAL_DIR="${EXTERNAL_DIR_ENV:-/hpcwork/thes2181/mini_app}"
 #INPUT_IMAGE="${MINI_APP_DIR}/old/Srtm_ramp2.world.21600x10800.jpg"
 INPUT_IMAGE="${MINI_APP_DIR}/old/World_elevation_map.png"
 PREP_H5="${EXTERNAL_DIR}/${JOB_NAME}/world_init.h5"
@@ -990,7 +1264,7 @@ else
 fi
 
 
-if [[ ( "${USE_SMARTSIM}" -eq 1 || ( "${USE_CPP_ML_INTERFACE}" -eq 1 && ( "${CPP_ML_INTERFACE_PROVIDER:u}" == "SMARTSIM" || ( "${CPP_ML_INTERFACE_PROVIDER:u}" == "PHYDLL" && "${USE_PYTHON_DL_CLIENT:-0}" == "1" ) ) ) ) && "${USE_LOCAL_RUNTIME_STAGE}" -eq 1 ]]; then
+if [[ ( "${USE_SMARTSIM}" -eq 1 || ( "${USE_CPP_ML_INTERFACE}" -eq 1 && ( "${CPP_ML_INTERFACE_PROVIDER^^}" == "SMARTSIM" || ( "${CPP_ML_INTERFACE_PROVIDER^^}" == "PHYDLL" && "${USE_PYTHON_DL_CLIENT:-0}" == "1" ) ) ) ) && "${USE_LOCAL_RUNTIME_STAGE}" -eq 1 ]]; then
   RUNTIME_TAR_PATH="${SMARTSIM_RUNTIME_ROOT}/${RUNTIME_DEVICE}.tar"
   LOCAL_RUNTIME_BASE="/tmp/${USER}/${RUN_ID}/smartsim_runtime"
   LOCAL_RUNTIME_TAR="/tmp/${USER}_${RUN_ID}_${RUNTIME_DEVICE}.tar"
@@ -1017,17 +1291,17 @@ if [[ ( "${USE_SMARTSIM}" -eq 1 || ( "${USE_CPP_ML_INTERFACE}" -eq 1 && ( "${CPP
     local label="$3"
     local cp_rc
     local group_cpus_var="SLURM_CPUS_PER_TASK_HET_GROUP_${het_group}"
-    local group_cpus="${(P)group_cpus_var:-${SLURM_CPUS_PER_TASK:-1}}"
+    local group_cpus="${!group_cpus_var-}"
+    group_cpus="${group_cpus:-${SLURM_CPUS_PER_TASK:-1}}"
     local stage_cpus=$(( group_cpus < RUNTIME_STAGE_CPUS ? group_cpus : RUNTIME_STAGE_CPUS ))
     if [[ "${stage_cpus}" -lt 1 ]]; then stage_cpus=1; fi
 
-    setopt pipefail
+    set -o pipefail
     srun --export=ALL $(get_srun_het_flag "${het_group}") --nodes "${node_count}" --ntasks-per-node 1 --cpus-per-task "${stage_cpus}" \
       $([[ "${node_count}" -gt 1 ]] && echo "--distribution=block") \
       /bin/zsh -lc "set -euo pipefail; cp -f '${RUNTIME_TAR_PATH}' '${LOCAL_RUNTIME_TAR}'; test -s '${LOCAL_RUNTIME_TAR}'; echo RUNTIME_TAR_COPY_PER_NODE label=${label} het_group=${het_group} host=\$(hostname) tar='${LOCAL_RUNTIME_TAR}'" \
       2>&1 | tee -a "${RUNTIME_STAGE_LOG}"
-    cp_rc=${pipestatus[1]}
-    unsetopt pipefail
+    cp_rc=$?
     return "${cp_rc}"
   }
 
@@ -1035,7 +1309,7 @@ if [[ ( "${USE_SMARTSIM}" -eq 1 || ( "${USE_CPP_ML_INTERFACE}" -eq 1 && ( "${CPP
   if command -v sbcast >/dev/null 2>&1; then
     set +e
     sbcast --force "${RUNTIME_TAR_PATH}" "${LOCAL_RUNTIME_TAR}" 2>&1 | tee -a "${RUNTIME_STAGE_LOG}"
-    sbcast_rc=${pipestatus[1]}
+    sbcast_rc=$?
     set -e
     if [[ "${sbcast_rc}" -eq 0 ]]; then
       sbcast_ok=1
@@ -1065,17 +1339,17 @@ if [[ ( "${USE_SMARTSIM}" -eq 1 || ( "${USE_CPP_ML_INTERFACE}" -eq 1 && ( "${CPP
     local label="$3"
     local stage_rc
     local group_cpus_var="SLURM_CPUS_PER_TASK_HET_GROUP_${het_group}"
-    local group_cpus="${(P)group_cpus_var:-${SLURM_CPUS_PER_TASK:-1}}"
+    local group_cpus="${!group_cpus_var-}"
+    group_cpus="${group_cpus:-${SLURM_CPUS_PER_TASK:-1}}"
     local stage_cpus=$(( group_cpus < RUNTIME_STAGE_CPUS ? group_cpus : RUNTIME_STAGE_CPUS ))
     if [[ "${stage_cpus}" -lt 1 ]]; then stage_cpus=1; fi
 
-    setopt pipefail
+    set -o pipefail
     srun --export=ALL $(get_srun_het_flag "${het_group}") --nodes "${node_count}" --ntasks-per-node 1 --cpus-per-task "${stage_cpus}" \
       $([[ "${node_count}" -gt 1 ]] && echo "--distribution=block") \
       /bin/zsh -lc "set -euo pipefail; df -h /tmp; mkdir -p '${LOCAL_RUNTIME_BASE}'; echo RUNTIME_STAGE_CGROUP label=${label} memory_current=\$(cat /sys/fs/cgroup/memory.current 2>/dev/null || true) memory_max=\$(cat /sys/fs/cgroup/memory.max 2>/dev/null || true); /usr/bin/time -v tar -xf '${LOCAL_RUNTIME_TAR}' -C '${LOCAL_RUNTIME_BASE}'; test -x '${LOCAL_RUNTIME_ENV}/bin/python3'; echo RUNTIME_STAGE_CGROUP_END label=${label} memory_current=\$(cat /sys/fs/cgroup/memory.current 2>/dev/null || true) memory_events=\"\$(tr '\\n' ' ' </sys/fs/cgroup/memory.events 2>/dev/null || true)\"; echo RUNTIME_STAGE_PER_NODE label=${label} het_group=${het_group} host=\$(hostname) runtime='${LOCAL_RUNTIME_ENV}'" \
       2>&1 | tee -a "${RUNTIME_STAGE_LOG}"
-    stage_rc=${pipestatus[1]}
-    unsetopt pipefail
+    stage_rc=$?
     return "${stage_rc}"
   }
 
@@ -1121,7 +1395,7 @@ else
 fi
 
 if [[ "${USE_SMARTSIM}" -eq 1 || ( "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER}" == "SMARTSIM" ) ]]; then
-  _backend_req="${MODEL_BACKEND:u}"
+  _backend_req="${MODEL_BACKEND^^}"
   _smart_info_out="$(smart info 2>/dev/null || true)"
   if [[ "${_backend_req}" == "TORCH" ]]; then
     if ! echo "${_smart_info_out}" | grep -Eiq "Torch.*True"; then
@@ -1145,7 +1419,7 @@ cd "${MINI_APP_DIR}" || exit
 
 if [[ -n "${MODEL_ARTIFACT_MANIFEST:-}" ]] && [[ -f "${MODEL_ARTIFACT_MANIFEST}" ]]; then
   echo "Resolving model artifact from manifest ${MODEL_ARTIFACT_MANIFEST} for model=${MODEL_NAME} backend=${MODEL_BACKEND}"
-  MODEL_RESOLUTION=("${(@f)$(python3 - "${MODEL_ARTIFACT_MANIFEST}" "${MODEL_NAME}" "${MODEL_BACKEND}" <<'PY'
+  _model_resolution_out="$(python3 - "${MODEL_ARTIFACT_MANIFEST}" "${MODEL_NAME}" "${MODEL_BACKEND}" <<'PY'
 import json
 import sys
 from pathlib import Path
@@ -1163,18 +1437,19 @@ for artifact in payload.get("artifacts", []):
         sys.exit(0)
 raise SystemExit(f"Artifact for model={model_name} backend={backend} not found in {manifest_path}")
 PY
-  )}")
-  if [[ "${#MODEL_RESOLUTION[@]}" -ge 1 ]] && [[ -n "${MODEL_RESOLUTION[1]}" ]]; then
-    MODEL_PATH="${MODEL_RESOLUTION[1]}"
+  )"
+  mapfile -t MODEL_RESOLUTION <<< "${_model_resolution_out}"
+  if [[ "${#MODEL_RESOLUTION[@]}" -ge 1 ]] && [[ -n "${MODEL_RESOLUTION[0]}" ]]; then
+    MODEL_PATH="${MODEL_RESOLUTION[0]}"
   fi
-  if [[ "${#MODEL_RESOLUTION[@]}" -ge 2 ]] && [[ -n "${MODEL_RESOLUTION[2]}" ]]; then
-    MODEL_INPUTS="${MODEL_RESOLUTION[2]}"
+  if [[ "${#MODEL_RESOLUTION[@]}" -ge 2 ]] && [[ -n "${MODEL_RESOLUTION[1]}" ]]; then
+    MODEL_INPUTS="${MODEL_RESOLUTION[1]}"
   fi
-  if [[ "${#MODEL_RESOLUTION[@]}" -ge 3 ]] && [[ -n "${MODEL_RESOLUTION[3]}" ]]; then
-    MODEL_OUTPUTS="${MODEL_RESOLUTION[3]}"
+  if [[ "${#MODEL_RESOLUTION[@]}" -ge 3 ]] && [[ -n "${MODEL_RESOLUTION[2]}" ]]; then
+    MODEL_OUTPUTS="${MODEL_RESOLUTION[2]}"
   fi
-  if [[ "${#MODEL_RESOLUTION[@]}" -ge 4 ]] && [[ -n "${MODEL_RESOLUTION[4]}" ]]; then
-    MODEL_IO_LAYOUT="${MODEL_RESOLUTION[4]}"
+  if [[ "${#MODEL_RESOLUTION[@]}" -ge 4 ]] && [[ -n "${MODEL_RESOLUTION[3]}" ]]; then
+    MODEL_IO_LAYOUT="${MODEL_RESOLUTION[3]}"
   fi
   echo "Resolved MODEL_PATH=${MODEL_PATH}"
   if [[ -n "${MODEL_INPUTS}" ]]; then
@@ -1196,7 +1471,7 @@ if [[ ! -f "${MODEL_PATH_SOURCE}" ]]; then
   exit 1
 fi
 
-if [[ "${USE_GPU}" -eq 0 ]] && [[ "${MODEL_BACKEND:u}" == "TORCH" ]] && [[ "${TORCH_CPU_MODEL_CONVERT}" -eq 1 ]]; then
+if [[ "${USE_GPU}" -eq 0 ]] && [[ "${MODEL_BACKEND^^}" == "TORCH" ]] && [[ "${TORCH_CPU_MODEL_CONVERT}" -eq 1 ]]; then
   MODEL_CPU_CONVERT_DIR="/tmp/${USER}/model_cpu_converted_${SLURM_JOB_ID}"
   MODEL_CPU_CONVERT_PATH="${MODEL_CPU_CONVERT_DIR}/$(basename "${MODEL_PATH_SOURCE%.*}")_cpu.pt"
   MODEL_CPU_ARTIFACT_PATH="${MODEL_PATH_SOURCE/_cuda/_cpu}"
@@ -1260,20 +1535,20 @@ if [[ "${USE_LOCAL_MODEL_CACHE}" -eq 1 ]]; then
 
     if command -v scontrol >/dev/null 2>&1; then
       component_job_info="$(scontrol show job "${component_job_id}" 2>/dev/null || true)"
-      if [[ -n "${component_job_info}" ]] && [[ "${component_job_info}" =~ 'NodeList=([^[:space:]]+)' ]]; then
-        raw_nodelist="${match[1]}"
+      if [[ -n "${component_job_info}" ]] && [[ "${component_job_info}" =~ NodeList=([^[:space:]]+) ]]; then
+        raw_nodelist="${BASH_REMATCH[1]}"
       fi
     fi
 
-    if [[ "${raw_nodelist:l}" == "(null)" || "${raw_nodelist:l}" == "null" || "${raw_nodelist:l}" == "none" || "${raw_nodelist:l}" == "n/a" ]]; then
+    if [[ "${raw_nodelist,,}" == "(null)" || "${raw_nodelist,,}" == "null" || "${raw_nodelist,,}" == "none" || "${raw_nodelist,,}" == "n/a" ]]; then
       raw_nodelist=""
     fi
 
     if [[ -z "${raw_nodelist}" ]]; then
-      raw_nodelist="${(P)nodelist_var:-}"
+      raw_nodelist="${!nodelist_var-}"
     fi
 
-    if [[ "${raw_nodelist:l}" == "(null)" || "${raw_nodelist:l}" == "null" || "${raw_nodelist:l}" == "none" || "${raw_nodelist:l}" == "n/a" ]]; then
+    if [[ "${raw_nodelist,,}" == "(null)" || "${raw_nodelist,,}" == "null" || "${raw_nodelist,,}" == "none" || "${raw_nodelist,,}" == "n/a" ]]; then
       raw_nodelist=""
     fi
 
@@ -1308,18 +1583,17 @@ if [[ "${USE_LOCAL_MODEL_CACHE}" -eq 1 ]]; then
     local nodes_out
     nodes_out="$(get_nodes_for_het_group "${het_group}" || true)"
     if [[ -n "${nodes_out}" ]]; then
-      group_nodes=("${(@f)nodes_out}")
+      mapfile -t group_nodes <<< "${nodes_out}"
     fi
 
     if [[ "${#group_nodes[@]}" -eq 0 ]]; then
       echo "Warning: Could not resolve explicit node list for het-group ${het_group}; falling back to single srun staging." | tee -a "${MODEL_STAGE_LOG}"
-      setopt pipefail
+      set -o pipefail
       srun --export=ALL $(get_srun_het_flag "${het_group}") --nodes "${node_count}" --ntasks-per-node 1 --cpus-per-task 1 \
         $([[ "${node_count}" -gt 1 ]] && echo "--distribution=block") \
         /bin/zsh -lc "set -euo pipefail; _t0=\$(date +%s); mkdir -p \"${MODEL_LOCAL_DIR}\"; cp -f \"${MODEL_PATH_SOURCE}\" \"${MODEL_LOCAL_PATH}\"; test -s \"${MODEL_LOCAL_PATH}\"; _t1=\$(date +%s); echo MODEL_STAGE_PER_NODE label=${label} het_group=${het_group} host=\$(hostname) duration_s=\$((_t1-_t0)) path=${MODEL_LOCAL_PATH}" \
         2>&1 | tee -a "${MODEL_STAGE_LOG}"
-      stage_rc=${pipestatus[1]}
-      unsetopt pipefail
+      stage_rc=$?
       if [[ "${stage_rc}" -ne 0 ]]; then
         echo "Error: model staging failed for het-group ${het_group} (${label}) with exit code ${stage_rc}" | tee -a "${MODEL_STAGE_LOG}"
         return "${stage_rc}"
@@ -1336,7 +1610,7 @@ if [[ "${USE_LOCAL_MODEL_CACHE}" -eq 1 ]]; then
           continue
         fi
         node_ok=0
-        for attempt in {1..${MODEL_STAGE_MAX_RETRIES}}; do
+        for ((attempt=1; attempt<=MODEL_STAGE_MAX_RETRIES; attempt++)); do
           set +e
           srun --export=ALL $(get_srun_het_flag "${het_group}") --nodes 1 --ntasks 1 --cpus-per-task 1 --nodelist "${node}" \
             /bin/zsh -lc "set -euo pipefail; _t0=\$(date +%s); mkdir -p \"${MODEL_LOCAL_DIR}\"; cp -f \"${MODEL_PATH_SOURCE}\" \"${MODEL_LOCAL_PATH}\"; test -s \"${MODEL_LOCAL_PATH}\"; _t1=\$(date +%s); echo MODEL_STAGE_PER_NODE label=${label} het_group=${het_group} host=\$(hostname) duration_s=\$((_t1-_t0)) path=${MODEL_LOCAL_PATH}" \
@@ -1382,7 +1656,7 @@ if [[ "${USE_LOCAL_MODEL_CACHE}" -eq 1 ]]; then
   }
 
   local_cache_ok=1
-  local solver_staged=0
+  solver_staged=0
   if [[ "${MODEL_STAGE_SOLVER_GROUP}" -eq 1 ]]; then
     if ! stage_model_to_group "${SOLVER_HET_GROUP}" "${_nodes:-1}" "solver"; then
       local_cache_ok=0
@@ -1541,7 +1815,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
     if [[ "${USE_CPP_ML_INTERFACE}" -eq 1 ]]; then
       # enable the USE_CPP_ML_INTERFACE option defined in the CMakeLists.txt to compile the C++ ML inference interface
       COMPILE_ARGS+=("-DUSE_CPP_ML_INTERFACE=ON" "-DWITH_DIRECT_SMARTSIM=OFF" "-DWITH_DIRECT_AIX=OFF")
-      if [[ "${CPP_ML_INTERFACE_PROVIDER:u}" == "PHYDLL" ]]; then
+      if [[ "${CPP_ML_INTERFACE_PROVIDER^^}" == "PHYDLL" ]]; then
         echo "Enabling WITH_PHYDLL=ON for CPP-ML PhyDLL provider."
         COMPILE_ARGS+=("-DWITH_PHYDLL=ON")
         if [[ "${PHYDLL_REBUILD_ENV:-0}" == "1" || ! -f "${MINI_APP_DIR}/../CPP-ML-Interface/extern/phydll/build/lib/libphydll.so" ]]; then
@@ -1567,12 +1841,12 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
       LIBTORCH_LIB_DIR="$(realpath "${MINI_APP_DIR}/../CPP-ML-Interface/extern/libtorch/lib")"
       export SCOREP_WRAPPER_INSTRUMENTER_FLAGS="--nocompiler --user --mpp=${SCOREP_MPP} --io=none --memory=malloc --thread=none --nocuda"
       SCOREP_BIN_DIR="$(dirname "$(command -v scorep-config)")"
-      COMPILE_ARGS+=("-DWITH_SCOREP=ON" "-DSCOREP_ENABLE_COMPILER=OFF" "-DSCOREP_ENABLE_USER=ON" "-DCPPML_SCOREP_MPP=${SCOREP_MPP}" "-DSCOREP_MPP_SYSTEM=${SCOREP_MPP}" "-DPHYDLL_DL_WITH_TORCH=OFF" "-DSCOREP_ROOT_DIR=${SMARTSIM_SCOREP_ROOT}" "-DSCOREP_CONFIG_EXECUTABLE=${SCOREP_BIN_DIR}/scorep-config" "-DSCOREP_INFO_EXECUTABLE=${SCOREP_BIN_DIR}/scorep-info" "-DAIX_USE_PREBUILT=ON" "-DFORCE_AIX_REBUILD=${FORCE_AIX_REBUILD_ENV:-OFF}" "-DAIXELERATOR_PREBUILT_INSTALL_PREFIX=${MINI_APP_DIR}/../CPP-ML-Interface/extern/AIxeleratorService/INSTALL-SCOREP" "-DTORCH_VERSION=2.4.0" "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-rpath-link,${LIBTORCH_LIB_DIR} -Wl,-rpath-link,/usr/lib64 -Wl,-rpath-link,/lib64 -Wl,-rpath,/usr/lib64 -Wl,-rpath,/lib64 -Wl,-rpath,/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/CUDA/12.4.0/lib/stubs -Wl,--allow-shlib-undefined" "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,-rpath-link,${LIBTORCH_LIB_DIR} -Wl,-rpath-link,/usr/lib64 -Wl,-rpath-link,/lib64 -Wl,-rpath,/usr/lib64 -Wl,-rpath,/lib64 -Wl,-rpath,/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/CUDA/12.4.0/lib/stubs -Wl,--allow-shlib-undefined")
+      COMPILE_ARGS+=("-DWITH_SCOREP=ON" "-DSCOREP_ENABLE_COMPILER=OFF" "-DSCOREP_ENABLE_USER=ON" "-DCPPML_SCOREP_MPP=${SCOREP_MPP}" "-DSCOREP_MPP_SYSTEM=${SCOREP_MPP}" "-DPHYDLL_DL_WITH_TORCH=OFF" "-DSCOREP_ROOT_DIR=${SMARTSIM_SCOREP_ROOT}" "-DSCOREP_CONFIG_EXECUTABLE=${SCOREP_BIN_DIR}/scorep-config" "-DSCOREP_INFO_EXECUTABLE=${SCOREP_BIN_DIR}/scorep-info" "-DAIX_USE_PREBUILT=ON" "-DFORCE_AIX_REBUILD=${FORCE_AIX_REBUILD_ENV:-OFF}" "-DAIXELERATOR_PREBUILT_INSTALL_PREFIX=${AIX_INSTALL_PREFIX_ENV:-${MINI_APP_DIR}/../CPP-ML-Interface/extern/AIxeleratorService/INSTALL-SCOREP}" "-DTORCH_VERSION=2.4.0" "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-rpath-link,${LIBTORCH_LIB_DIR} -Wl,-rpath-link,/usr/lib64 -Wl,-rpath-link,/lib64 -Wl,-rpath,/usr/lib64 -Wl,-rpath,/lib64 -Wl,-rpath,/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/CUDA/12.4.0/lib/stubs -Wl,--allow-shlib-undefined" "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,-rpath-link,${LIBTORCH_LIB_DIR} -Wl,-rpath-link,/usr/lib64 -Wl,-rpath-link,/lib64 -Wl,-rpath,/usr/lib64 -Wl,-rpath,/lib64 -Wl,-rpath,/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/CUDA/12.4.0/lib/stubs -Wl,--allow-shlib-undefined")
       export CXX="${SCOREP_BIN_DIR}/scorep-mpicxx"
       export CC="${SCOREP_BIN_DIR}/scorep-mpicc"
       echo "Using SCOREP compilers: CC=${CC} CXX=${CXX}"
     else
-      COMPILE_ARGS+=("-DWITH_SCOREP=OFF" "-DAIX_USE_PREBUILT=ON" "-DAIXELERATOR_PREBUILT_INSTALL_PREFIX=${MINI_APP_DIR}/../CPP-ML-Interface/extern/AIxeleratorService/INSTALL")
+      COMPILE_ARGS+=("-DWITH_SCOREP=OFF" "-DAIX_USE_PREBUILT=ON" "-DAIXELERATOR_PREBUILT_INSTALL_PREFIX=${AIX_INSTALL_PREFIX_ENV:-${MINI_APP_DIR}/../CPP-ML-Interface/extern/AIxeleratorService/INSTALL}")
     fi
 
     # by default, COMPILE_OUTPUT_PATH is "build", but if COMPILE_OUTPUT_SUBDIR is set it overrides it
@@ -1603,8 +1877,8 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
 
   DB_HOSTNAME="127.0.0.1:6379"
 
-  if [[ "${USE_SMARTSIM}" -eq 1 || ( "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:u}" == "SMARTSIM" ) ]]; then
-    TARGET_DB_PORT=$((6700 + (${SLURM_JOB_ID:-0} % 1000)))
+  if [[ "${USE_SMARTSIM}" -eq 1 || ( "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER^^}" == "SMARTSIM" ) ]]; then
+    TARGET_DB_PORT=$((6700 + ((${SLURM_JOB_ID:-0} + ${SMARTSIM_PORT_OFFSET_ENV:-0}) % 1000)))
     if [[ "${DB_NODE_PREFLIGHT}" -eq 1 ]]; then
       echo "Running DB node preflight checks (ib0, port ${TARGET_DB_PORT}, local write)..."
       DB_PREFLIGHT_LOG="logs/db_preflight_${RUN_ID}.log"
@@ -1645,14 +1919,37 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
     # pipe the output of the SmartSim controller to a log file for debugging
     python_path="${PY_ENV}/bin/python3"
     echo "Using Python interpreter at ${python_path} for SmartSim controller"
-    max_wait_time=300 # seconds
+    for _cleanup_command in timeout squeue scancel; do
+      command -v "${_cleanup_command}" >/dev/null || { echo "Missing cleanup command: ${_cleanup_command}" >&2; exit 1; }
+    done
+    if [[ -z "${SLURM_JOB_ID:-}" ]]; then
+      echo "SmartSim cleanup requires a Slurm allocation." >&2
+      exit 1
+    fi
+    export RUN_ID_ENV="${RUN_ID}"
+    startup_deadline=$((SECONDS + SMARTSIM_STARTUP_TIMEOUT))
+    max_wait_time="${SMARTSIM_STARTUP_TIMEOUT}"
     driver_log="logs/mini_app_driver_${RUN_ID}.txt"
     controller_started=0
     controller_attempt=1
     while [[ "${controller_attempt}" -le "${CONTROLLER_START_MAX_RETRIES}" ]]; do
-      rm -f "${DB_HOSTNAME_FILE}"
+      (( SECONDS < startup_deadline )) || break
+      rm -f "${DB_HOSTNAME_FILE}" "close_driver_${RUN_ID}.txt"
       echo "=== CONTROLLER_ATTEMPT ${controller_attempt}/${CONTROLLER_START_MAX_RETRIES} ===" >> "${driver_log}"
-      ${python_path} smartsim_controller.py --db_nodes "${DB_NODES}" \
+      # Tag database identifiers so orphaned remote steps can be safely selected.
+      SMARTSIM_OWNED_STEP_PREFIX="${SMARTSIM_STEP_PREFIX}" "${python_path}" -c '
+import os
+import runpy
+import sys
+from smartsim.experiment import Experiment
+create_database = Experiment.create_database
+def owned_database(self, *args, **kwargs):
+    kwargs["db_identifier"] = os.environ["SMARTSIM_OWNED_STEP_PREFIX"] + kwargs.get("db_identifier", "orchestrator")
+    return create_database(self, *args, **kwargs)
+Experiment.create_database = owned_database
+sys.argv = ["smartsim_controller.py"] + sys.argv[1:]
+runpy.run_path("smartsim_controller.py", run_name="__main__")
+' --db_nodes "${DB_NODES}" \
           --db_layout "${DB_LAYOUT}" \
           --port="${TARGET_DB_PORT}" \
           $([[ -n "${SLURM_HET_SIZE:-}" || -n "${SLURM_JOB_NUM_NODES_HET_GROUP_0:-}" ]] && echo "--het_group=${DB_HET_GROUP}") \
@@ -1660,29 +1957,29 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
           $([ "${USE_GPU}" -eq 1 ] && echo "--use_gpu") \
           --cpu_cores_per_node="${ML_INFERENCE_CPU_CORES}" >> "${driver_log}" 2>&1 &
       DRIVER_PID=$!
+      SMARTSIM_CLEANUP_ACTIVE=1
       echo "Wait until database hostname file ${DB_HOSTNAME_FILE} is created by the SmartSim controller...(attempt ${controller_attempt}/${CONTROLLER_START_MAX_RETRIES}, at most ${max_wait_time}s)"
       wait_time=0
-      while [[ ! -f "${DB_HOSTNAME_FILE}" ]]; do
+      while [[ ! -s "${DB_HOSTNAME_FILE}" ]]; do
         if ! ps -p "${DRIVER_PID}" > /dev/null 2>&1; then
           echo "Warning: SmartSim controller exited before writing ${DB_HOSTNAME_FILE} (attempt ${controller_attempt}/${CONTROLLER_START_MAX_RETRIES})."
           break
         fi
         sleep 1
         wait_time=$((wait_time + 1))
-        if [[ ${wait_time} -ge ${max_wait_time} ]]; then
+        if (( SECONDS >= startup_deadline )); then
           echo "Warning: Timeout waiting for ${DB_HOSTNAME_FILE} (attempt ${controller_attempt}/${CONTROLLER_START_MAX_RETRIES})."
-          if ps -p "${DRIVER_PID}" > /dev/null 2>&1; then
-            kill "${DRIVER_PID}" 2>/dev/null || true
-          fi
           break
         fi
       done
 
-      if [[ -f "${DB_HOSTNAME_FILE}" ]]; then
+      if [[ -s "${DB_HOSTNAME_FILE}" ]] && kill -0 "${DRIVER_PID}" 2>/dev/null; then
         controller_started=1
         break
       fi
 
+      _smartsim_cleanup || exit 125
+      (( SECONDS < startup_deadline )) || break
       controller_attempt=$((controller_attempt + 1))
       sleep 2
     done
@@ -1867,7 +2164,11 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
         export SCOREP_ENABLE_TRACING=false
       fi
       export SCOREP_TOTAL_MEMORY=524288K  # 512M per rank; prevents pre-MPI-init trace buffer flush
-      export SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY=true
+      # NOTE: SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY is deliberately NOT set here.
+      # The SCOREP setup block earlier in this script already applied the correct
+      # policy (unset for shared OTF2 tracing so ranks join the dir created by
+      # rank 0; false for profiling-only runs). Forcing it to true here made every
+      # rank clobber the shared tracing directory at startup.
       export ENABLE_SCOREP_USER=1
       # Match prior successful Score-P smoke-test config: disable memory recording
       # (which adds massive overhead on every malloc/free interception) and PAPI metrics.
@@ -1892,7 +2193,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
   export _SOLVER_BINARY="${SOLVER_EXE}"
   SOLVER_EXE="./solver_wrapper.sh"
 
-  if [[ "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:u}" == "PHYDLL" ]]; then
+  if [[ "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER^^}" == "PHYDLL" ]]; then
     USE_PYTHON_DL_CLIENT=${USE_PYTHON_DL_CLIENT:-0}
     PHYDLL_PY_SCOREP_WRAPPER=${PHYDLL_PY_SCOREP_WRAPPER:-0}
     export PHYDLL_PY_SCOREP_WRAPPER
@@ -1904,10 +2205,14 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
         SCOREP_BIN_DIR="$(dirname "$(command -v scorep-config)")"
         SCOREP_PYTHONPATH="${CMI_DIR}/extern/python/${RUNTIME_DEVICE}/lib/python3.9/site-packages"
         _py_exp_dir="${SCOREP_EXPERIMENT_DIRECTORY}_py_client"
-        if [[ "${SCOREP_ENABLE_TRACING:-false}" == "true" || "${SCOREP_ENABLE_TRACING:-false}" == "1" ]]; then
-          _py_exp_dir="${SCOREP_EXPERIMENT_DIRECTORY}"
-        fi
-        DL_CLIENT_CMD=("env" "ENABLE_SCOREP_USER=1" "SCOREP_EXPERIMENT_DIRECTORY=${_py_exp_dir}" "SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY=true" "SMARTSIM_PAPI_ROOT=${SMARTSIM_PAPI_ROOT}" "SMARTSIM_SCOREP_ROOT=${SMARTSIM_SCOREP_ROOT}" "PATH=${SCOREP_BIN_DIR}:$PATH" "PYTHONPATH=${SCOREP_PYTHONPATH}:${PYTHONPATH:-}" "${PY_ENV}/bin/python3" "-m" "scorep" "--keep-files" "--instrumenter-type=dummy" "--noinstrumenter" "--mpp=none" "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/phydll_dl_client.py")
+        _py_overwrite="SCOREP_OVERWRITE_EXPERIMENT_DIRECTORY=true"
+        # NOTE: the Python DL client can NEVER join the solver's shared
+        # experiment dir, neither in profiling nor in tracing mode. Score-P has
+        # no "join existing dir" path: an existing user-specified dir is fatal
+        # with overwrite=false (:301 "exists and overwriting is disabled"), and
+        # with overwrite=true the client would rename the solver's live
+        # experiment away. Single-process client => own dir, always.
+        DL_CLIENT_CMD=("env" "ENABLE_SCOREP_USER=1" "SCOREP_EXPERIMENT_DIRECTORY=${_py_exp_dir}" "${_py_overwrite}" "SMARTSIM_PAPI_ROOT=${SMARTSIM_PAPI_ROOT}" "SMARTSIM_SCOREP_ROOT=${SMARTSIM_SCOREP_ROOT}" "PATH=${SCOREP_BIN_DIR}:$PATH" "PYTHONPATH=${SCOREP_PYTHONPATH}:${PYTHONPATH:-}" "${PY_ENV}/bin/python3" "-m" "scorep" "--keep-files" "--instrumenter-type=dummy" "--noinstrumenter" "--mpp=none" "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/phydll_dl_client.py")
       else
         DL_CLIENT_CMD=("${PY_ENV}/bin/python3" "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/phydll_dl_client.py")
       fi
@@ -1976,7 +2281,8 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
         --device \"${device}\" \
         --gpus-per-node \"${GPUS_PER_NODE}\" \
         --ml-nodes \"${DB_NODES}\" \
-        --ml-batch-size \"${ML_BATCH_SIZE}\" \
+        --ml-batch-size \"${ML_BATCH_SIZE}\" \\
+        ${ML_DB_ARGS[@]} \
         --model-path \"${MODEL_PATH_FOR_SOLVER}\" \
         --model-backend \"${MODEL_BACKEND}\" \
         --model-io-layout \"${MODEL_IO_LAYOUT}\" \
@@ -2009,7 +2315,8 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
         --device \"${device}\" \
         --gpus-per-node \"${GPUS_PER_NODE}\" \
         --ml-nodes \"${DB_NODES}\" \
-        --ml-batch-size \"${ML_BATCH_SIZE}\" \
+        --ml-batch-size \"${ML_BATCH_SIZE}\" \\
+        ${ML_DB_ARGS[@]} \
         --model-path \"${MODEL_PATH_FOR_SOLVER}\" \
         --model-backend \"${MODEL_BACKEND}\" \
         --model-io-layout \"${MODEL_IO_LAYOUT}\" \
@@ -2042,21 +2349,23 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
     fi
 
     else
-    if [[ "${USE_SMARTSIM}" -eq 1 || ( "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:u}" == "SMARTSIM" ) ]]; then
+    if [[ "${USE_SMARTSIM}" -eq 1 || ( "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER^^}" == "SMARTSIM" ) ]]; then
     export SSDB="${DB_HOSTNAME}"
     else
     unset SSDB
     fi
 
-    if [[ ( "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:u}" == "AIX" ) || "${USE_DIRECT_AIX:-0}" -eq 1 ]]; then
+    if [[ ( "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER^^}" == "AIX" ) || "${USE_DIRECT_AIX:-0}" -eq 1 ]]; then
     srun_cmd="srun --wait=120 --export=ALL $(get_srun_het_flag "${SOLVER_HET_GROUP}") --nodes \"${_nodes:-1}\" --ntasks \"${MPI_RANKS}\" ${SOLVER_SRUN_EXTRA_ARGS} \
         --cpus-per-task 1 \
+        ${_solver_step_gpus_args} \
         ${SRUN_DIST} \
         ${SOLVER_EXE} \
         --device "${device}" \
         --gpus-per-node "${GPUS_PER_NODE}" \
         --ml-nodes "${DB_NODES}" \
         --ml-batch-size "${ML_BATCH_SIZE}" \
+        "${ML_DB_ARGS[@]}" \
         --model-path "${MODEL_PATH_FOR_SOLVER}" \
         --model-backend "${MODEL_BACKEND}" \
         --model-io-layout "${MODEL_IO_LAYOUT}" \
@@ -2084,6 +2393,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
         --gpus-per-node "${GPUS_PER_NODE}" \
         --ml-nodes "${DB_NODES}" \
         --ml-batch-size "${ML_BATCH_SIZE}" \
+        "${ML_DB_ARGS[@]}" \
         --model-path "${MODEL_PATH_FOR_SOLVER}" \
         --model-backend "${MODEL_BACKEND}" \
         --model-io-layout "${MODEL_IO_LAYOUT}" \
@@ -2115,6 +2425,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
         --gpus-per-node "${GPUS_PER_NODE}" \
         --ml-nodes "${DB_NODES}" \
         --ml-batch-size "${ML_BATCH_SIZE}" \
+        "${ML_DB_ARGS[@]}" \
         --model-path "${MODEL_PATH_FOR_SOLVER}" \
         --model-backend "${MODEL_BACKEND}" \
         --model-io-layout "${MODEL_IO_LAYOUT}" \
@@ -2150,18 +2461,14 @@ else
 fi
 
 if [[ "${USE_SMARTSIM}" -eq 1 || ( "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER}" == "SMARTSIM" ) ]]; then
-  rm -f "${DB_HOSTNAME_FILE}"
-  echo "Creating 'close_driver_${RUN_ID}.txt' file to signal SmartSim controller to shut down..."
-  echo "Done" > "close_driver_${RUN_ID}.txt"
-  echo "Waiting for SmartSim controller to shut down..."
-  if [[ -n "${DRIVER_PID:-}" ]]; then
-    wait "${DRIVER_PID}" 2>/dev/null || true
-    echo "SmartSim controller (PID ${DRIVER_PID}) shut down completed."
-  fi
+  _smartsim_cleanup || exit 125
   if [[ -n "${NV_DMON_PID:-}" ]]; then
     echo "Terminating nvidia-smi dmon sidecar with PID ${NV_DMON_PID}"
     kill "${NV_DMON_PID}" 2>/dev/null || true
-    cp "logs/redis_gpu_${RUN_ID}.log" "${SCOREP_EXPERIMENT_DIRECTORY}/" 2>/dev/null || true
+    if [[ -n "${SCOREP_EXPERIMENT_DIRECTORY:-}" ]]; then
+      cp "logs/redis_gpu_${RUN_ID}.log" "${SCOREP_EXPERIMENT_DIRECTORY}/" 2>/dev/null || true
+    fi
+    NV_DMON_PID=""
   fi
 fi
 

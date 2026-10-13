@@ -1,6 +1,15 @@
 #!/bin/bash
 set -euo pipefail
 
+# HET surrogate: this task runs on a c23g node that stands in for a c23mm
+# (CPU-only) node; hide the reserved GPUs from the CUDA runtime. Slurm's GPU
+# binding sets CUDA_VISIBLE_DEVICES and would override an srun --export value,
+# so the marker is applied here, at process start.
+if [[ "${HET_SURROGATE_HIDE_GPU:-0}" == "1" ]]; then
+    export CUDA_VISIBLE_DEVICES="NoDevFiles"
+    echo "[WRAPPER] HET_SURROGATE_HIDE_GPU: forced CUDA_VISIBLE_DEVICES=NoDevFiles"
+fi
+
 # Score-P: add CUDA stubs only on CPU nodes (GPU nodes have the real driver).
 # Detection: check SLURM_JOB_PARTITION, existence of /dev/nvidia* devices, or availability of the real libnvidia-ml.so.1 library in library paths.
 echo "[WRAPPER] _CUDA_STUBS=${_CUDA_STUBS:-} SLURM_JOB_PARTITION=${SLURM_JOB_PARTITION:-} host=$(hostname)"
@@ -22,9 +31,9 @@ if [[ -n "${_CUDA_STUBS:-}" ]]; then
     fi
 fi
 
-# Profiles are independent per rank in MPMD mode. An OTF2 trace, however,
-# requires all MPI ranks to write one shared Score-P experiment directory.
-if [[ -n "${SCOREP_EXPERIMENT_DIRECTORY:-}" && "${SCOREP_ENABLE_TRACING:-false}" != "true" && "${SCOREP_ENABLE_TRACING:-false}" != "1" ]]; then
+# Historical profiles use per-rank dirs; shared profiles and OTF2 traces keep
+# the same experiment directory across the instrumented MPI world.
+if [[ -n "${SCOREP_EXPERIMENT_DIRECTORY:-}" && "${SCOREP_SHARED_PROFILE_ENV:-0}" != "1" && "${SCOREP_ENABLE_TRACING:-false}" != "true" && "${SCOREP_ENABLE_TRACING:-false}" != "1" ]]; then
   if [[ -n "${OMPI_COMM_WORLD_RANK:-}" ]]; then
     export SCOREP_EXPERIMENT_DIRECTORY="${SCOREP_EXPERIMENT_DIRECTORY}_rank_${OMPI_COMM_WORLD_RANK}"
   elif [[ -n "${PMIX_RANK:-}" ]]; then

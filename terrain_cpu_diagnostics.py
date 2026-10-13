@@ -187,6 +187,9 @@ def main():
     parser.add_argument("--repeats", type=int, default=2)
     parser.add_argument("--steps", type=int, default=10)
     parser.add_argument("--scorep", action="store_true")
+    parser.add_argument('--memory-config', choices=('AIx', 'PHYDLL_CPP', 'SS_DEFAULT',
+                                                  'SS_TPQ1_I96_B96', 'SS_TPQ12_I8_B96', 'SS_TPQ96_I1_B96'))
+    parser.add_argument('--solver-ranks', type=int, default=96)
     args = parser.parse_args()
     if args.steps < 6 or args.steps % 2:
         parser.error("steps must be even and >=6 (10 gives four steady ML steps)")
@@ -203,6 +206,14 @@ def main():
         data = json.loads(args.validate_memory.read_text())
         if not data["coverage_ok"] or data["live_read_errors"] or data["cleanup_sigkill_pids"]:
             raise ValueError("Invalid sampler coverage/read quality/forced cleanup")
+        if args.memory_config:
+            expected = dict(solver=args.solver_ranks,
+                            dl=args.solver_ranks if args.memory_config == 'PHYDLL_CPP' else 0,
+                            db=int(args.memory_config.startswith('SS_')))
+            if (args.solver_ranks <= 0 or data['expected_processes'] != expected or
+                    data['simultaneous_coverage_samples'] <= 0 or
+                    any(data['max_direct_processes'][role] != count for role, count in expected.items())):
+                raise ValueError('Invalid configuration-specific sampler census')
     else:
         aggregate(args.root, args.scorep)
 

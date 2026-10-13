@@ -1,0 +1,249 @@
+import contextlib
+import csv
+import hashlib
+import importlib.util
+import io
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import tempfile
+import unittest
+from unittest.mock import patch
+
+HERE = Path(__file__).resolve().parent
+spec = importlib.util.spec_from_file_location("refresh", HERE / "gpu_refresh_campaign.py")
+refresh = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(refresh)
+
+
+class CampaignTest(unittest.TestCase):
+    def test_matrix_and_caps(self):
+        groups = refresh.groups()
+        self.assertEqual(len(groups), 28)
+        self.assertEqual(sum(len(g["cases"]) for g in groups), 88)
+        self.assertEqual(len({g["id"] for g in groups}), 28)
+        self.assertEqual(sum(g["mode"] == "timing" for g in groups), 24)
+        for g in groups:
+            if g["mode"] == "timing":
+                self.assertEqual([c[2] for c in g["cases"]], ["default", "readiness"] if g["repeat"] % 2 else ["readiness", "default"])
+            for case in g["cases"]:
+                e = refresh.case_env(g, case)
+                water = case[0] == "watercnn8k"
+                self.assertEqual(e["ML_BATCH_SIZE_ENV"], "20000000" if water else "500000")
+                self.assertEqual(e["TOTAL_STEPS_ENV"], "202" if water and g["mode"] == "timing" else "12")
+                self.assertEqual(e["SAVE_EVERY_ENV"], e["TOTAL_STEPS_ENV"])
+                self.assertEqual((e["TARGET_WIDTH_ENV"], e["TARGET_HEIGHT_ENV"], e["CHUNK_SIZE_ENV"]), ("7680", "4320", "60") if water else ("480", "288", "16"))
+                self.assertEqual(e["SCOREP_ENABLE_TRACING_ENV"], "false")
+                self.assertEqual(e["USE_SCOREP_ENV"], str(int(g["mode"] == "profile")))
+                self.assertEqual(e["SMARTSIM_THREADS_PER_QUEUE_ENV"], "1")
+                if case[1] == "SMARTSIM":
+                    self.assertEqual(e["SMARTSIM_MPI_SEQUENTIAL_PUT"],
+                                     {"shared_c1": "1", "shared_c3": "3"}.get(case[2], "0"))
+                if "p" in g["hw"]:
+                    self.assertEqual((e["RANK_GRID_X_ENV"], e["RANK_GRID_Z_ENV"]), ("", ""))
+                else:
+                    self.assertEqual(int(e["RANK_GRID_X_ENV"]) * int(e["RANK_GRID_Z_ENV"]), int(e["MPI_RANKS_ENV"]))
+        missing = [(g["hw"], c) for g in groups if g["mode"] == "profile" for c in g["cases"] if c[1] != "PHYDLL"]
+        self.assertEqual(len(missing), 24)
+        self.assertEqual(sum(c[1] == "AIX" for _, c in missing), 6)
+        self.assertEqual(sum(c[1] == "SMARTSIM" and c[2] == "shared" for _, c in missing), 2)
+        chain_cases = [(hw, c) for hw, c in missing
+                       if c[1] == "SMARTSIM" and c[2] in ("shared_c1", "shared_c3")]
+        self.assertEqual(len(chain_cases), 16)
+        self.assertEqual({c[2] for _, c in chain_cases}, {"shared_c1", "shared_c3"})
+        for variant in ("default", "readiness"):
+            library = (HERE / f"config_phydll_gpu_refresh_{variant}.toml").read_text()
+            self.assertIn('transport_layout = "packed"', library)
+            self.assertIn(f'solver_readiness_wait = {str(variant == "readiness").lower()}', library)
+            self.assertNotIn("wire_dtype", library)
+            self.assertNotIn("float_codec", library)
+
+    def test_times_templates_and_syntax(self):
+        for group in refresh.groups():
+            expected = (65 if "p" in group["hw"] else 55) if group["mode"] == "profile" else (20 if group["cases"][0][0] == "giantmlp288" else 75 if "p" in group["hw"] else 60 if group["hw"] == "24c1g" else 40)
+            self.assertEqual(refresh.minutes(group), expected)
+        for hw in refresh.HARDWARE:
+            file = HERE / f"gpu_refresh_{hw}.sbatch"
+            subprocess.run(["bash", "-n", str(file)], check=True)
+            sections = file.read_text().split("#SBATCH hetjob")
+            self.assertEqual(len(sections), 2 if "p" in hw else 1)
+            for section in sections:
+                for directive in ("--account=rwth0792", "--partition=c23g", "--exclusive", "--mem=0"):
+                    self.assertIn(directive, section)
+            for section in sections:
+                self.assertIn(f"--gres=gpu:{4 if hw.startswith('96') else 1}", section)
+        subprocess.run(["zsh", "-n", str(HERE / "gpu_refresh_case.zsh")], check=True)
+
+    def fixture(self, base):
+        mini = base / "mini_app"
+        mini.mkdir()
+        for driver in ("5r_driver_single.zsh", "5r_driver_hetsurrogate.zsh"):
+            shutil.copy(HERE / driver, mini / driver)
+        for mode in ("plain", "scorep"):
+            solver = mini / "solver_cpp" / f"build_gpu_refresh_{mode}"
+            dl = base / "CPP-ML-Interface/dl_clients" / f"build-gpu-refresh-{mode}"
+            solver.mkdir(parents=True)
+            dl.mkdir(parents=True)
+            prov = solver / "provenance-123"
+            prov.mkdir()
+            entries = []
+            for path in (solver / "terrain_solver", dl / "phydll_dl_client"):
+                path.write_text("#!/bin/sh\nexit 0\n")
+                path.chmod(0o755)
+                entries.append(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path}\n")
+                (prov / f"{path.name}.ldd.txt").write_text("libscorep_mpp_mpi\n" if mode == "scorep" else "libmpi\n")
+            (prov / "binaries.sha256").write_text("".join(entries))
+            (prov / "source.sha256").write_text(entries[0])
+            cache = f"CMAKE_BUILD_TYPE:STRING=Release\nWITH_SCOREP:BOOL={'ON' if mode == 'scorep' else 'OFF'}\nPHYDLL_DL_WITH_TORCH:BOOL=ON\nCPPML_SCOREP_MPP:STRING=mpi\n"
+            (dl / "CMakeCache.txt").write_text(cache)
+            (solver / "CMakeCache.txt").write_text(cache + "".join(f"{f}:BOOL=ON\n" for f in ("USE_CPP_ML_INTERFACE", "WITH_PHYDLL", "WITH_SMARTSIM", "WITH_AIX", "WITH_TORCH")))
+            (solver / "generated_registry.hpp").write_text("solver_readiness_wait")
+            (solver / "cpp-ml-interface-build").mkdir()
+            shutil.copy(solver / "generated_registry.hpp", solver / "cpp-ml-interface-build/generated_registry.hpp")
+            phy = base / "CPP-ML-Interface/extern/phydll/build-gpu-refresh"
+            (solver / "build.env").write_text(f"SOLVER_BIN={solver}/terrain_solver\nPHYDLL_DL_CLIENT={dl}/phydll_dl_client\nUSE_SCOREP={int(mode == 'scorep')}\nSCOREP_MPP=mpi\nPROVENANCE={prov}\nPHYDLL_BUILD_DIR={phy}\nGPU_REFRESH_LIBRARY_PATH={phy}/lib\n")
+            marker = f"BUILD_READY job=123 mode={mode} completed=2026-10-11T00:00:00Z validation=cpu-build-only runtime_validation=pending\n"
+            for file in (prov / "binaries.sha256", prov / "source.sha256"):
+                marker += f"{hashlib.sha256(file.read_bytes()).hexdigest()}  {file}\n"
+            for directory in (solver, dl):
+                (directory / "BUILD_READY").write_text(marker)
+        return mini
+
+    def test_ready_guards(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            mini = self.fixture(Path(tmp))
+            with patch.object(refresh, "MINI", mini), patch.dict(os.environ, GPU_REFRESH_BUILD_JOB_ID_ENV="123"):
+                refresh.ready("plain")
+                refresh.ready("scorep")
+                dl_marker = Path(tmp) / "CPP-ML-Interface/dl_clients/build-gpu-refresh-plain/BUILD_READY"
+                original_marker = dl_marker.read_text()
+                dl_marker.write_text(original_marker.replace("job=123", "job=124"))
+                with self.assertRaises(RuntimeError):
+                    refresh.ready("plain")
+                dl_marker.write_text(original_marker)
+                ldd = mini / "solver_cpp/build_gpu_refresh_plain/provenance-123/terrain_solver.ldd.txt"
+                ldd.write_text("libscorep_mpp_mpi")
+                with self.assertRaises(RuntimeError):
+                    refresh.ready("plain")
+                ldd.write_text("libmpi")
+                with patch.dict(os.environ, GPU_REFRESH_BUILD_JOB_ID_ENV="456"):
+                    with self.assertRaises(RuntimeError):
+                        refresh.ready("plain")
+                cache = mini / "solver_cpp/build_gpu_refresh_plain/CMakeCache.txt"
+                cache.write_text(cache.read_text().replace("WITH_PHYDLL:BOOL=ON", "WITH_PHYDLL:BOOL=OFF"))
+                with self.assertRaises(RuntimeError):
+                    refresh.ready("plain")
+
+    def test_fake_submit_and_dry_run(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            mini = self.fixture(base)
+            tools = base / "tools"
+            tools.mkdir()
+            calls = base / "calls"
+            sbatch = tools / "sbatch"
+            sbatch.write_text('#!/usr/bin/env python3\nimport json,os,sys\nfrom pathlib import Path\np=Path(os.environ["CALLS"])\na=json.loads(p.read_text()) if p.exists() else []\na.append(sys.argv[1:]);p.write_text(json.dumps(a));print(1000+len(a))\n')
+            sbatch.chmod(0o755)
+            watch = tools / "swatch"
+            watch.write_text('#!/usr/bin/env python3\nimport json,os,sys\nfrom pathlib import Path\nPath(os.environ["WATCH"]).write_text(json.dumps(sys.argv[1:]))\n')
+            watch.chmod(0o755)
+            env = dict(GPU_REFRESH_BUILD_JOB_ID_ENV="123", PATH=f"{tools}:{os.environ['PATH']}", GPU_REFRESH_SWATCH=str(watch), CALLS=str(calls), WATCH=str(base / "watch"))
+            with patch.object(refresh, "MINI", mini), patch.dict(os.environ, env), contextlib.redirect_stdout(io.StringIO()) as output:
+                refresh.submit("--dry-run", "dry")
+                self.assertFalse(calls.exists())
+                self.assertFalse((base / "watch").exists())
+                self.assertEqual(output.getvalue().count("sbatch --parsable"), 28)
+                refresh.submit("--dry-run", "subset", [refresh.groups()[0]])
+                with (mini / "results/gpu_refresh/subset/groups.csv").open() as f:
+                    self.assertEqual(len(list(csv.DictReader(f))), 1)
+                with (mini / "results/gpu_refresh/subset/cases.csv").open() as f:
+                    self.assertEqual(len(list(csv.DictReader(f))), 2)
+                refresh.submit("--submit", "actual")
+                commands = json.loads(calls.read_text())
+                self.assertEqual(len(commands), 28)
+                self.assertTrue(all(not any("dependency" in a for a in cmd) for cmd in commands))
+                for command in commands:
+                    if "p" in Path(command[-2]).stem.removeprefix("gpu_refresh_"):
+                        self.assertEqual(command.count(":"), 1)
+                        times = [a for a in command if a.startswith("--time=")]
+                        self.assertEqual(len(times), 2)
+                        self.assertEqual(times[0], times[1])
+                self.assertEqual(len(json.loads((base / "watch").read_text())), 29)
+                with (mini / "results/gpu_refresh/actual/cases.csv").open() as f:
+                    self.assertEqual(len(list(csv.DictReader(f))), 88)
+                with self.assertRaises(RuntimeError):
+                    refresh.submit("--submit", "actual")
+
+    def test_shell_adapter_and_rebuild_guard(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            build = root / "build.env"
+            build.write_text(f"SOLVER_BIN={root}/build_gpu_refresh_plain/terrain_solver\nPHYDLL_DL_CLIENT={root}/build-gpu-refresh-plain/phydll_dl_client\nPHYDLL_BUILD_DIR={root}/fresh\nGPU_REFRESH_LIBRARY_PATH={root}/libs\n")
+            driver = root / "5r_driver_single.zsh"
+            driver.write_text('EXTERNAL_DIR=/legacy\nPREP_H5="${EXTERNAL_DIR}/test.h5"\nprint -r -- "$PREP_H5"\nrealpath /old/extern/phydll/build/lib\n')
+            env = dict(os.environ, GPU_REFRESH_BUILD_ENV=str(build), GPU_REFRESH_OUTPUT_ROOT=str(root / "output"))
+            reply = subprocess.check_output(["zsh", str(HERE / "gpu_refresh_case.zsh"), str(driver)], env=env, text=True)
+            self.assertEqual(reply.splitlines(), [f"{root}/output/test.h5", f"{root}/fresh/lib"])
+            for skip in (1, 0):
+                driver.write_text(f'SKIP_COMPILE={skip}\nRUN_SOLVER=1\nif [[ "$RUN_SOLVER" -eq 1 ]]; then\n'
+                                  'if [[ "$SKIP_COMPILE" -eq 1 ]]; then\n'
+                                  'print -r -- "Skipping compilation; tars=$SMARTSIM_CREATE_RUNTIME_TARS"\n'
+                                  'else\necho "Compiling solver..."\ncmake -S /never-run\nfi\nfi\n')
+                reply = subprocess.run(["zsh", str(HERE / "gpu_refresh_case.zsh"), str(driver)],
+                                       env=env, capture_output=True, text=True)
+                self.assertEqual(reply.returncode, 0 if skip else 90)
+                if skip:
+                    self.assertEqual(reply.stdout.strip(), "Skipping compilation; tars=0")
+            for command in ('echo "Compiling solver..."', 'cmake -S /never-run',
+                            'cmake --build /never-run', 'rm -rf "solver_cpp/never-run"'):
+                with self.subTest(command=command):
+                    driver.write_text(command + '\nexit 0\n')
+                    reply = subprocess.run(["zsh", str(HERE / "gpu_refresh_case.zsh"), str(driver)],
+                                           env=env, capture_output=True)
+                    self.assertEqual(reply.returncode, 90)
+
+    def test_group_failure_continues_only_after_safe_cleanup(self):
+        from unittest.mock import MagicMock
+        for unsafe in (False, True):
+            with self.subTest(unsafe=unsafe), tempfile.TemporaryDirectory() as tmp:
+                mini = self.fixture(Path(tmp))
+                for variant in ("default", "readiness"):
+                    shutil.copy(HERE / f"config_phydll_gpu_refresh_{variant}.toml", mini)
+                group = refresh.groups()[0]
+                processes = []
+
+                def fake_popen(*args, **kwargs):
+                    proc = MagicMock()
+                    proc.pid = 99999999
+                    proc.wait.return_value = 7 if not processes else 0
+                    for step in range(2, int(kwargs["env"]["TOTAL_STEPS_ENV"]) + 1, 2):
+                        kwargs["stdout"].write(f"STEP_TIMING step={step} solver=ML step_ms=1\n")
+                    processes.append(kwargs["env"])
+                    return proc
+
+                cleanup = MagicMock(side_effect=[None, RuntimeError("unsafe")] if unsafe else None)
+                env = dict(GPU_REFRESH_BUILD_JOB_ID_ENV="123", SLURM_JOB_ID="456", SLURM_NTASKS="24", SLURM_JOB_NUM_NODES="1", SSDB="stale")
+                with patch.object(refresh, "MINI", mini), patch.dict(os.environ, env), patch.object(refresh, "clean_steps", cleanup), patch.object(refresh.subprocess, "Popen", fake_popen), patch.object(refresh.os, "killpg", side_effect=ProcessLookupError):
+                    # Mocking Popen also affects subprocess.run in ready().
+                    with patch.object(refresh, "ready", return_value="validated"):
+                        if unsafe:
+                            with self.assertRaises(RuntimeError):
+                                refresh.run(group, "test")
+                        else:
+                            self.assertEqual(refresh.run(group, "test"), 1)
+                self.assertEqual(len(processes), 1 if unsafe else 2)
+                manifest = mini / "results/gpu_refresh/test" / f"{group['id']}_456/manifest.csv"
+                with manifest.open() as stream:
+                    rows = list(csv.DictReader(stream))
+                self.assertEqual(len(rows), len(processes))
+                self.assertEqual(rows[0]["rc"], "7")
+                for e in processes:
+                    self.assertNotIn("SSDB", e)
+                    self.assertIn("batch_size = 20000000", Path(e["CPP_ML_CONFIG_ENV"]).read_text())
+                self.assertEqual(len({e["RUN_ID_ENV"] for e in processes}), len(processes))
+
+
+if __name__ == "__main__":
+    unittest.main()

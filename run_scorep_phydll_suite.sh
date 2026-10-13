@@ -65,13 +65,17 @@ submit_suite_job "ScoreP_${MODEL}_PhyDLL_cpp_packed" \
 submit_suite_job "ScoreP_${MODEL}_PhyDLL_cpp_uniform" \
     "USE_SMARTSIM=0,USE_CPP_ML_INTERFACE=1,ML_INTERFACE_ENV=cpp,CPP_ML_INTERFACE_PROVIDER_ENV=PHYDLL,CPP_ML_CONFIG_ENV=config_phydll_uniform.toml,USE_PYTHON_DL_CLIENT=0,PHYDLL_DL_FIELD_COUNT=1,SCOREP_DIR_TAG_ENV=phydll_cpp_uniform,JOB_NAME_ENV=scorep_${MODEL}_phydll_cpp_uniform"
 
-# 3. PhyDLL Python DL client, packed layout
-submit_suite_job "ScoreP_${MODEL}_PhyDLL_py_packed" \
-    "USE_SMARTSIM=0,USE_CPP_ML_INTERFACE=1,ML_INTERFACE_ENV=cpp,CPP_ML_INTERFACE_PROVIDER_ENV=PHYDLL,CPP_ML_CONFIG_ENV=config_phydll.toml,USE_PYTHON_DL_CLIENT=1,PHYDLL_PY_SCOREP_WRAPPER=1,PHYDLL_DL_FIELD_COUNT=1,SCOREP_DIR_TAG_ENV=phydll_py_packed,JOB_NAME_ENV=scorep_${MODEL}_phydll_py_packed"
-
-# 4. PhyDLL Python DL client, uniform_chunks layout
-submit_suite_job "ScoreP_${MODEL}_PhyDLL_py_uniform" \
-    "USE_SMARTSIM=0,USE_CPP_ML_INTERFACE=1,ML_INTERFACE_ENV=cpp,CPP_ML_INTERFACE_PROVIDER_ENV=PHYDLL,CPP_ML_CONFIG_ENV=config_phydll_uniform.toml,USE_PYTHON_DL_CLIENT=1,PHYDLL_PY_SCOREP_WRAPPER=1,PHYDLL_DL_FIELD_COUNT=1,SCOREP_DIR_TAG_ENV=phydll_py_uniform,JOB_NAME_ENV=scorep_${MODEL}_phydll_py_uniform"
+# 3+4. PhyDLL Python DL client cases — EXCLUDED (structural Score-P limitation,
+#    Sep 2026): the Python client (standard mpi4py, scorep --mpp=none) cannot
+#    join Score-P's world-wide init collectives (PMPI_Comm_dup/Allgather) or the
+#    clock ping-pong, so the instrumented solver ranks deadlock inside MPI_Init
+#    in profiling AND tracing mode. See the fail-fast guard in proper_slurm_job.sh.
+#    The C++ DL client cases above cover the DL-client insight.
+# submit_suite_job "ScoreP_${MODEL}_PhyDLL_py_packed" \
+#     "USE_SMARTSIM=0,USE_CPP_ML_INTERFACE=1,ML_INTERFACE_ENV=cpp,CPP_ML_INTERFACE_PROVIDER_ENV=PHYDLL,CPP_ML_CONFIG_ENV=config_phydll.toml,USE_PYTHON_DL_CLIENT=1,PHYDLL_PY_SCOREP_WRAPPER=1,PHYDLL_DL_FIELD_COUNT=1,SCOREP_DIR_TAG_ENV=phydll_py_packed,JOB_NAME_ENV=scorep_${MODEL}_phydll_py_packed"
+#
+# submit_suite_job "ScoreP_${MODEL}_PhyDLL_py_uniform" \
+#     "USE_SMARTSIM=0,USE_CPP_ML_INTERFACE=1,ML_INTERFACE_ENV=cpp,CPP_ML_INTERFACE_PROVIDER_ENV=PHYDLL,CPP_ML_CONFIG_ENV=config_phydll_uniform.toml,USE_PYTHON_DL_CLIENT=1,PHYDLL_PY_SCOREP_WRAPPER=1,PHYDLL_DL_FIELD_COUNT=1,SCOREP_DIR_TAG_ENV=phydll_py_uniform,JOB_NAME_ENV=scorep_${MODEL}_phydll_py_uniform"
 
 echo ""
 echo "=== All Score-P PhyDLL measurement cases submitted successfully ==="

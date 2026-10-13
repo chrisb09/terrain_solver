@@ -95,7 +95,9 @@ if [[ "${USE_SCOREP:-}" == "1" ]]; then
     if [[ -f "${CMI_SCOREP_ENV}" ]]; then
         source "${CMI_SCOREP_ENV}"
     fi
-    if [[ "${AIX_SERVICE_NAME}" == *"pipelined"* || "${AIX_SERVICE_NAME}" == *"P2P"* || "${AIX_SERVICE_NAME}" == *"p2p"* ]]; then
+    if [[ -n "${AIX_INSTALL_PREFIX_ENV:-}" ]]; then
+        AIX_INSTALL_PREFIX="${AIX_INSTALL_PREFIX_ENV}"
+    elif [[ "${AIX_SERVICE_NAME}" == *"pipelined"* || "${AIX_SERVICE_NAME}" == *"P2P"* || "${AIX_SERVICE_NAME}" == *"p2p"* ]]; then
         AIX_INSTALL_PREFIX="${AIX_SERVICE_DIR}/INSTALL-PIPELINED-SCOREP-MPI"
         if [[ ! -d "${AIX_INSTALL_PREFIX}" ]]; then
             AIX_INSTALL_PREFIX="${AIX_SERVICE_DIR}/INSTALL-PIPELINED-SCOREP"
@@ -112,12 +114,20 @@ if [[ "${USE_SCOREP:-}" == "1" ]]; then
 
     echo "USE_SCOREP=1 detected, using local scorep-mpicxx compiler for CMake"
     SCOREP_BIN_DIR="$(dirname "$(command -v scorep-config)")"
-    export SCOREP_WRAPPER_INSTRUMENTER_FLAGS="--nocompiler --user --mpp=${SCOREP_MPP:-none} --io=none --memory=none --thread=none --nocuda"
+    # NOTE: default MUST be mpi, not none. 'none' links the Score-P *mockup* MPP
+    # adapter (libscorep_mpp_mockup), which makes EVERY MPI rank report rank 0.
+    # With tracing all ranks then race on the shared experiment directory
+    # (scorep_create_directory has a rank-0-only guard) and abort fatally.
+    # SCOREP_MPP is normally unset during standalone builds (slurm_build.sh does
+    # not export it), so the default is what the build actually gets.
+    export SCOREP_WRAPPER_INSTRUMENTER_FLAGS="--nocompiler --user --mpp=${SCOREP_MPP:-mpi} --io=none --memory=none --thread=none --nocuda"
     SCOREP_FLAGS="-DCMAKE_CXX_COMPILER=${SCOREP_BIN_DIR}/scorep-mpicxx -DCMAKE_C_COMPILER=${SCOREP_BIN_DIR}/scorep-mpicc -DWITH_SCOREP=ON -DSCOREP_ROOT_DIR=${SMARTSIM_SCOREP_ROOT} -DSCOREP_CONFIG_EXECUTABLE=${SCOREP_BIN_DIR}/scorep-config -DSCOREP_INFO_EXECUTABLE=${SCOREP_BIN_DIR}/scorep-info -DAIX_USE_PREBUILT=ON -DFORCE_AIX_REBUILD=${FORCE_AIX_REBUILD_ENV:-OFF} -DAIXELERATOR_DIR=${AIX_SERVICE_DIR} -DAIXELERATOR_PREBUILT_INSTALL_PREFIX=${AIX_INSTALL_PREFIX} -DTORCH_VERSION=${TORCH_VERSION}"
     unset CC
     unset CXX
 else
-    if [[ "${AIX_SERVICE_NAME}" == *"pipelined"* || "${AIX_SERVICE_NAME}" == *"P2P"* || "${AIX_SERVICE_NAME}" == *"p2p"* ]]; then
+    if [[ -n "${AIX_INSTALL_PREFIX_ENV:-}" ]]; then
+        AIX_INSTALL_PREFIX="${AIX_INSTALL_PREFIX_ENV}"
+    elif [[ "${AIX_SERVICE_NAME}" == *"pipelined"* || "${AIX_SERVICE_NAME}" == *"P2P"* || "${AIX_SERVICE_NAME}" == *"p2p"* ]]; then
         AIX_INSTALL_PREFIX="${AIX_SERVICE_DIR}/INSTALL-PIPELINED"
     else
         AIX_INSTALL_PREFIX="${AIX_SERVICE_DIR}/INSTALL"

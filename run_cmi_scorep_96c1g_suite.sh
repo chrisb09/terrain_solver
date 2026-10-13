@@ -89,9 +89,14 @@ submit_suite_job "SP_96c1g_aix_p2p" \
 submit_suite_job "SP_96c1g_phydll_cpp" \
     "USE_SMARTSIM=0,USE_CPP_ML_INTERFACE=1,ML_INTERFACE_ENV=cpp,CPP_ML_INTERFACE_PROVIDER_ENV=PHYDLL,CPP_ML_CONFIG_ENV=config_phydll.toml,USE_PYTHON_DL_CLIENT=0,PHYDLL_NP_DL_ENV=1,SCOREP_ENABLE_TRACING_ENV=true,SCOREP_DIR_TAG_ENV=96c1g_phydll_cpp"
 
-# 8. PhyDLL Python DL Client (1 DL worker on 1 GPU, Score-P python wrapper)
-submit_suite_job "SP_96c1g_phydll_py" \
-    "USE_SMARTSIM=0,USE_CPP_ML_INTERFACE=1,ML_INTERFACE_ENV=cpp,CPP_ML_INTERFACE_PROVIDER_ENV=PHYDLL,CPP_ML_CONFIG_ENV=config_phydll.toml,USE_PYTHON_DL_CLIENT=1,PHYDLL_NP_DL_ENV=1,PHYDLL_PY_SCOREP_WRAPPER=1,SCOREP_ENABLE_TRACING_ENV=true,SCOREP_DIR_TAG_ENV=96c1g_phydll_py"
+# 8. PhyDLL Python DL Client — EXCLUDED (structural Score-P limitation, Sep 2026):
+#    the Python client (standard mpi4py, scorep --mpp=none) cannot join Score-P's
+#    world-wide init collectives (PMPI_Comm_dup/Allgather) or the clock ping-pong,
+#    so the instrumented solver ranks deadlock inside MPI_Init in profiling AND
+#    tracing mode. See the fail-fast guard in single_node_96c_1gpu.sh.
+#    The C++ DL client case (SP_96c1g_phydll_cpp) covers the DL-client insight.
+# submit_suite_job "SP_96c1g_phydll_py" \
+#     "USE_SMARTSIM=0,USE_CPP_ML_INTERFACE=1,ML_INTERFACE_ENV=cpp,CPP_ML_INTERFACE_PROVIDER_ENV=PHYDLL,CPP_ML_CONFIG_ENV=config_phydll.toml,USE_PYTHON_DL_CLIENT=1,PHYDLL_NP_DL_ENV=1,PHYDLL_PY_SCOREP_WRAPPER=1,SCOREP_ENABLE_TRACING_ENV=true,SCOREP_DIR_TAG_ENV=96c1g_phydll_py"
 
 echo ""
 echo "=== All 8 96c1g Score-P benchmark cases submitted successfully ==="

@@ -93,3 +93,13 @@ python
 /campaign_figures/**/phase_summary.md
 /campaign_figures/**/memory_latency_accounting.md
 /campaign_figures/**/production_submission.txt
+
+# Large experiment result directories (not tracked)
+/results/
+/old/
+test_analysis_c0/
+
+# SmartSim smoke experiment output directories (contain builds + large artifacts)
+smoke_native_*/
+smoke_phydll_*/
+smoke_trained_*/

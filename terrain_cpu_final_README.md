@@ -4,6 +4,12 @@
 build, submit other jobs, invoke campaign analysis, or change shared libraries.
 Performance and memory evidence must remain separate.
 
+An explicit `MODE=timing` now uses a hash-attested actual plain build, without
+Score-P or a memory sampler. This does not change the existing profiled
+`performance` or `memory` treatments. The seven-configuration timing and missing
+memory submissions are documented in `terrain_cpu_missing_20261012_README.md`;
+use its dedicated wrapper rather than the legacy workflow below.
+
 ## Settings
 
 One exclusive c23mm node, 96 CPUs, 480G; 96 solver ranks on a 12x8 grid.
