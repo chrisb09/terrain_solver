@@ -1,6 +1,7 @@
 import io
 from pathlib import Path
 import subprocess
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -20,6 +21,15 @@ class CampaignTests(unittest.TestCase):
         orders = [[CONDITIONS[(rep + position) % 5] for position in range(5)] for rep in range(5)]
         for position in range(5):
             self.assertEqual({order[position] for order in orders}, set(CONDITIONS))
+
+    def test_batch_root_uses_campaign_directory(self):
+        root_line = next(line for line in (ROOT / "run_colocated_campaign.sh").read_text().splitlines()
+                         if line.startswith("ROOT="))
+        result = subprocess.run(["bash", "-c", root_line + '\nprintf "%s\\n" "$ROOT"'],
+                                env={"CAMPAIGN_ROOT": str(ROOT),
+                                     "SLURM_SUBMIT_DIR": "/var/spool/slurm/job123"},
+                                capture_output=True, text=True, check=True)
+        self.assertEqual(result.stdout.strip(), str(ROOT))
 
     def test_paired_summary_and_warmup(self):
         manifests = [Path(f"/campaign/cpu_production_r{rep}_{rep}/runs.tsv") for rep in range(1, 6)]
@@ -58,6 +68,16 @@ class CampaignTests(unittest.TestCase):
         result = subprocess.run(["bash", "-c", f'source "{ROOT}/colocated_campaign_env.sh"',
                                  "solver_wrapper.sh"], env={"SKIP_PAPI_METRICS": "0"}, capture_output=True)
         self.assertNotEqual(result.returncode, 0)
+
+    def test_wrapper_records_rank_without_bash_env(self):
+        with tempfile.TemporaryDirectory() as directory:
+            result = subprocess.run(["bash", str(ROOT / "solver_wrapper.sh")],
+                                    env={"CAMPAIGN_ENV_DIR": directory, "SLURM_PROCID": "0",
+                                         "SKIP_PAPI_METRICS": "1", "CUDA_LAUNCH_BLOCKING": "1",
+                                         "_SOLVER_BINARY": "/bin/true"},
+                                    capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("rank=0", (Path(directory) / "rank_0.txt").read_text())
 
 
 if __name__ == "__main__":

@@ -41,7 +41,33 @@ def groups():
     return result
 
 
+def profile_retry_groups():
+    result = []
+    limits = dict(zip(HARDWARE, (35, 45, 55, 25)))
+    for group in groups():
+        if group["mode"] != "profile":
+            continue
+        cases = group["cases"]
+        # Reuse the successful 24c SmartSim smoke and 96+96c PHYDLL/AIx profiles.
+        if group["hw"] == "24c1g":
+            cases = [c for c in cases if c[2] not in ("shared_c1", "shared_c3")]
+        elif group["hw"] == "96p96c4g":
+            cases = [c for c in cases if c[1] == "SMARTSIM"]
+        result.append(dict(group, id=f"profile_retry1_{group['hw']}_r1", cases=cases,
+                           minutes=limits[group["hw"]]))
+    assert len(result) == 4 and sum(len(g["cases"]) for g in result) == 31
+    return result
+
+
+def profile_recovery_group():
+    return dict(id="profile_retry2_24p24c1g_r1", hw="24p24c1g", mode="profile",
+                repeat=1, minutes=20,
+                cases=[("watercnn8k", "SMARTSIM", "shared_c1")])
+
+
 def minutes(group):
+    if "minutes" in group:
+        return group["minutes"]
     if group["mode"] == "profile":
         return 65 if "p" in group["hw"] else 55
     if group["cases"][0][0] == "giantmlp288":
@@ -160,13 +186,15 @@ def write_csv(path, rows, fields):
         writer.writerows(rows)
 
 
-def submit(mode, campaign, selected_groups=None):
+def submit(mode, campaign, selected_groups=None, notifier="swatch"):
     selected_groups = groups() if selected_groups is None else selected_groups
     markers = {b: ready(b) for b in ("plain", "scorep")}
     root = MINI / "results/gpu_refresh" / campaign
     if root.exists():
         raise RuntimeError("Campaign already exists; use a fresh token")
-    watcher = os.environ.get("GPU_REFRESH_SWATCH", str(Path.home() / "scripts/swatch"))
+    if notifier not in ("swatch", "snotify"):
+        raise ValueError(f"Unknown notifier: {notifier}")
+    watcher = os.environ.get(f"GPU_REFRESH_{notifier.upper()}", str(Path.home() / "scripts" / notifier))
     if mode == "--submit" and not os.access(watcher, os.X_OK):
         raise RuntimeError("Mandatory swatch executable missing")
     root.mkdir(parents=True)
@@ -196,7 +224,9 @@ def submit(mode, campaign, selected_groups=None):
         write_csv(root / "groups.csv", group_rows, list(group_rows[0]))
         write_csv(root / "cases.csv", case_rows, list(case_rows[0]))
     if ids:
-        subprocess.run([watcher, "--jobid", *ids], check=True)
+        notify_args = (["--jobid"] if notifier == "swatch" else
+                       ["-N", "GPU Refresh Profiles", "-m", f"{campaign}: {len(selected_groups)} allocations"])
+        subprocess.run([watcher, *notify_args, *ids], check=True)
     print(f"{len(selected_groups)} allocations; {sum(len(g['cases']) for g in selected_groups)} cases; manifests: {root}")
 
 
@@ -311,7 +341,8 @@ def main():
         print(json.dumps(groups(), indent=2))
         return 0
     if args.action in ("--describe", "--run"):
-        group = next((g for g in groups() if g["id"] == args.token), None)
+        authorized = groups() + profile_retry_groups() + [profile_recovery_group()]
+        group = next((g for g in authorized if g["id"] == args.token), None)
         if group is None:
             parser.error("Unauthorized group")
         if args.action == "--describe":

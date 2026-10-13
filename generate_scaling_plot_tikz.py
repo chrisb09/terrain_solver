@@ -41,6 +41,8 @@ def compute_medians():
         "smartsim_c0": [f"s{s}_smartsim_c0_default" if s > 7 else "s7_smartsim_c0" for s in scens],
         "smartsim_c3": [f"s{s}_smartsim_c3_default" if s > 7 else "s7_smartsim_c3" for s in scens],
         "smartsim_per_gpu_db": [f"s{s}_smartsim_per_gpu_db_default" for s in scens],
+        "phydll_default": [f"s{s}_phydll_default" for s in scens],
+        "phydll_readiness": [f"s{s}_phydll_readiness" for s in scens],
 
         # Graph 2 (default)
         "aix_p2p_default": [f"s{s}_aix_p2p_default" for s in scens],
@@ -102,7 +104,8 @@ def generate_tikz(nodes, data, output_tex: Path):
         return (val / y_max2) * H
 
     def format_pts(ys, mapper):
-        return " -- ".join(f"({map_x(i):.3f},{mapper(y):.3f})" for i, y in enumerate(ys))
+        pts = [f"({map_x(i):.3f},{mapper(y):.3f})" for i, y in enumerate(ys) if y is not None]
+        return " -- ".join(pts) if pts else ""
 
     tex_lines = [
         r"\documentclass[tikz,border=4pt]{standalone}",
@@ -121,6 +124,8 @@ def generate_tikz(nodes, data, output_tex: Path):
         r"\definecolor{colorSSZero}{HTML}{D62728}",     # Tab:Red
         r"\definecolor{colorSSThree}{HTML}{9467BD}",    # Tab:Purple
         r"\definecolor{colorSSPgdb}{HTML}{8C564B}",     # Tab:Brown
+        r"\definecolor{colorPhydllDef}{HTML}{008080}",  # Teal
+        r"\definecolor{colorPhydllReady}{HTML}{17BECF}",# Cyan/Teal
         r"",
         r"\begin{document}",
         r"\begin{tikzpicture}[",
@@ -231,6 +236,26 @@ def generate_tikz(nodes, data, output_tex: Path):
             for i, y in enumerate(data["aix_coll_default"]):
                 tex_lines.append(f"  \\fill[colorAixColl] ({map_x(i):.3f},{mapper(y):.3f}) circle (1.7pt);")
 
+            # PhyDLL default
+            if any(y is not None for y in data.get("phydll_default", [])):
+                p_pdef = format_pts(data["phydll_default"], mapper)
+                if p_pdef:
+                    tex_lines.append(f"  \\draw[colorPhydllDef, line width=1.1pt, dotted] {p_pdef};")
+                for i, y in enumerate(data["phydll_default"]):
+                    if y is not None:
+                        cx, cy = map_x(i), mapper(y)
+                        tex_lines.append(f"  \\fill[colorPhydllDef] ({cx:.3f},{cy:.3f}) +(-1.8pt,0) -- +(0,1.8pt) -- +(1.8pt,0) -- +(0,-1.8pt) -- cycle;")
+
+            # PhyDLL readiness
+            if any(y is not None for y in data.get("phydll_readiness", [])):
+                p_pready = format_pts(data["phydll_readiness"], mapper)
+                if p_pready:
+                    tex_lines.append(f"  \\draw[colorPhydllReady, line width=1.1pt, dashdotted] {p_pready};")
+                for i, y in enumerate(data["phydll_readiness"]):
+                    if y is not None:
+                        cx, cy = map_x(i), mapper(y)
+                        tex_lines.append(f"  \\fill[colorPhydllReady] ({cx:.3f},{cy:.3f}) circle (1.5pt);")
+
         elif g_idx == 1:
             p_coll = format_pts(data["aix_coll_default"], mapper)
             tex_lines.append(f"  \\draw[colorAixColl, line width=1.1pt] {p_coll};")
@@ -248,6 +273,26 @@ def generate_tikz(nodes, data, output_tex: Path):
             for i, y in enumerate(data["aix_p2p_fc_default"]):
                 cx, cy = map_x(i), mapper(y)
                 tex_lines.append(f"  \\fill[colorAixP2PFC] ({cx:.3f},{cy + 0.055:.3f}) -- ({cx - 0.045:.3f},{cy - 0.035:.3f}) -- ({cx + 0.045:.3f},{cy - 0.035:.3f}) -- cycle;")
+
+            # PhyDLL default (in subgraph 2 magnified scale)
+            if any(y is not None for y in data.get("phydll_default", [])):
+                p_pdef = format_pts(data["phydll_default"], mapper)
+                if p_pdef:
+                    tex_lines.append(f"  \\draw[colorPhydllDef, line width=1.1pt, dotted] {p_pdef};")
+                for i, y in enumerate(data["phydll_default"]):
+                    if y is not None:
+                        cx, cy = map_x(i), mapper(y)
+                        tex_lines.append(f"  \\fill[colorPhydllDef] ({cx:.3f},{cy:.3f}) +(-1.8pt,0) -- +(0,1.8pt) -- +(1.8pt,0) -- +(0,-1.8pt) -- cycle;")
+
+            # PhyDLL readiness (in subgraph 2 magnified scale)
+            if any(y is not None for y in data.get("phydll_readiness", [])):
+                p_pready = format_pts(data["phydll_readiness"], mapper)
+                if p_pready:
+                    tex_lines.append(f"  \\draw[colorPhydllReady, line width=1.1pt, dashdotted] {p_pready};")
+                for i, y in enumerate(data["phydll_readiness"]):
+                    if y is not None:
+                        cx, cy = map_x(i), mapper(y)
+                        tex_lines.append(f"  \\fill[colorPhydllReady] ({cx:.3f},{cy:.3f}) circle (1.5pt);")
 
         elif g_idx == 2:
             p_coll = format_pts(data["aix_coll_affine"], mapper)
@@ -293,7 +338,7 @@ def generate_tikz(nodes, data, output_tex: Path):
     box_left = -0.90
     box_w = total_plot_width - box_left
     leg_y = -1.05  # cm below x-axis
-    box_h = 0.95
+    box_h = 1.35
 
     tex_lines.append("% ==================== SHARED LEGEND ====================")
     tex_lines.append(f"\\begin{{scope}}[shift={{(0,{leg_y:.3f})}}]")
@@ -304,8 +349,8 @@ def generate_tikz(nodes, data, output_tex: Path):
     cw = box_w / 3.0
     c_starts = [box_left + 0.35 + i * cw for i in range(3)]
 
-    # Row 1: AIx modes (y = -0.28)
-    r1_y = -0.28
+    # Row 1: AIx modes (y = -0.26)
+    r1_y = -0.26
     # Item 1: AIx Collective
     tex_lines.append(f"  \\draw[colorAixColl, line width=1.1pt] ({c_starts[0]:.3f},{r1_y}) -- ({c_starts[0]+0.45:.3f},{r1_y});")
     tex_lines.append(f"  \\fill[colorAixColl] ({c_starts[0]+0.225:.3f},{r1_y}) circle (1.7pt);")
@@ -321,8 +366,8 @@ def generate_tikz(nodes, data, output_tex: Path):
     tex_lines.append(f"  \\fill[colorAixP2PFC] ({c_starts[2]+0.225:.3f},{r1_y+0.055:.3f}) -- ({c_starts[2]+0.225-0.045:.3f},{r1_y-0.035:.3f}) -- ({c_starts[2]+0.225+0.045:.3f},{r1_y-0.035:.3f}) -- cycle;")
     tex_lines.append(f"  \\node[legend label, anchor=west] at ({c_starts[2]+0.55:.3f},{r1_y}) {{AIx P2P (Full Credits)}};")
 
-    # Row 2: SmartSim modes (y = -0.66)
-    r2_y = -0.66
+    # Row 2: SmartSim modes (y = -0.62)
+    r2_y = -0.62
     # Item 4: SmartSim (default) [replaces SmartSim c0]
     tex_lines.append(f"  \\draw[colorSSZero, line width=1.0pt, dashed] ({c_starts[0]:.3f},{r2_y}) -- ({c_starts[0]+0.45:.3f},{r2_y});")
     tex_lines.append(f"  \\fill[colorSSZero] ({c_starts[0]+0.225:.3f},{r2_y}) circle (1.6pt);")
@@ -337,6 +382,18 @@ def generate_tikz(nodes, data, output_tex: Path):
     tex_lines.append(f"  \\draw[colorSSPgdb, line width=1.0pt, densely dotted] ({c_starts[2]:.3f},{r2_y}) -- ({c_starts[2]+0.45:.3f},{r2_y});")
     tex_lines.append(f"  \\draw[colorSSPgdb, line width=0.8pt, fill=white] ({c_starts[2]+0.225-0.045:.3f},{r2_y-0.045:.3f}) rectangle ({c_starts[2]+0.225+0.045:.3f},{r2_y+0.045:.3f});")
     tex_lines.append(f"  \\node[legend label, anchor=west] at ({c_starts[2]+0.55:.3f},{r2_y}) {{SmartSim Per-GPU DB}};")
+
+    # Row 3: PhyDLL modes (y = -0.98)
+    r3_y = -0.98
+    # Item 7: PhyDLL (default)
+    tex_lines.append(f"  \\draw[colorPhydllDef, line width=1.1pt, dotted] ({c_starts[0]:.3f},{r3_y}) -- ({c_starts[0]+0.45:.3f},{r3_y});")
+    tex_lines.append(f"  \\fill[colorPhydllDef] ({c_starts[0]+0.225:.3f},{r3_y}) +(-1.8pt,0) -- +(0,1.8pt) -- +(1.8pt,0) -- +(0,-1.8pt) -- cycle;")
+    tex_lines.append(f"  \\node[legend label, anchor=west] at ({c_starts[0]+0.55:.3f},{r3_y}) {{PhyDLL (default)}};")
+
+    # Item 8: PhyDLL (readiness)
+    tex_lines.append(f"  \\draw[colorPhydllReady, line width=1.1pt, dashdotted] ({c_starts[1]:.3f},{r3_y}) -- ({c_starts[1]+0.45:.3f},{r3_y});")
+    tex_lines.append(f"  \\fill[colorPhydllReady] ({c_starts[1]+0.225:.3f},{r3_y}) circle (1.5pt);")
+    tex_lines.append(f"  \\node[legend label, anchor=west] at ({c_starts[1]+0.55:.3f},{r3_y}) {{PhyDLL (readiness)}};")
 
     tex_lines.append(r"\end{scope}")
     tex_lines.append(r"\end{tikzpicture}")

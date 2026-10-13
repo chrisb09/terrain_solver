@@ -2032,7 +2032,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
     export PHYDLL_DL_FIELD_COUNT PHYDLL_DL_COUNT
     export PHYDLL_MPMD_SHUTDOWN_BARRIER="${PHYDLL_MPMD_SHUTDOWN_BARRIER_ENV:-1}"
 
-    PHYDLL_LIB_DIR="$(realpath "${MINI_APP_DIR}/../CPP-ML-Interface/extern/phydll/build/lib")"
+    PHYDLL_LIB_DIR="${PHYDLL_LIB_DIR_ENV:-$(realpath "${MINI_APP_DIR}/../CPP-ML-Interface/extern/phydll/build/lib")}"
     if [[ "${USE_GPU}" -eq 1 ]]; then
       DL_LD_LIBRARY_PATH="${PHYDLL_LIB_DIR}:${LD_LIBRARY_PATH:-}"
     else

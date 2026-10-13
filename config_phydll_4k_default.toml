@@ -1,0 +1,19 @@
+[logging]
+level = "debug"
+error_separate = false
+
+[library]
+class = "Phydll"
+model_file = "./train_models/model_a/watercnn_cuda.pt"
+backend = "TORCH"
+device = "GPU"
+batch_size = 20000000
+transport_layout = "packed"
+solver_readiness_wait = false
+
+[behavior]
+class = "Default"
+
+[application]
+class = "MLCouplingApplicationTerrainSolver"
+model_io_layout = "flat_contiguous"

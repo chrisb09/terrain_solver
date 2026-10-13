@@ -8,6 +8,7 @@ import sys
 from os import environ as env
 import time
 import subprocess
+from pathlib import Path
 
 job_id_raw = env.get("SLURM_JOB_ID", "0").split("+")[0]
 try:
@@ -45,6 +46,30 @@ def positive_env_int(name, default):
     if value < 1:
         raise ValueError(f"{name} must be positive, got {value}")
     return value
+
+
+def configure_redisai_libraries(redisai_path):
+    # RedisAI's Torch ABI differs from Python/solver Torch; isolate DB children.
+    torch_lib = Path(redisai_path).parent / "backends" / "redisai_torch" / "lib"
+    if not torch_lib.is_dir():
+        raise RuntimeError(f"RedisAI bundled Torch libraries not found: {torch_lib}")
+    inherited = env.get("LD_LIBRARY_PATH", "")
+    # With srun --export=ALL, the controller environment takes precedence.
+    env["LD_LIBRARY_PATH"] = str(torch_lib) + (":" + inherited if inherited else "")
+    print(f"RedisAI database Torch library path: {torch_lib}", flush=True)
+
+
+def cleanup_failed_start(experiment, databases):
+    for database in databases:
+        try:
+            experiment.stop(database)
+        except Exception as exc:
+            print(f"Database cleanup after failed startup: {exc}", file=sys.stderr, flush=True)
+    if env.get("GPU_REFRESH_CAMPAIGN_ENV"):
+        # No solver has started yet; this campaign owns an exclusive allocation.
+        # SmartSim stop can miss a partially registered step, so drain it too.
+        from gpu_refresh_campaign import clean_steps
+        clean_steps(env["SLURM_JOB_ID"].split("+")[0])
 
 device = "GPU" if use_gpu else "CPU"
 queue = "c23g" if use_gpu else "c23ms"
@@ -135,7 +160,7 @@ for _key in ("SLURM_NTASKS", "SLURM_NPROCS", "SLURM_NTASKS_PER_NODE",
              "SLURM_TASKS_PER_NODE", "SLURM_NPROCS"):
     env.pop(_key, None)
 
-exp_dir = "smartsim_experiments/" + env.get("SLURM_JOB_ID", "local")
+exp_dir = "smartsim_experiments/" + env.get("RUN_ID_ENV", env.get("SLURM_JOB_ID", "local"))
 if os.path.exists(exp_dir):
     print(f"Cleaning up previous experiment directory: {exp_dir}")
     shutil.rmtree(exp_dir)
@@ -254,6 +279,9 @@ else:
         db.set_cpus(max(1, args.cpu_cores_per_node))
     dbs.append(db)
 
+from smartsim._core.config import CONFIG
+configure_redisai_libraries(CONFIG.redisai)
+
 import traceback
 
 # DEBUG: print the env we're launching with (excluding too-large values)
@@ -270,6 +298,7 @@ try:
 except Exception:
     print("=== DEBUG: exp.start failed ===", flush=True)
     traceback.print_exc()
+    cleanup_failed_start(exp, dbs)
     # Try sacct to see what steps are registered
     try:
         job_id = env.get("SLURM_JOB_ID", "")

@@ -1,0 +1,18 @@
+[logging]
+level = "debug"
+error_separate = false
+
+[library]
+class = "Phydll"
+model_file = "./train_models/model_a/watercnn_cpu.pt"
+backend = "TORCH"
+device = "CPU"
+batch_size = 500000
+solver_readiness_wait = false
+
+[behavior]
+class = "Default"
+
+[application]
+class = "MLCouplingApplicationTerrainSolver"
+model_io_layout = "flat_contiguous"

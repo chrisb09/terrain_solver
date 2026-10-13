@@ -1,6 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 
+if [[ -n "${CAMPAIGN_ENV_DIR:-}" ]]; then
+    source "$(dirname "${BASH_SOURCE[0]}")/colocated_campaign_env.sh"
+fi
+
 # HET surrogate: this task runs on a c23g node that stands in for a c23mm
 # (CPU-only) node; hide the reserved GPUs from the CUDA runtime. Slurm's GPU
 # binding sets CUDA_VISIBLE_DEVICES and would override an srun --export value,

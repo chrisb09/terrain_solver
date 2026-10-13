@@ -60,6 +60,28 @@ class CampaignTest(unittest.TestCase):
             self.assertNotIn("wire_dtype", library)
             self.assertNotIn("float_codec", library)
 
+    def test_profile_retry_excludes_valid_cases(self):
+        groups = refresh.profile_retry_groups()
+        self.assertEqual([len(g["cases"]) for g in groups], [6, 11, 10, 4])
+        self.assertEqual([refresh.minutes(g) for g in groups], [35, 45, 55, 25])
+        self.assertEqual(len({g["id"] for g in groups}), 4)
+        self.assertFalse({g["id"] for g in groups} & {g["id"] for g in refresh.groups()})
+        for g in groups:
+            self.assertEqual(g["mode"], "profile")
+            for case in g["cases"]:
+                e = refresh.case_env(g, case)
+                self.assertEqual(e["TOTAL_STEPS_ENV"], "12")
+                self.assertEqual(e["USE_SCOREP_ENV"], "1")
+                if g["hw"] == "24c1g":
+                    self.assertNotIn(case[2], ("shared_c1", "shared_c3"))
+                if g["hw"] == "96p96c4g":
+                    self.assertEqual(case[1], "SMARTSIM")
+        with patch.object(refresh, "run", return_value=0) as run:
+            with patch.object(refresh.os.sys, "argv", ["campaign", "--run", groups[0]["id"]]):
+                with patch.dict(os.environ, GPU_REFRESH_CAMPAIGN_ENV="profile_retry_test"):
+                    self.assertEqual(refresh.main(), 0)
+            self.assertEqual(run.call_args.args, (groups[0], "profile_retry_test"))
+
     def test_times_templates_and_syntax(self):
         for group in refresh.groups():
             expected = (65 if "p" in group["hw"] else 55) if group["mode"] == "profile" else (20 if group["cases"][0][0] == "giantmlp288" else 75 if "p" in group["hw"] else 60 if group["hw"] == "24c1g" else 40)
@@ -75,6 +97,18 @@ class CampaignTest(unittest.TestCase):
             for section in sections:
                 self.assertIn(f"--gres=gpu:{4 if hw.startswith('96') else 1}", section)
         subprocess.run(["zsh", "-n", str(HERE / "gpu_refresh_case.zsh")], check=True)
+
+    def test_single_case_profile_recovery(self):
+        group = refresh.profile_recovery_group()
+        self.assertEqual(group["hw"], "24p24c1g")
+        self.assertEqual(group["cases"], [("watercnn8k", "SMARTSIM", "shared_c1")])
+        self.assertEqual(refresh.minutes(group), 20)
+        self.assertEqual(refresh.case_env(group, group["cases"][0])["TOTAL_STEPS_ENV"], "12")
+        with patch.object(refresh, "run", return_value=0) as run:
+            with patch.object(refresh.os.sys, "argv", ["campaign", "--run", group["id"]]):
+                with patch.dict(os.environ, GPU_REFRESH_CAMPAIGN_ENV="recovery_test"):
+                    self.assertEqual(refresh.main(), 0)
+            self.assertEqual(run.call_args.args, (group, "recovery_test"))
 
     def fixture(self, base):
         mini = base / "mini_app"
@@ -175,6 +209,13 @@ class CampaignTest(unittest.TestCase):
                     self.assertEqual(len(list(csv.DictReader(f))), 88)
                 with self.assertRaises(RuntimeError):
                     refresh.submit("--submit", "actual")
+                with patch.dict(os.environ, GPU_REFRESH_SNOTIFY=str(watch)):
+                    refresh.submit("--submit", "recovery", [refresh.profile_recovery_group()], notifier="snotify")
+                notify_args = json.loads((base / "watch").read_text())
+                self.assertEqual(notify_args[:2], ["-N", "GPU Refresh Profiles"])
+                self.assertEqual(notify_args[-1], "1029")
+                with (mini / "results/gpu_refresh/recovery/cases.csv").open() as f:
+                    self.assertEqual(len(list(csv.DictReader(f))), 1)
 
     def test_shell_adapter_and_rebuild_guard(self):
         with tempfile.TemporaryDirectory() as tmp:

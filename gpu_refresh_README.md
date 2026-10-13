@@ -34,6 +34,12 @@ submitted by implementing or testing this harness. The main operator owns launch
 
 ## Build Contract
 
+The profile retry uses `profile_retry_groups()`: 6/11/10/4 cases on
+24c1g/96c4g/24p24c1g/96p96c4g, with 35/45/55/25 minute limits respectively.
+It excludes the four successful 24c1g SmartSim backend-smoke cases and the
+four PhyDLL plus one AIx successful 96p96c4g profiles. All 31 retry cases
+use 12 steps and profiling; the original campaign matrix is unchanged.
+
 The separately owned `build_gpu_refresh.sbatch` must finish before either
 dry-run or submit. Set `GPU_REFRESH_BUILD_JOB_ID_ENV` to that completed job ID.
 The harness requires matching solver/DL markers for each mode, and matching

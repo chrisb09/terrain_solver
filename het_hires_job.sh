@@ -2162,8 +2162,8 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
       #    the proven het24 pattern.
       if [[ "${G_SIDE_TASKS:-0}" -gt 0 ]]; then
         _mm_host_count="${HET_MM_NODES_ENV:-${SLURM_JOB_NUM_NODES_HET_GROUP_0:-1}}"
-        _mm_hosts="$(scontrol show hostnames "${SLURM_JOB_NODELIST_HET_GROUP_0}" 2>/dev/null | head -n "${_mm_host_count}" | paste -sd, -)"
-        _g_hosts="$(scontrol show hostnames "${SLURM_JOB_NODELIST_HET_GROUP_1}" 2>/dev/null | paste -sd, -)"
+        _mm_hosts="$(scontrol show hostnames "${SLURM_JOB_NODELIST_HET_GROUP_0}" 2>/dev/null | head -n "${_mm_host_count}" | sed 's/$/:128/' | paste -sd, -)"
+        _g_hosts="$(scontrol show hostnames "${SLURM_JOB_NODELIST_HET_GROUP_1}" 2>/dev/null | sed 's/$/:128/' | paste -sd, -)"
         _phydll_scorep_opts=""
         if [[ "${USE_SCOREP:-0}" -eq 1 ]]; then
           if [[ "${SCOREP_ENABLE_TRACING:-false}" != "true" && "${SCOREP_ENABLE_TRACING:-false}" != "1" ]]; then
@@ -2172,12 +2172,41 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
         fi
         _ph_solver_args="--device \"${device}\" --gpus-per-node \"${GPUS_PER_NODE}\" --ml-nodes \"${DB_NODES}\" --ml-batch-size \"${ML_BATCH_SIZE}\" --model-path \"${MODEL_PATH_FOR_SOLVER}\" --model-backend \"${MODEL_BACKEND}\" --model-io-layout \"${MODEL_IO_LAYOUT}\" ${MODEL_IO_ARGS} --input-hdf5 \"${PREP_H5}\" --output-hdf5 \"${TRAJ_H5}\" --steps \"${TOTAL_STEPS}\" --save-every \"${SAVE_EVERY}\" --save-mode \"${SAVE_MODE}\" --triangular-scale \"${TRIANGULAR_SCALE}\" --chunk-size \"${CHUNK_SIZE}\" --io-mode \"${IO_MODE}\" --mpi-sync-mode \"${MPI_SYNC_MODE}\" --hdf5-xfer-mode \"${HDF5_XFER_MODE}\" ${RANK_GRID_ARGS} ${OVERWRITE_ARG} --write-surface"
         export LD_LIBRARY_PATH="${DL_LD_LIBRARY_PATH}"
-        echo "Launching phydll via mpirun MPMD: solver world of $((MPI_RANKS + G_SIDE_TASKS)) ranks on hosts=${_mm_hosts},${_g_hosts} + ${PHYDLL_NP_DL} DL worker(s) on hosts=${_g_hosts}"
-        launch_cmd="mpirun --bind-to none --oversubscribe -x LD_LIBRARY_PATH=\"${DL_LD_LIBRARY_PATH}\" -x PHYDLL_MPMD_SHUTDOWN_BARRIER=1 -np $((MPI_RANKS + G_SIDE_TASKS)) -host \"${_mm_hosts}:128,${_g_hosts}:128\" \
-      ${SOLVER_EXE} \
-        ${_ph_solver_args} : \
-         --bind-to none --oversubscribe -np ${PHYDLL_NP_DL} -host \"${_g_hosts}:128\" -x LD_LIBRARY_PATH=\"${DL_LD_LIBRARY_PATH}\" -x PATH -x PHYDLL_MPMD_SHUTDOWN_BARRIER=1 -x PHYDLL_PY_FORCE_EXIT=1 ${_phydll_scorep_opts} \
-          ${DL_CLIENT_CMD[*]}"
+        _dispatch_wrapper="${MINI_APP_DIR}/mpi_launch_test/dispatch_wrapper.sh"
+        if [[ -x "${_dispatch_wrapper}" && "${PHYDLL_USE_MPIRUN:-0}" != "1" ]]; then
+          _dispatch_dir="${MINI_APP_DIR}/logs/dispatch_${RUN_ID}"
+          mkdir -p "${_dispatch_dir}"
+          _dispatch_solver="${_dispatch_dir}/solver.sh"
+          _dispatch_dl="${_dispatch_dir}/dl.sh"
+          _g_total_slots=$(( G_SIDE_TASKS + PHYDLL_NP_DL ))
+          _ph_dl_cmd=(python3 "${MINI_APP_DIR}/phydll_pin_exec.py" --budget "${G_SIDE_TASKS}" --role dl --rank-env SLURM_LOCALID --offset "${G_SIDE_TASKS}" --count "${PHYDLL_NP_DL}" -- "${DL_CLIENT_CMD[@]}")
+          {
+            echo '#!/bin/bash'
+            echo "exec ${SOLVER_EXE} ${_ph_solver_args}"
+          } > "${_dispatch_solver}"
+          {
+            echo '#!/bin/bash'
+            if [[ -n "${_phydll_scorep_opts}" ]]; then
+              echo "export ${_phydll_scorep_opts}"
+            fi
+            echo "exec ${_ph_dl_cmd[*]}"
+          } > "${_dispatch_dl}"
+          chmod +x "${_dispatch_solver}" "${_dispatch_dl}"
+          echo "Launching phydll via srun MPMD + rank-dispatch wrapper: CPU-side ${MPI_RANKS} solver (het-group ${SOLVER_HET_GROUP}); GPU-side ${G_SIDE_TASKS} solver + ${PHYDLL_NP_DL} DL = ${_g_total_slots} tasks (het-group ${DB_HET_GROUP}, --overcommit)"
+          launch_cmd="srun --wait=120 --export=ALL \
+            $(get_srun_het_flag "${SOLVER_HET_GROUP}") --nodes \"${_mm_host_count:-1}\" --ntasks \"${MPI_RANKS}\" --ntasks-per-node 96 --cpus-per-task 1 \
+            ${SOLVER_EXE} ${_ph_solver_args} \
+            : \
+            --export=ALL,PHYDLL_MPMD_SHUTDOWN_BARRIER=1,PHYDLL_PY_FORCE_EXIT=1 $(get_srun_het_flag "${DB_HET_GROUP}") --nodes \"${G_SIDE_NODES}\" --ntasks \"${_g_total_slots}\" --cpus-per-task 1 --overcommit ${_solver_step_gpus_args} \
+            \"${_dispatch_wrapper}\" ${G_SIDE_TASKS} \"${_dispatch_solver}\" \"${_dispatch_dl}\""
+        else
+          echo "Launching phydll via mpirun MPMD: solver world of $((MPI_RANKS + G_SIDE_TASKS)) ranks on hosts=${_mm_hosts},${_g_hosts} + ${PHYDLL_NP_DL} DL worker(s) on hosts=${_g_hosts}"
+          launch_cmd="mpirun --bind-to none --oversubscribe -x LD_LIBRARY_PATH=\"${DL_LD_LIBRARY_PATH}\" -x PHYDLL_MPMD_SHUTDOWN_BARRIER=1 -np $((MPI_RANKS + G_SIDE_TASKS)) -host \"${_mm_hosts},${_g_hosts}\" \
+        ${SOLVER_EXE} \
+          ${_ph_solver_args} : \
+           --bind-to none --oversubscribe -np ${PHYDLL_NP_DL} -host \"${_g_hosts}\" -x LD_LIBRARY_PATH=\"${DL_LD_LIBRARY_PATH}\" -x PATH -x PHYDLL_MPMD_SHUTDOWN_BARRIER=1 -x PHYDLL_PY_FORCE_EXIT=1 ${_phydll_scorep_opts} \
+            ${DL_CLIENT_CMD[*]}"
+        fi
         eval "${launch_cmd}"
         SRUN_STATUS=$?
       else

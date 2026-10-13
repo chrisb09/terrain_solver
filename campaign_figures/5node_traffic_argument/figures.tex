@@ -1,0 +1,47 @@
+% Requires \usepackage{graphicx} and \usepackage{subcaption}.
+% Add this directory to \graphicspath, or prefix the asset paths below.
+% PDF assets can be replaced by \input{...pgf} at their authored widths.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{runtime_attribution.pdf}
+  \caption{Steady ML-step timings for standalone and clustered SmartSim
+    deployments. Columns show the mean across five runs; error bars indicate
+    two-sided 95\% Student-$t$ confidence intervals for the run mean.
+    Each run is averaged over 96 solver ranks and 50 steady ML steps,
+    excluding the initial warmup step. All timings use inclusive Score-P
+    regions from the same steady-step subtree. The total is the profiled
+    rank-mean step duration, not the synchronized solver walltime.
+    \texttt{put\_tensor} includes both input uploads per step;
+    \texttt{run\_model} measures the client-observed synchronous call,
+    including communication and server execution.}
+  \label{fig:smartsim-runtime-regions}
+\end{figure}
+
+\begin{figure}[tbp]
+  \centering
+  \begin{subfigure}[t]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{traffic_total.pdf}
+    \caption{Total transmitted and received traffic.}
+    \label{fig:smartsim-traffic-total}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{traffic_directions.pdf}
+    \caption{Direction-resolved traffic.}
+    \label{fig:smartsim-traffic-directions}
+  \end{subfigure}
+  \caption{Analytical traffic predictions and measurements for standalone
+    and clustered SmartSim deployments, normalized per ML step.
+    Measurements count transmitted (TX) and received (RX) bytes on the
+    solver node's \texttt{ib0} interface over 51 ML steps. Predictions count
+    tensor payload bytes; measurements also include protocol and other
+    interface traffic. Measured columns are means across five runs, with
+    two-sided 95\% Student-$t$ confidence intervals. Both panels use the
+    same vertical scale. Integer direction labels use total-preserving
+    rounding; column heights and confidence intervals use unrounded data.
+    The clustered-to-standalone traffic ratio is
+    3.00 analytically and approximately 3.023 in the measurements.}
+  \label{fig:smartsim-traffic-validation}
+\end{figure}

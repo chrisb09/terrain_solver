@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
+export CAMPAIGN_ROOT="$ROOT"
 phase=${1:?Usage: bash submit_colocated_campaign.sh smoke|pilot|production cpu|gpu [--submit]}
 platform=${2:?platform required}
 [[ $# == 2 || ( $# == 3 && $3 == --submit ) ]] || exit 2
-case "$phase" in smoke) reps=1; cpu_minutes=45; gpu_minutes=60;; pilot) reps=1; cpu_minutes=60; gpu_minutes=90;; production) reps=5; cpu_minutes=90; gpu_minutes=120;; *) exit 2;; esac
-case "$platform" in cpu) partition=c23ms; account=rwth2150; minutes=$cpu_minutes; gpu_args=();; gpu) partition=c23g; account=default; minutes=$gpu_minutes; gpu_args=(--gres=gpu:4);; *) exit 2;; esac
+case "$phase" in smoke) reps=1; cpu_minutes=45; gpu_minutes=60;; pilot) reps=1; cpu_minutes=60; gpu_minutes=90;; production) reps=5; cpu_minutes=150; gpu_minutes=120;; *) exit 2;; esac
+case "$platform" in cpu) partition=c23ms; account=rwth2150; minutes=$cpu_minutes; gpu_args=();; gpu) partition=c23g; account=rwth0792; minutes=$gpu_minutes; gpu_args=(--gres=gpu:4);; *) exit 2;; esac
 export CAMPAIGN_ID="${CAMPAIGN_ID:-colocated_$(date -u +%Y%m%dT%H%M%SZ)_$$}"
 [[ "$CAMPAIGN_ID" =~ ^[A-Za-z0-9_-]+$ ]] || exit 2
 # Explicit fresh directories are required; no fallback to historical builds.

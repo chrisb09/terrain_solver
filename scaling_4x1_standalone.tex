@@ -14,6 +14,8 @@
 \definecolor{colorSSZero}{HTML}{D62728}
 \definecolor{colorSSThree}{HTML}{9467BD}
 \definecolor{colorSSPgdb}{HTML}{8C564B}
+\definecolor{colorPhydllDef}{HTML}{008080}
+\definecolor{colorPhydllReady}{HTML}{17BECF}
 
 \begin{document}
 \begin{tikzpicture}[
@@ -260,25 +262,31 @@
 % ==================== SHARED LEGEND ====================
 \begin{scope}[shift={(0,-1.050)}]
   \draw[draw=black!25, fill=gray!3, rounded corners=2pt, line width=0.45pt]
-    (-0.900, -0.950) rectangle (13.590, 0);
-  \draw[colorAixColl, line width=1.1pt] (-0.550,-0.28) -- (-0.100,-0.28);
-  \fill[colorAixColl] (-0.325,-0.28) circle (1.7pt);
-  \node[legend label, anchor=west] at (0.000,-0.28) {AIx Collective};
-  \draw[colorAixP2P, line width=1.1pt] (4.280,-0.28) -- (4.730,-0.28);
-  \fill[colorAixP2P] (4.465,-0.320) rectangle (4.545,-0.240);
-  \node[legend label, anchor=west] at (4.830,-0.28) {AIx P2P (Credit = 1)};
-  \draw[colorAixP2PFC, line width=1.1pt] (9.110,-0.28) -- (9.560,-0.28);
-  \fill[colorAixP2PFC] (9.335,-0.225) -- (9.290,-0.315) -- (9.380,-0.315) -- cycle;
-  \node[legend label, anchor=west] at (9.660,-0.28) {AIx P2P (Full Credits)};
-  \draw[colorSSZero, line width=1.0pt, dashed] (-0.550,-0.66) -- (-0.100,-0.66);
-  \fill[colorSSZero] (-0.325,-0.66) circle (1.6pt);
-  \node[legend label, anchor=west] at (0.000,-0.66) {SmartSim (default)};
-  \draw[colorSSThree, line width=1.0pt, dashdotted] (4.280,-0.66) -- (4.730,-0.66);
-  \fill[colorSSThree] (4.505,-0.66) +(-1.6pt,0) -- +(0,1.6pt) -- +(1.6pt,0) -- +(0,-1.6pt) -- cycle;
-  \node[legend label, anchor=west] at (4.830,-0.66) {SmartSim $c=3$ (Sequential)};
-  \draw[colorSSPgdb, line width=1.0pt, densely dotted] (9.110,-0.66) -- (9.560,-0.66);
-  \draw[colorSSPgdb, line width=0.8pt, fill=white] (9.290,-0.705) rectangle (9.380,-0.615);
-  \node[legend label, anchor=west] at (9.660,-0.66) {SmartSim Per-GPU DB};
+    (-0.900, -1.350) rectangle (13.590, 0);
+  \draw[colorAixColl, line width=1.1pt] (-0.550,-0.26) -- (-0.100,-0.26);
+  \fill[colorAixColl] (-0.325,-0.26) circle (1.7pt);
+  \node[legend label, anchor=west] at (0.000,-0.26) {AIx Collective};
+  \draw[colorAixP2P, line width=1.1pt] (4.280,-0.26) -- (4.730,-0.26);
+  \fill[colorAixP2P] (4.465,-0.300) rectangle (4.545,-0.220);
+  \node[legend label, anchor=west] at (4.830,-0.26) {AIx P2P (Credit = 1)};
+  \draw[colorAixP2PFC, line width=1.1pt] (9.110,-0.26) -- (9.560,-0.26);
+  \fill[colorAixP2PFC] (9.335,-0.205) -- (9.290,-0.295) -- (9.380,-0.295) -- cycle;
+  \node[legend label, anchor=west] at (9.660,-0.26) {AIx P2P (Full Credits)};
+  \draw[colorSSZero, line width=1.0pt, dashed] (-0.550,-0.62) -- (-0.100,-0.62);
+  \fill[colorSSZero] (-0.325,-0.62) circle (1.6pt);
+  \node[legend label, anchor=west] at (0.000,-0.62) {SmartSim (default)};
+  \draw[colorSSThree, line width=1.0pt, dashdotted] (4.280,-0.62) -- (4.730,-0.62);
+  \fill[colorSSThree] (4.505,-0.62) +(-1.6pt,0) -- +(0,1.6pt) -- +(1.6pt,0) -- +(0,-1.6pt) -- cycle;
+  \node[legend label, anchor=west] at (4.830,-0.62) {SmartSim $c=3$ (Sequential)};
+  \draw[colorSSPgdb, line width=1.0pt, densely dotted] (9.110,-0.62) -- (9.560,-0.62);
+  \draw[colorSSPgdb, line width=0.8pt, fill=white] (9.290,-0.665) rectangle (9.380,-0.575);
+  \node[legend label, anchor=west] at (9.660,-0.62) {SmartSim Per-GPU DB};
+  \draw[colorPhydllDef, line width=1.1pt, dotted] (-0.550,-0.98) -- (-0.100,-0.98);
+  \fill[colorPhydllDef] (-0.325,-0.98) +(-1.8pt,0) -- +(0,1.8pt) -- +(1.8pt,0) -- +(0,-1.8pt) -- cycle;
+  \node[legend label, anchor=west] at (0.000,-0.98) {PhyDLL (default)};
+  \draw[colorPhydllReady, line width=1.1pt, dashdotted] (4.280,-0.98) -- (4.730,-0.98);
+  \fill[colorPhydllReady] (4.505,-0.98) circle (1.5pt);
+  \node[legend label, anchor=west] at (4.830,-0.98) {PhyDLL (readiness)};
 \end{scope}
 \end{tikzpicture}
 \end{document}

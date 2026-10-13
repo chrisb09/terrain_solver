@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
-ROOT="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
+# Slurm executes a spooled copy; submission exports the real campaign directory.
+ROOT="${CAMPAIGN_ROOT:-${SLURM_SUBMIT_DIR:-$(dirname "$(realpath "${BASH_SOURCE[0]}")")}}"
 phase=${1:?phase required}; platform=${2:?platform required}; rep=${3:?replicate required}
 case "$phase" in smoke) steps=6; warmup=0;; pilot) steps=20; warmup=3;; production) steps=66; warmup=3;; *) exit 2;; esac
 case "$platform" in
@@ -34,9 +35,9 @@ export MODEL_ARTIFACT_MANIFEST_ENV="$ROOT/train_models/model_a/artifact_manifest
 export MODEL_PATH_ENV="$ROOT/train_models/model_a/giant_split_cuda.pt"
 export CPP_ML_CONFIG_ENV="$ROOT/config_colocated_campaign.toml" CPP_ML_INTERFACE_PROVIDER_ENV=SMARTSIM
 export FORCE_FRESH_RUN_ENV=1 OVERWRITE_OUTPUT_ENV=1 USE_LOCAL_RUNTIME_STAGE_ENV=0 USE_LOCAL_MODEL_CACHE_ENV=1
+export SMARTSIM_CREATE_RUNTIME_TARS=0
 export SKIP_PAPI_METRICS=1 SCOREP_METRIC_PAPI= SCOREP_METRIC_PAPI_PER_PROCESS= CUDA_LAUNCH_BLOCKING=1
 export APPLY_CUDA_STUBS_ENV=1
-export BASH_ENV="$ROOT/colocated_campaign_env.sh"
 unset LD_PRELOAD SMARTSIM_DB_NODELIST SMARTSIM_DB_EXCLUDE_NODE
 bash -n "$ROOT/single_node_96c_4gpu.sh"
 conditions=(direct_nopreload direct_preload cmi_baseline cmi_profiling cmi_tracing)
@@ -78,7 +79,7 @@ for ((position=0; position<5; position++)); do
             case "$line" in *ENV=*|SMARTSIM_*=*|SCOREP_*=*|SKIP_PAPI_METRICS=*|CUDA_LAUNCH_BLOCKING=*) printf '%s\n' "$line";; esac
         done
     } > "$RUN_ROOT/${condition}_identity.txt"
-    # Validate Slurm export before the child; the BASH_ENV guard validates actual ranks.
+    # Validate Slurm export before the child; the wrapper validates actual ranks.
     srun --export=ALL --nodes=1 --ntasks=1 --cpus-per-task=1 bash -c \
         '[[ "$SKIP_PAPI_METRICS" == 1 && -z "$SCOREP_METRIC_PAPI" && "$CUDA_LAUNCH_BLOCKING" == 1 ]]' \
         > "$RUN_ROOT/${condition}_export_check.txt" 2>&1
@@ -91,3 +92,8 @@ for ((position=0; position<5; position++)); do
     # A failed child may leave its DB alive. Never run another condition then.
     [[ "$status" == 0 ]] || { printf 'Failed condition %s; see %s\n' "$condition" "$log" >&2; exit "$status"; }
 done
+if [[ "$phase" == pilot ]]; then
+    python3 -B "$ROOT/summarize_colocated_campaign.py" \
+        "$ROOT/logs/colocated_campaign/$CAMPAIGN_ID" "$platform" "$phase" \
+        > "$RUN_ROOT/pilot_summary.json"
+fi
