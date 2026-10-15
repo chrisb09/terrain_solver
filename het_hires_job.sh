@@ -2209,6 +2209,9 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
         fi
         eval "${launch_cmd}"
         SRUN_STATUS=$?
+        if [[ -n "${SUMMARY:-}" && -f "${SUMMARY:-}" && ! -f "${SOLVER_STEP_LOG}" ]]; then
+          ln -sf "${SUMMARY}" "${SOLVER_STEP_LOG}" 2>/dev/null || true
+        fi
       else
       # HetJob mode: use srun
       srun_solver_args="--export=ALL${_SOLVER_EXPORT_HIDE:+,${_SOLVER_EXPORT_HIDE}} $(get_srun_het_flag "${SOLVER_HET_GROUP}") --nodes \"${_nodes:-1}\" --ntasks \"${MPI_RANKS}\""

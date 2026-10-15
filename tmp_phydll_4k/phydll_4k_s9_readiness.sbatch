@@ -7,7 +7,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=0
 #SBATCH --exclusive
-#SBATCH --time=00:12:00
+#SBATCH --time=00:18:00
 #SBATCH --output=logs/phydll_4k_s9_readiness_%j.txt
 
 #SBATCH hetjob
@@ -19,7 +19,7 @@
 #SBATCH --gres=gpu:4
 #SBATCH --mem=0
 #SBATCH --exclusive
-#SBATCH --time=00:12:00
+#SBATCH --time=00:18:00
 
 set -uo pipefail
 

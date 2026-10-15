@@ -12,7 +12,7 @@ transport_layout = "packed"
 solver_readiness_wait = true
 
 [behavior]
-class = "Readiness"
+class = "Default"
 
 [application]
 class = "MLCouplingApplicationTerrainSolver"

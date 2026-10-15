@@ -110,6 +110,51 @@ class CampaignTest(unittest.TestCase):
                     self.assertEqual(refresh.main(), 0)
             self.assertEqual(run.call_args.args, (group, "recovery_test"))
 
+    def test_thesis_native_and_trace_groups(self):
+        native = refresh.thesis_native_groups()
+        self.assertEqual(len(native), 24)
+        self.assertEqual(sum(len(g["cases"]) for g in native), 66)
+        self.assertEqual({g["mode"] for g in native}, {"timing"})
+        for hw in refresh.HARDWARE:
+            per_model = refresh.smartsim_gap_cases(hw)
+            for model in refresh.MODELS:
+                self.assertEqual(sum(c[0] == model for c in per_model), {"24c1g": 3, "96c4g": 2, "24p24c1g": 4, "96p96c4g": 2}[hw])
+        for g in native:
+            for case in g["cases"]:
+                e = refresh.case_env(g, case)
+                self.assertEqual(e["TOTAL_STEPS_ENV"], "202" if case[0] == "watercnn8k" else "12")
+                self.assertEqual(e["USE_SCOREP_ENV"], "0")
+                if case[2] == "pergpu":
+                    self.assertEqual(e["DB_LAYOUT_ENV"], "per-ml-node")
+                    self.assertEqual(e["DB_NODES_ENV"], str(int(e["GPUS_PER_NODE_ENV"])))
+                else:
+                    self.assertEqual(e["DB_LAYOUT_ENV"], "shared")
+                    self.assertEqual(e["DB_NODES_ENV"], "1")
+        trace = refresh.thesis_trace_groups()
+        self.assertEqual(len(trace), 2)
+        self.assertEqual([g["mode"] for g in trace], ["trace", "trace"])
+        for g in trace:
+            for case in g["cases"]:
+                e = refresh.case_env(g, case)
+                self.assertEqual(e["USE_SCOREP_ENV"], "1")
+                self.assertEqual(e["SCOREP_ENABLE_TRACING_ENV"], "true")
+                self.assertEqual(e["SCOREP_ENABLE_PROFILING_ENV"], "true")
+                self.assertEqual(e["TOTAL_STEPS_ENV"], "12")
+        aix_p2p = refresh.case_env(trace[0], ("watercnn8k", "AIX", "p2p1"))
+        self.assertEqual(aix_p2p["CPP_ML_CONFIG_ENV"], "config_aix_pipelined.toml")
+        self.assertEqual(aix_p2p["AIX_P2P_INITIAL_CREDITS_ENV"], "1")
+        self.assertEqual(aix_p2p["AIX_P2P_TIMELINE_ENV"], "1")
+        self.assertEqual(aix_p2p["AIX_COMMUNICATION_MODE_ENV"], "pipelined")
+        aix_coll = refresh.case_env(refresh.groups()[0], ("watercnn8k", "AIX", "default"))
+        self.assertEqual(aix_coll["CPP_ML_CONFIG_ENV"], "config_aix.toml")
+        self.assertNotIn("AIX_P2P_INITIAL_CREDITS_ENV", aix_coll)
+        for g in native + trace:
+            with patch.object(refresh, "run", return_value=0) as run:
+                with patch.object(refresh.os.sys, "argv", ["campaign", "--run", g["id"]]):
+                    with patch.dict(os.environ, GPU_REFRESH_CAMPAIGN_ENV="thesis_test"):
+                        self.assertEqual(refresh.main(), 0)
+                self.assertEqual(run.call_args.args, (g, "thesis_test"))
+
     def fixture(self, base):
         mini = base / "mini_app"
         mini.mkdir()

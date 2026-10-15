@@ -42,6 +42,7 @@ def generate_script(sid: int, variant: str) -> Path:
     job_name = f"phydll_4k_s{sid}_{variant}"
     script_path = SCRIPTS_DIR / f"{job_name}.sbatch"
 
+    time_limit = "00:18:00" if sid <= 9 else "00:20:00"
     script_content = f"""#!/bin/zsh
 #SBATCH --job-name={job_name}
 #SBATCH --account=thes2181
@@ -51,7 +52,7 @@ def generate_script(sid: int, variant: str) -> Path:
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=0
 #SBATCH --exclusive
-#SBATCH --time=00:12:00
+#SBATCH --time={time_limit}
 #SBATCH --output=logs/phydll_4k_s{sid}_{variant}_%j.txt
 
 #SBATCH hetjob
@@ -63,7 +64,7 @@ def generate_script(sid: int, variant: str) -> Path:
 #SBATCH --gres=gpu:4
 #SBATCH --mem=0
 #SBATCH --exclusive
-#SBATCH --time=00:12:00
+#SBATCH --time={time_limit}
 
 set -uo pipefail
 

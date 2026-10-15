@@ -65,6 +65,46 @@ def profile_recovery_group():
                 cases=[("watercnn8k", "SMARTSIM", "shared_c1")])
 
 
+def smartsim_gap_cases(hw):
+    """Native SmartSim cells missing from the earlier retest campaigns."""
+    cases = [(model, "SMARTSIM", f"shared_c{chain}") for model in MODELS for chain in (1, 3)]
+    if hw in ("24c1g", "24p24c1g"):
+        cases.extend((model, "SMARTSIM", "pergpu") for model in MODELS)
+    if hw == "24p24c1g":
+        cases.extend((model, "SMARTSIM", "shared") for model in MODELS)
+    assert len(cases) == {"24c1g": 6, "96c4g": 4, "24p24c1g": 8, "96p96c4g": 4}[hw]
+    return cases
+
+
+def thesis_native_groups():
+    """Fill the 22 native SmartSim gap cells with the matrix's three repeats."""
+    limits = {("24c1g", "watercnn8k"): 75, ("24c1g", "giantmlp288"): 20,
+              ("96c4g", "watercnn8k"): 40, ("96c4g", "giantmlp288"): 20,
+              ("24p24c1g", "watercnn8k"): 90, ("24p24c1g", "giantmlp288"): 25,
+              ("96p96c4g", "watercnn8k"): 45, ("96p96c4g", "giantmlp288"): 20}
+    result = []
+    for hw in HARDWARE:
+        gap = smartsim_gap_cases(hw)
+        for model in MODELS:
+            for repeat in (1, 2, 3):
+                cases = [c for c in gap if c[0] == model]
+                result.append(dict(id=f"thesis_native_{hw}_{model}_r{repeat}", hw=hw, mode="timing",
+                                   repeat=repeat, minutes=limits[(hw, model)], cases=cases))
+    assert len(result) == 24 and sum(len(g["cases"]) for g in result) == 66
+    return result
+
+
+def thesis_trace_groups():
+    """One short five-call trace capture per library before the full expansion."""
+    return [
+        dict(id="thesis_trace_24c1g_r1", hw="24c1g", mode="trace", repeat=1, minutes=30,
+             cases=[("watercnn8k", "PHYDLL", "default"), ("watercnn8k", "AIX", "p2p1"),
+                    ("watercnn8k", "SMARTSIM", "shared"), ("watercnn8k", "SMARTSIM", "pergpu")]),
+        dict(id="thesis_trace_24p24c1g_r1", hw="24p24c1g", mode="trace", repeat=1, minutes=35,
+             cases=[("watercnn8k", "PHYDLL", "default"), ("watercnn8k", "AIX", "p2p1")]),
+    ]
+
+
 def minutes(group):
     if "minutes" in group:
         return group["minutes"]
@@ -81,18 +121,22 @@ def case_env(group, case):
     gpus = ranks // 24
     water = model == "watercnn8k"
     profile = group["mode"] == "profile"
-    steps = 12 if profile or not water else 202
+    traced = group["mode"] == "trace"
+    instrumented = profile or traced
+    steps = 12 if instrumented or not water else 202
     cap = 20000000 if water else 500000
-    build = "scorep" if profile else "plain"
+    build = "scorep" if instrumented else "plain"
     chain_count = {"shared_c1": "1", "shared_c3": "3"}.get(variant, "0")
+    pergpu = provider == "SMARTSIM" and variant == "pergpu"
+    pipelined = provider == "AIX" and variant in ("p2p1", "p2p24")
     cmi = MINI.parent / "CPP-ML-Interface"
-    env = dict(USE_SCOREP_ENV=str(int(profile)), USE_SCOREP=str(int(profile)),
+    env = dict(USE_SCOREP_ENV=str(int(instrumented)), USE_SCOREP=str(int(instrumented)),
                SCOREP_MPP_ENV="mpi", SKIP_COMPILE_ENV="1",
                COMPILE_OUTPUT_PATH_ENV=f"build_gpu_refresh_{build}",
                SOLVER_BIN=str(MINI / "solver_cpp" / f"build_gpu_refresh_{build}" / "terrain_solver"),
                PHYDLL_DL_BUILD_DIR=str(cmi / "dl_clients" / f"build-gpu-refresh-{build}"),
                PHYDLL_DL_CLIENT=str(cmi / "dl_clients" / f"build-gpu-refresh-{build}" / "phydll_dl_client"),
-               AIX_INSTALL_PREFIX_ENV=str(cmi / "extern/AIxeleratorService" / ("INSTALL-SCOREP" if profile else "INSTALL")),
+               AIX_INSTALL_PREFIX_ENV=str(cmi / "extern/AIxeleratorService" / ("INSTALL-SCOREP" if instrumented else "INSTALL")),
                USE_SMARTSIM="0", USE_CPP_ML_INTERFACE="1", USE_DIRECT_AIX="0", ML_INTERFACE_ENV="cpp",
                CPP_ML_INTERFACE_PROVIDER_ENV=provider,
                MODEL_NAME_ENV="watercnn" if water else "benchmark_giant_mlp",
@@ -106,8 +150,11 @@ def case_env(group, case):
                 USE_LOCAL_RUNTIME_STAGE_ENV="0", SMARTSIM_CREATE_RUNTIME_TARS="0",
                 USE_LOCAL_MODEL_CACHE_ENV="1", SOLVER_CPU_BIND_ENV="cores",
                SMARTSIM_RUNTIME_ROOT_ENV=os.environ.get("GPU_REFRESH_RUNTIME_ROOT_ENV", str(MINI.parent / "python")),
-               NIC_SAMPLING_ENV="0", GPU_MEM_SAMPLING_ENV="0", AIX_P2P_TIMELINE_ENV="0",
-               AIX_COMMUNICATION_MODE_ENV="collective", DB_NODES_ENV="1", DB_LAYOUT_ENV="shared",
+               NIC_SAMPLING_ENV="0", GPU_MEM_SAMPLING_ENV="0",
+               AIX_P2P_TIMELINE_ENV="1" if pipelined else "0",
+               AIX_COMMUNICATION_MODE_ENV="pipelined" if pipelined else "collective",
+               DB_NODES_ENV=str(gpus) if pergpu else "1",
+               DB_LAYOUT_ENV="per-ml-node" if pergpu else "shared",
                SMARTSIM_THREADS_PER_QUEUE_ENV="1", SMARTSIM_THREADS_PER_QUEUE="1",
                 SMARTSIM_INTRA_OP_THREADS="8", SMARTSIM_INTER_OP_THREADS="1", SMARTSIM_MPI_SEQUENTIAL_PUT=chain_count,
                ML_DB_BATCH_SIZE_ENV=str(cap), PHYDLL_PIN_ENV="1", PHYDLL_PIN_LOG_ENV="1",
@@ -116,12 +163,17 @@ def case_env(group, case):
                PHYDLL_REBUILD_DL_CLIENT_ENV="0", PHYDLL_REBUILD_ENV="0", USE_PYTHON_DL_CLIENT="0",
                MLCOUPLING_INTRA_OP_THREADS="1", MLCOUPLING_INTER_OP_THREADS="1", OMP_NUM_THREADS="1",
                MLCOUPLING_MEM_LOG_VERBOSE="0", MLCOUPLING_MEM_LOG_COLLECTIVE="0", MLCOUPLING_STEP_TIMING_SYNC="1",
-               SCOREP_ENABLE_TRACING_ENV="false", SCOREP_ENABLE_TRACING="false",
-               SCOREP_ENABLE_PROFILING_ENV=str(profile).lower(), SCOREP_ENABLE_PROFILING=str(profile).lower(),
+               SCOREP_ENABLE_TRACING_ENV=str(traced).lower(), SCOREP_ENABLE_TRACING=str(traced).lower(),
+               SCOREP_ENABLE_PROFILING_ENV=str(instrumented).lower(), SCOREP_ENABLE_PROFILING=str(instrumented).lower(),
                SCOREP_SHARED_PROFILE_ENV="1", SKIP_PAPI_METRICS="1", SCOREP_METRIC_PAPI="",
                SCOREP_DIR_TAG_ENV="gpu_refresh", OVERWRITE_JOB_NAME_ENV="1", APPLY_CUDA_STUBS_ENV="0")
     env["CPP_ML_CONFIG_ENV"] = (f"config_phydll_gpu_refresh_{variant}.toml" if provider == "PHYDLL"
-                                 else "config_aix.toml" if provider == "AIX" else "config.toml")
+                                 else ("config_aix_pipelined.toml" if pipelined else "config_aix.toml")
+                                 if provider == "AIX" else "config.toml")
+    if pipelined:
+        env["AIX_P2P_INITIAL_CREDITS_ENV"] = {"p2p1": "1", "p2p24": "24"}[variant]
+        # The solver calls MPI_Init, so the async controller must stay explicit.
+        env["AIX_P2P_ASYNC_CONTROLLER"] = "0"
     return env
 
 
@@ -254,7 +306,7 @@ def run(group, campaign):
             raise RuntimeError("Het allocation mismatch")
     elif os.environ.get("SLURM_NTASKS") != str(ranks) or os.environ.get("SLURM_JOB_NUM_NODES") != "1":
         raise RuntimeError("Single allocation mismatch")
-    build = "scorep" if group["mode"] == "profile" else "plain"
+    build = "scorep" if group["mode"] in ("profile", "trace") else "plain"
     ready(build)
     root = MINI / "results/gpu_refresh" / campaign / f"{group['id']}_{job}"
     root.mkdir(parents=True, exist_ok=False)
@@ -315,6 +367,16 @@ def run(group, campaign):
             if build == "scorep" and not profiles:
                 validation_error += "; Missing nonempty Score-P profile"
                 rc = rc or 1
+            traces = sorted(p for p in (MINI / "scorep_runs").glob(f"gpu_refresh_{run_id}/**/traces.otf2")
+                            if p.stat().st_size > 0)
+            (out / "traces.txt").write_text("".join(f"{p}\n" for p in traces))
+            if group["mode"] == "trace" and not traces:
+                validation_error += "; Missing nonempty OTF2 trace"
+                rc = rc or 1
+            timelines = sorted((MINI / "logs").glob(f"aix_p2p_timeline_{run_id}/aix_p2p_timeline_rank_*.csv"))
+            if provider == "AIX" and variant in ("p2p1", "p2p24") and not timelines:
+                validation_error += "; Missing AIx P2P timeline CSV"
+                rc = rc or 1
             rows.append(dict(run_id=run_id, model=model, provider=provider, variant=variant, rc=rc, cleanup_safe=safe))
             rows[-1].update(group=group["id"], job_id=job, hardware=group["hw"], mode=group["mode"],
                              repeat=group["repeat"], order=index, steps=env["TOTAL_STEPS_ENV"], warm=1,
@@ -341,7 +403,8 @@ def main():
         print(json.dumps(groups(), indent=2))
         return 0
     if args.action in ("--describe", "--run"):
-        authorized = groups() + profile_retry_groups() + [profile_recovery_group()]
+        authorized = (groups() + profile_retry_groups() + [profile_recovery_group()]
+                      + thesis_native_groups() + thesis_trace_groups())
         group = next((g for g in authorized if g["id"] == args.token), None)
         if group is None:
             parser.error("Unauthorized group")

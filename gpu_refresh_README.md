@@ -40,6 +40,23 @@ It excludes the four successful 24c1g SmartSim backend-smoke cases and the
 four PhyDLL plus one AIx successful 96p96c4g profiles. All 31 retry cases
 use 12 steps and profiling; the original campaign matrix is unchanged.
 
+## Thesis Groups
+
+`thesis_native_groups()` fills the 22 native SmartSim cells missing from the
+earlier retest campaigns: shared c1/c3 on every layout, per-GPU DB on 24c1g and
+24p24c1g, and shared c0 on 24p24c1g, for both models. It uses the matrix's three
+repeats, split per hardware/model/repeat (24 allocations, 66 cases) with the
+202-step WaterCNN and 12-step GiantMLP conventions.
+
+`thesis_trace_groups()` validates one short capture per library before the full
+expansion: on 24c1g, PhyDLL default, AIx p2p1 (with the P2P timeline CSV),
+SmartSim shared and per-GPU; on 24p24c1g, PhyDLL default and AIx p2p1. Trace
+mode runs 12 steps, enables both profiling and OTF2 tracing, and validates a
+nonempty `traces.otf2` plus, for pipelined AIx, a nonempty `aix_p2p_timeline_*`
+CSV. `export_trace_intervals.py` converts a trace into the renderer CSV
+(`OTF2_PRINT` selects the executable); `build_thesis_aix_variants.sbatch` builds
+the isolated affine/NUMA DSOs needed for the remaining AIx cells.
+
 The separately owned `build_gpu_refresh.sbatch` must finish before either
 dry-run or submit. Set `GPU_REFRESH_BUILD_JOB_ID_ENV` to that completed job ID.
 The harness requires matching solver/DL markers for each mode, and matching

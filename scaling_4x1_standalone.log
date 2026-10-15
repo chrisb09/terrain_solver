@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.9.10)  13 OCT 2026 19:37
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.9.10)  14 OCT 2026 12:35
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -669,45 +669,45 @@ File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
 e
 ))
 LaTeX Font Info:    Trying to load font information for OT1+lmr on input line 2
-80.
+98.
 
 (/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/latex/lm/ot1l
 mr.fd
 File: ot1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
 LaTeX Font Info:    Trying to load font information for OML+lmm on input line 2
-80.
+98.
 
 (/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/latex/lm/omll
 mm.fd
 File: omllmm.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
 LaTeX Font Info:    Trying to load font information for OMS+lmsy on input line 
-280.
+298.
 
 (/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/latex/lm/omsl
 msy.fd
 File: omslmsy.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
 LaTeX Font Info:    Trying to load font information for OMX+lmex on input line 
-280.
+298.
 
 (/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/latex/lm/omxl
 mex.fd
 File: omxlmex.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <7> on input line 280.
+(Font)              <7> on input line 298.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <5> on input line 280.
-LaTeX Font Info:    Trying to load font information for U+msa on input line 280
+(Font)              <5> on input line 298.
+LaTeX Font Info:    Trying to load font information for U+msa on input line 298
 .
 
 (/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/latex/amsfont
 s/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Trying to load font information for U+msb on input line 280
+LaTeX Font Info:    Trying to load font information for U+msb on input line 298
 .
 
 (/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/latex/amsfont
@@ -717,7 +717,7 @@ File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 
 
 Non-PDF special ignored!
-<special> papersize=446.3023pt,182.21648pt
+<special> papersize=446.3023pt,369.15576pt
 {/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-var/fonts/map/pdftex/u
 pdmap/pdftex.map}{/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/
 fonts/enc/dvips/lm/lm-ec.enc}{/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026
@@ -733,7 +733,7 @@ L3 programming layer <2026-08-10>
 Here is how much of TeX's memory you used:
  17409 strings out of 468232
  393927 string characters out of 5421604
- 783426 words of memory out of 5000000
+ 788124 words of memory out of 5000000
  46291 multiletter control sequences out of 15000+600000
  651687 words of font info for 57 fonts, out of 8000000 for 9000
  430 hyphenation exceptions out of 8191
@@ -743,7 +743,7 @@ lic/lm/lmbx8.pfb></rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/
 fonts/type1/public/lm/lmmi7.pfb></rwthfs/rz/cluster/home/ro092286/opt/texlive/2
 026/texmf-dist/fonts/type1/public/lm/lmr7.pfb>
 Output written on /rwthfs/rz/cluster/hpcwork/ro092286/smartsim/mini_app/scaling
-_4x1_standalone.pdf (1 page, 69438 bytes).
+_4x1_standalone.pdf (1 page, 70262 bytes).
 PDF statistics:
  32 PDF objects out of 1000 (max. 8388607)
  21 compressed objects within 1 object stream
