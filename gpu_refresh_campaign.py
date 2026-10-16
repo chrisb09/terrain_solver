@@ -4,6 +4,7 @@ import argparse
 import csv
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -15,6 +16,57 @@ import time
 MINI = Path(__file__).resolve().parent
 HARDWARE = ("24c1g", "96c4g", "24p24c1g", "96p96c4g")
 MODELS = ("watercnn8k", "giantmlp288")
+AIX_LAYOUTS = ("default", "affine", "numa")
+AIX_VARIANT_SHA = "86968b64380307a5113db8077ffe4b9494309c71"
+
+
+def case_fields(case):
+    # Earlier shipped campaigns persist three-element case tuples.
+    if isinstance(case, dict):
+        return case["model"], case["provider"], case["variant"], case["layout"]
+    return (*case, "default")
+
+
+def missing65_profile_groups():
+    """Only the remaining current-workload profiles, not native timing repeats."""
+    # Rounded-up maxima of mean_step_ms over each hardware/model's nine cells:
+    # results/retest_aix/summary_{watercnn8k,giantmlp288}.csv. Using the maximum
+    # covers every selected layout/communication without depending on live logs.
+    mean_bounds = {"24c1g": (735, 2468), "96c4g": (231, 780),
+                   "24p24c1g": (566, 2561), "96p96c4g": (201, 776)}
+    result = []
+    for hw in HARDWARE:
+        for model_index, model in enumerate(MODELS):
+            cases = [dict(model=model, provider="AIX", variant=comm, layout=layout)
+                     for layout in AIX_LAYOUTS for comm in ("default", "p2p1", "p2p24")
+                     if not (layout == "default" and
+                             (comm == "default" or (model_index == 0 and
+                              hw in ("24c1g", "24p24c1g") and comm == "p2p1")))]
+            if (hw == "24c1g" and model_index == 1) or hw == "24p24c1g":
+                cases.append(dict(model=model, provider="SMARTSIM", variant="pergpu", layout="default"))
+            # Trace pilot jobs 5006151/5006153 AIx driver totals minus solver
+            # runtime: 24-4=20s and 17-5=12s. Reserve 30s startup per AIx
+            # case (45s at 96 ranks), plus 30s cleanup/profile flush per case.
+            # Fresh native jobs 5006190/5006218 per-GPU giant means ~2469/2712ms,
+            # startup 62-14=48s / 70-16=54s. Water 24p uses a conservative
+            # 4000ms bound (native job 5006209 steps 4/6/12: 2068/1929/1817ms);
+            # trace SmartSim job 5006151 startup was 169-37=132s.
+            aix_count = sum(c["provider"] == "AIX" for c in cases)
+            ss_count = len(cases) - aix_count
+            aix_startup = 45 if hw.startswith("96") else 30
+            ss_mean = 4000 if model_index == 0 else (2712 if "p" in hw else 2469)
+            inference = 6 * (aix_count * mean_bounds[hw][model_index] + ss_count * ss_mean) / 1000
+            startup = aix_count * aix_startup + ss_count * (150 if model_index == 0 else 60)
+            seconds = 60 + 1.5 * (inference + startup + 30 * len(cases))
+            budget = dict(expected_calls_per_case=6, aix_mean_bound_ms=mean_bounds[hw][model_index],
+                          smartsim_mean_bound_ms=ss_mean if ss_count else 0,
+                          inference_seconds=inference, startup_seconds=startup,
+                          cleanup_seconds=30 * len(cases), headroom_factor=1.5,
+                          allocation_overhead_seconds=60, estimated_seconds=seconds)
+            result.append(dict(id=f"missing65_profile_{hw}_{model}_r1", hw=hw, mode="profile",
+                               repeat=1, cases=cases, minutes=max(5, math.ceil(seconds / 60)), budget=budget))
+    assert len(result) == 8 and sum(len(g["cases"]) for g in result) == 65
+    return result
 
 
 def groups():
@@ -116,7 +168,7 @@ def minutes(group):
 
 
 def case_env(group, case):
-    model, provider, variant = case
+    model, provider, variant, layout = case_fields(case)
     ranks = 96 if group["hw"].startswith("96") else 24
     gpus = ranks // 24
     water = model == "watercnn8k"
@@ -174,10 +226,47 @@ def case_env(group, case):
         env["AIX_P2P_INITIAL_CREDITS_ENV"] = {"p2p1": "1", "p2p24": "24"}[variant]
         # The solver calls MPI_Init, so the async controller must stay explicit.
         env["AIX_P2P_ASYNC_CONTROLLER"] = "0"
+    if provider == "AIX" and isinstance(case, dict):
+        prefix = MINI / "solver_cpp/build_thesis_aix_variants" / f"{layout}_{build}" / "aix-install"
+        env["AIX_INSTALL_PREFIX_ENV"] = str(prefix)
+        env["GPU_REFRESH_AIX_LIBRARY_DIR_ENV"] = str(prefix / "lib")
     return env
 
 
-def ready(build):
+def aix_ready(layout, build):
+    if layout not in AIX_LAYOUTS or build not in ("plain", "scorep"):
+        raise ValueError("Invalid AIx layout/build")
+    variant = MINI / "solver_cpp/build_thesis_aix_variants" / f"{layout}_{build}"
+    text = (variant / "READY").read_text()
+    entries = dict(line.split("=", 1) for line in text.splitlines())
+    prefix = variant / "aix-install"
+    library = prefix / "lib/libAIxeleratorService.so"
+    checksums = variant / "checksums.sha256"
+    expected = dict(format="THESIS_AIX_READY_V1", layout=layout, mode=build,
+                    gitsha=AIX_VARIANT_SHA, gpu_refresh_job=os.environ["GPU_REFRESH_BUILD_JOB_ID_ENV"],
+                    prefix=str(prefix), library=str(library), cache=str(variant / "aix-build/CMakeCache.txt"),
+                    solver=str(MINI / "solver_cpp" / f"build_gpu_refresh_{build}" / "terrain_solver"),
+                    dl_client=str(MINI.parent / "CPP-ML-Interface/dl_clients" / f"build-gpu-refresh-{build}" / "phydll_dl_client"),
+                    checksums=str(checksums), checksums_sha256=hashlib.sha256(checksums.read_bytes()).hexdigest(),
+                    validation="cpu-build-only", runtime_validation="pending")
+    if any(entries.get(k) != v for k, v in expected.items()) or not re.fullmatch(r"[0-9]+", entries.get("job", "")):
+        raise RuntimeError(f"{variant}: READY contract mismatch")
+    if entries.get("library_size") != str(library.stat().st_size) or entries.get("library_mtime") != str(int(library.stat().st_mtime)):
+        raise RuntimeError(f"{variant}: library metadata mismatch")
+    # Require coverage of the selected DSO, sources, and reused executables.
+    covered = {line.split(maxsplit=1)[1].lstrip(" *") for line in checksums.read_text().splitlines()}
+    if not {str(library), expected["solver"], expected["dl_client"], str(variant / "source.sha256")} <= covered:
+        raise RuntimeError(f"{variant}: incomplete checksums")
+    subprocess.run(["sha256sum", "--check", str(checksums)], check=True, stdout=subprocess.DEVNULL)
+    linkage = (variant / "library.ldd.txt").read_text()
+    if re.search(r"not found|/stubs|libscorep_mpp_mockup|libscorep_adapter_(compiler|cuda)", linkage):
+        raise RuntimeError(f"{variant}: invalid library linkage")
+    if build == "scorep" and not all(s in linkage for s in ("libscorep_mpp_mpi", "libscorep_adapter_user")):
+        raise RuntimeError(f"{variant}: missing Score-P MPI/user linkage")
+    return text
+
+
+def ready(build, aix_layouts=()):
     solver = MINI / "solver_cpp" / f"build_gpu_refresh_{build}"
     dl = MINI.parent / "CPP-ML-Interface/dl_clients" / f"build-gpu-refresh-{build}"
     identity = os.environ.get("GPU_REFRESH_BUILD_JOB_ID_ENV", "")
@@ -227,7 +316,9 @@ def ready(build):
         if text.count("SKIP_COMPILE=0") != 3 or "WITH_PHYDLL:BOOL=ON" not in text:
             raise RuntimeError(f"{driver}: compile source guard changed; review before launch")
     subprocess.run(["sha256sum", "--check"], input="\n".join(marker.splitlines()[1:]) + "\n", text=True,
-                   check=True, stdout=subprocess.DEVNULL)
+                    check=True, stdout=subprocess.DEVNULL)
+    for layout in aix_layouts:
+        aix_ready(layout, build)
     return marker
 
 
@@ -238,9 +329,19 @@ def write_csv(path, rows, fields):
         writer.writerows(rows)
 
 
-def submit(mode, campaign, selected_groups=None, notifier="swatch"):
+def submit(mode, campaign, selected_groups=None, notifier="swatch", smoke_first=False):
+    """Optionally gate later groups on the first; dry runs use afterok:DRY_RUN."""
     selected_groups = groups() if selected_groups is None else selected_groups
-    markers = {b: ready(b) for b in ("plain", "scorep")}
+    if mode not in ("--dry-run", "--submit") or not selected_groups:
+        raise ValueError("Expected dry-run/submit and at least one group")
+    markers = {}
+    selected_layouts = {}
+    for build in sorted({"scorep" if g["mode"] in ("profile", "trace") else "plain" for g in selected_groups}):
+        layouts = sorted({case_fields(c)[3] for g in selected_groups for c in g["cases"]
+                          if ("scorep" if g["mode"] in ("profile", "trace") else "plain") == build
+                          and isinstance(c, dict) and c["provider"] == "AIX"})
+        selected_layouts[build] = layouts
+        markers[build] = ready(build, layouts) if layouts else ready(build)
     root = MINI / "results/gpu_refresh" / campaign
     if root.exists():
         raise RuntimeError("Campaign already exists; use a fresh token")
@@ -251,7 +352,12 @@ def submit(mode, campaign, selected_groups=None, notifier="swatch"):
         raise RuntimeError("Mandatory swatch executable missing")
     root.mkdir(parents=True)
     (root / "ready.json").write_text(json.dumps(markers, indent=2) + "\n")
+    (root / "budget.json").write_text(json.dumps({g["id"]: g["budget"] for g in selected_groups if "budget" in g}, indent=2) + "\n")
+    (root / "aix-ready.json").write_text(json.dumps({f"{layout}_{build}": aix_ready(layout, build)
+        for build in markers for layout in selected_layouts[build]}, indent=2) + "\n")
     group_rows, case_rows, ids = [], [], []
+    cleanenv = {key: value for key, value in os.environ.items()
+                if not key.startswith(("SLURM_", "SBATCH_", "SRUN_"))}
     for group in selected_groups:
         cmd = ["sbatch", "--parsable", f"--time=00:{minutes(group):02d}:00" if minutes(group) < 60 else f"--time=01:{minutes(group)-60:02d}:00",
                f"--chdir={MINI}", f"--output={root}/{group['id']}_%j.out", f"--error={root}/{group['id']}_%j.err",
@@ -259,10 +365,14 @@ def submit(mode, campaign, selected_groups=None, notifier="swatch"):
                str(MINI / f"gpu_refresh_{group['hw']}.sbatch"), group["id"]]
         if "p" in group["hw"]:
             cmd[-2:-2] = [":", cmd[2]]
+        if smoke_first and group_rows:
+            # Dependencies are global Slurm options, including for het jobs.
+            cmd.insert(2, f"--dependency=afterok:{group_rows[0]['job_id']}")
+            cmd.insert(3, "--kill-on-invalid-dep=yes")
         print(shlex.join(cmd), flush=True)
         jid = "DRY_RUN"
         if mode == "--submit":
-            reply = subprocess.check_output(cmd, text=True).strip()
+            reply = subprocess.check_output(cmd, text=True, env=cleanenv).strip()
             if not re.fullmatch(r"[0-9]+(?:;[A-Za-z0-9_.-]+)?", reply):
                 raise RuntimeError(f"Unexpected sbatch reply: {reply}")
             jid = reply.split(";")[0]
@@ -270,7 +380,9 @@ def submit(mode, campaign, selected_groups=None, notifier="swatch"):
         group_rows.append(dict(group=group["id"], mode=group["mode"], hardware=group["hw"], repeat=group["repeat"], minutes=minutes(group), job_id=jid))
         for index, case in enumerate(group["cases"], 1):
             env = case_env(group, case)
-            case_rows.append(dict(group=group["id"], order=index, model=case[0], provider=case[1], variant=case[2], job_id=jid,
+            model, provider, variant, layout = case_fields(case)
+            case_rows.append(dict(group=group["id"], order=index, model=model, provider=provider, variant=variant, layout=layout,
+                                  aix_library_dir=env.get("GPU_REFRESH_AIX_LIBRARY_DIR_ENV", ""), job_id=jid,
                                   steps=env["TOTAL_STEPS_ENV"], cap=env["ML_BATCH_SIZE_ENV"], warm=1,
                                   steady=int(env["TOTAL_STEPS_ENV"]) // 2 - 1))
         write_csv(root / "groups.csv", group_rows, list(group_rows[0]))
@@ -278,7 +390,8 @@ def submit(mode, campaign, selected_groups=None, notifier="swatch"):
     if ids:
         notify_args = (["--jobid"] if notifier == "swatch" else
                        ["-N", "GPU Refresh Profiles", "-m", f"{campaign}: {len(selected_groups)} allocations"])
-        subprocess.run([watcher, *notify_args, *ids], check=True)
+        subprocess.run([watcher, *notify_args, *ids], check=True,
+                       env={**os.environ, "SBATCH_ACCOUNT": "thes2181"})
     print(f"{len(selected_groups)} allocations; {sum(len(g['cases']) for g in selected_groups)} cases; manifests: {root}")
 
 
@@ -307,29 +420,40 @@ def run(group, campaign):
     elif os.environ.get("SLURM_NTASKS") != str(ranks) or os.environ.get("SLURM_JOB_NUM_NODES") != "1":
         raise RuntimeError("Single allocation mismatch")
     build = "scorep" if group["mode"] in ("profile", "trace") else "plain"
-    ready(build)
+    layouts = sorted({case_fields(c)[3] for c in group["cases"] if isinstance(c, dict) and c["provider"] == "AIX"})
+    if layouts:
+        ready(build, layouts)
+    else:
+        ready(build)
     root = MINI / "results/gpu_refresh" / campaign / f"{group['id']}_{job}"
     root.mkdir(parents=True, exist_ok=False)
     rows = []
     failed = False
     for index, case in enumerate(group["cases"], 1):
-        model, provider, variant = case
+        model, provider, variant, layout = case_fields(case)
         run_id = f"gpu_refresh_{campaign}_{group['id']}_{job}_{index}_{model}_{provider.lower()}_{variant}"
+        if isinstance(case, dict):
+            run_id += f"_{layout}"
         out = root / run_id
         out.mkdir()
         env = os.environ.copy()
         for key in list(env):
-            if key.startswith(("AIX_P2P_", "SMARTSIM_DB_", "SCOREP_")) or key == "SSDB":
+            if key.startswith(("AIX_P2P_", "SMARTSIM_DB_", "SCOREP_")) or key in ("SSDB", "GPU_REFRESH_AIX_LIBRARY_DIR_ENV", "SLURM_MEM_PER_CPU", "SLURM_MEM_PER_GPU"):
                 del env[key]
+        # Exclusive GPU allocations request --mem=0, including older exports.
+        env["SLURM_MEM_PER_NODE"] = "0"
         env.update(case_env(group, case))
         env.update(RUN_ID_ENV=run_id, JOB_NAME_ENV=run_id, SMARTSIM_PORT_OFFSET_ENV=str(index * 31))
         env.update(GPU_REFRESH_OUTPUT_ROOT=str(root), GPU_REFRESH_BUILD_ENV=str(MINI / "solver_cpp" / f"build_gpu_refresh_{build}" / "build.env"))
+        env["GPU_REFRESH_AIX_RESOLUTION_LOG_ENV"] = str(out / "solver.ldd.txt")
         config = (MINI / env["CPP_ML_CONFIG_ENV"]).read_text()
         if provider == "PHYDLL":
             config = config.replace("batch_size = 500000", f"batch_size = {env['ML_BATCH_SIZE_ENV']}")
         (out / "config.toml").write_text(config)
         env["CPP_ML_CONFIG_ENV"] = str(out / "config.toml")
         (out / "runtime.env.json").write_text(json.dumps(env, indent=2, sort_keys=True) + "\n")
+        if "GPU_REFRESH_AIX_LIBRARY_DIR_ENV" in env:
+            (out / "aix.READY").write_text(aix_ready(layout, build))
         driver = MINI / ("5r_driver_hetsurrogate.zsh" if "p" in group["hw"] else "5r_driver_single.zsh")
         (out / "driver.sha256").write_text(hashlib.sha256(driver.read_bytes()).hexdigest() + "\n")
         rc = 1
@@ -351,7 +475,10 @@ def run(group, campaign):
             clean_steps(job)
             for name in (f"db_hostname_{run_id}.txt", f"close_driver_{run_id}.txt"):
                 (MINI / name).unlink(missing_ok=True)
-            ready(build)
+            if layouts:
+                ready(build, layouts)
+            else:
+                ready(build)
             safe = True
         finally:
             expected_calls = int(env["TOTAL_STEPS_ENV"]) // 2
@@ -377,7 +504,8 @@ def run(group, campaign):
             if provider == "AIX" and variant in ("p2p1", "p2p24") and not timelines:
                 validation_error += "; Missing AIx P2P timeline CSV"
                 rc = rc or 1
-            rows.append(dict(run_id=run_id, model=model, provider=provider, variant=variant, rc=rc, cleanup_safe=safe))
+            rows.append(dict(run_id=run_id, model=model, provider=provider, variant=variant, layout=layout,
+                             aix_library_dir=env.get("GPU_REFRESH_AIX_LIBRARY_DIR_ENV", ""), rc=rc, cleanup_safe=safe))
             rows[-1].update(group=group["id"], job_id=job, hardware=group["hw"], mode=group["mode"],
                              repeat=group["repeat"], order=index, steps=env["TOTAL_STEPS_ENV"], warm=1,
                              steady=int(env["TOTAL_STEPS_ENV"]) // 2 - 1, cap=env["ML_BATCH_SIZE_ENV"],
@@ -389,7 +517,7 @@ def run(group, campaign):
             write_csv(out / "manifest.csv", [rows[-1]], list(rows[-1]))
             write_csv(root / "manifest.csv", rows, list(rows[-1]))
             failed |= rc != 0 or not safe
-        if not safe:
+        if not safe or (rc != 0 and group["id"].startswith("missing65_profile_")):
             break
     return int(failed)
 
@@ -404,7 +532,7 @@ def main():
         return 0
     if args.action in ("--describe", "--run"):
         authorized = (groups() + profile_retry_groups() + [profile_recovery_group()]
-                      + thesis_native_groups() + thesis_trace_groups())
+                       + thesis_native_groups() + thesis_trace_groups() + missing65_profile_groups())
         group = next((g for g in authorized if g["id"] == args.token), None)
         if group is None:
             parser.error("Unauthorized group")

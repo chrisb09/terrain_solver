@@ -147,3 +147,77 @@ Tests use temporary builds, fake sbatch/watcher executables and mocked runtime
 launches. They check the entire matrix, readiness order, missing-case selection,
 caps, grids, templates, time overrides, fresh build guards, shell adapter,
 safe-failure continuation and manifests. They never launch real jobs.
+
+## MissingProfileBatch
+
+`missing65_profile_groups()` selects eight allocations (one per hardware/model),
+65 missing cases: 62 AIx across default/affine/numa layouts and collective,
+p2p1/p2p24 communication, plus three SmartSim per-GPU cases (24c1g GiantMLP;
+24p24c1g both models). Completed matching profiles are excluded. Each case is
+profile-only: 12 steps, six ML calls (one warm, five steady), no OTF2 tracing.
+
+AIx uses `mini_app/solver_cpp/build_thesis_aix_variants/{layout}_scorep/aix-install/lib`,
+not a shared default library. Before launch, require verified layout-specific
+`READY`, `checksums.sha256`, and `library.ldd.txt`; also check the actual solver
+`ldd` resolution under the case's library environment points to that layout's
+`libAIxeleratorService.so`. CPU-build readiness is not GPU runtime validation.
+Variant build job `5026388` uses `rwth2150` / `c23ms` (replacing cancelled
+`5025857`). CPU launcher `5026232` uses `thes2181` / `c23ms` and waits for its
+successful completion, then runs `submit_missing65_profiles.sbatch` to validate
+readiness and submit all eight allocations with `smoke_first=True`. The first
+allocation (24c1g WaterCNN, covering all three AIx layouts) gates the remaining
+seven with `afterok`; invalid dependencies cancel rather than wait indefinitely.
+The GPU profile jobs do not exist until that launcher runs successfully.
+Build/launch snotify watcher: `5026394`, on `thes2181` / `c23ms` (replacing
+cancelled `5026254`); the launcher registers a separate
+consolidated snotify watcher for all eight GPU allocations once submitted.
+GPU allocations remain `rwth0792` / `c23g`, including both surrogate components.
+
+Build `5026388` failed CPU loader validation after compiling the default Score-P
+DSO: `libnvidia-ml.so.1` is unavailable on CPU nodes. Its dependent launcher
+`5026232` was cancelled without submitting GPUs. Retry build `5027130`
+(`--resume`) preserves completed variants and uses an isolated, checksummed
+NVML stub only for CPU `ldd -r`; the directory never enters `runtime_ld`.
+The GPU adapter rejects that directory and missing dependencies. Replacement
+launcher: `5027132`; replacement build/launch snotify: `5027133`.
+Retry `5027130` completed successfully in 3:46 with all six variants ready;
+launcher `5027132` also completed. Campaign `missing65_20261015_5027132`
+contains 65 cases in GPU jobs `5027177`, `5027178`, `5027179`, `5027180`,
+`5027181`, `5027183`, `5027185`, `5027187`. First job `5027177` gates the
+remaining seven; consolidated GPU snotify watcher is `5027189`.
+
+First GPU job `5027177` timed out after repeated startup OOMs, with no completed
+ML calls. Accounting shows 499800M allocated to the job but only 2G to each
+solver step: the CPU launcher's `SLURM_MEM_PER_NODE=2048` leaked through exports.
+Submission now strips parent `SLURM_*`, `SBATCH_*`, and `SRUN_*` settings before
+calling sbatch; each runtime case explicitly uses `SLURM_MEM_PER_NODE=0` and
+removes per-CPU/per-GPU memory settings. Missing65 groups fail fast after a
+failed case. Retry campaign `missing65_20261016_memory_retry1` has first GPU
+job `5050769`, seven dependent jobs `5050770`, `5050771`, `5050772`, `5050773`,
+`5050775`, `5050777`, `5050779`, and consolidated snotify watcher `5050781`.
+The original dependent jobs were cancelled without running. Limits are unchanged.
+
+Per-group limits in minutes (WaterCNN / GiantMLP):
+
+| Hardware | Minutes |
+| --- | --- |
+| 24c1g | 13 / 19 |
+| 96c4g | 17 / 17 |
+| 24p24c1g | 18 / 19 |
+| 96p96c4g | 17 / 17 |
+
+Budgets use six calls times conservative native mean bounds: AIx WaterCNN/GiantMLP
+735/2468, 231/780, 566/2561, 201/776 ms in table order; SmartSim 4000 ms
+WaterCNN and 2469/2712 ms GiantMLP single/two-node. Add startup per case (AIx
+30 s, or 45 s at 96 ranks; SmartSim 150/60 s WaterCNN/GiantMLP) and 30 s
+cleanup/profile flush per case, multiply by 1.5 for headroom, add 60 s allocation
+overhead, then round up to minutes. `budget.json` records the estimates.
+
+For a manual retry only (do not duplicate the queued launcher), after variant
+readiness and linkage checks pass, submit with a
+fresh, unused token through the API (reused solver build identity `4938224`,
+not the pending variant build ID); use `notifier="snotify"`:
+
+```bash
+GPU_REFRESH_BUILD_JOB_ID_ENV=4938224 python3 -c 'from mini_app.gpu_refresh_campaign import submit, missing65_profile_groups; submit("--submit", "missing65_profiles_FRESH_UNIQUE_TOKEN", missing65_profile_groups(), notifier="snotify", smoke_first=True)'
+```

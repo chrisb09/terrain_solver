@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Six isolated runtime DSOs. --preflight never loads modules or writes files.
 #SBATCH --job-name=build-thesis-aix
-#SBATCH --account=default
-#SBATCH --partition=devel
+#SBATCH --account=rwth2150
+#SBATCH --partition=c23ms
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
@@ -83,7 +83,8 @@ if (( preflight )); then
     printf 'Preflight passed: AIx=%s GPU_REFRESH_BUILD_JOB=%s targets=%s\n' "$expected_sha" "$refresh_job" "$targets"
     exit 0
 fi
-[[ "${SLURM_JOB_PARTITION:-}" == devel && "${SLURM_CPUS_PER_TASK:-0}" -ge 8 && -n "${SLURM_JOB_ID:-}" ]] || fail 'Requires devel CPU allocation.'
+[[ "${SLURM_JOB_PARTITION:-}" == c23ms && "${SLURM_CPUS_PER_TASK:-0}" -ge 8 && -n "${SLURM_JOB_ID:-}" ]] || fail 'Requires c23ms CPU allocation.'
+[[ "${SLURM_JOB_ACCOUNT:-}" == rwth2150 ]] || fail 'Requires rwth2150 account.'
 [[ -z "${SLURM_JOB_GPUS:-}" && -z "${SLURM_GPUS:-}" ]] || fail 'GPU reservation forbidden.'
 export CMI_DIR="$cmi" USE_SCOREP=0
 set +u
@@ -158,7 +159,18 @@ for layout in default affine numa; do
         cp -a "$aix/src/." "$prefix/include/"
         library="$prefix/lib/libAIxeleratorService.so"
         export LD_LIBRARY_PATH="$runtime_ld"
-        ldd -r "$library" > "$variant/library.ldd.txt" 2>&1
+        validation_ld="$runtime_ld"
+        if [[ "$mode" == scorep ]]; then
+            # CPU nodes have no driver: resolve NVML only for loader validation.
+            # Copy, not symlink, to keep resumable trees symlink-free. Never
+            # publish this directory in runtime_ld or the GPU launch environment.
+            ls -d "$variant"
+            mkdir -p "$variant/cpu-validation-nvml-stub"
+            cp -L "$stubs/libnvidia-ml.so" "$variant/cpu-validation-nvml-stub/libnvidia-ml.so.1"
+            validation_ld="$variant/cpu-validation-nvml-stub:$runtime_ld"
+            printf 'CPU_VALIDATION_NVML_STUB=%s\n' "$variant/cpu-validation-nvml-stub" >> "$variant/environment.txt"
+        fi
+        LD_LIBRARY_PATH="$validation_ld" ldd -r "$library" > "$variant/library.ldd.txt" 2>&1
         ! grep -Eq 'not found|/stubs' "$variant/library.ldd.txt" || fail 'Missing dependency or runtime CUDA stubs.'
         if [[ "$mode" == scorep ]]; then
             ! grep 'undefined symbol' "$variant/library.ldd.txt" | grep -Ev '^undefined symbol: scorep_(subsystems|number_of_subsystems)[[:space:]]+\([^)]*/libscorep_measurement\.so[^)]*\)$' || fail 'Undefined DSO symbol.'
@@ -176,6 +188,9 @@ for layout in default affine numa; do
         [[ "$(git -C "$aix" rev-parse HEAD)" == "$expected_sha" && -z "$(git -C "$aix" status --porcelain --untracked-files=no)" ]] || fail 'AIx changed during build.'
         sha256sum "$variant/source.sha256" "$library" "$build/CMakeCache.txt" "$variant/aix-cache.txt" \
             "$build/compile_commands.json" "$variant/library.ldd.txt" "$variant/library.dynamic.txt" > "$variant/checksums.sha256"
+        if [[ "$mode" == scorep ]]; then
+            sha256sum "$variant/cpu-validation-nvml-stub/libnvidia-ml.so.1" >> "$variant/checksums.sha256"
+        fi
         # Include individual sources/binaries so --resume detects changes, not just a changed manifest.
         while IFS= read -r line; do printf '%s\n' "$line"; done < "$variant/source.sha256" >> "$variant/checksums.sha256"
         sha256sum --check --status "$variant/checksums.sha256"
