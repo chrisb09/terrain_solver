@@ -47,6 +47,20 @@ class ScalingPlotTests(unittest.TestCase):
                 output = Path(directory) / f"{name}.tex"
                 generate_tikz([1, 2, 4, 8, 16], data, output, title, panels, legend)
                 self.assertEqual(output.read_text().count(r"\clip"), len(panels))
+                fragments = list(Path(directory).glob("*.pgf"))
+                self.assertEqual(len(fragments), len(panels) + 1)
+                for fragment in fragments:
+                    text = fragment.read_text()
+                    self.assertEqual(text.count(r"\begin{tikzpicture}"), 1)
+                    self.assertEqual(text.count(r"\end{tikzpicture}"), 1)
+                    self.assertNotIn(r"\documentclass", text)
+                    self.assertNotIn("SmartSim curves appear", text)
+                    if fragment.stem.endswith("_legend"):
+                        self.assertNotIn(r"\clip", text)
+                    else:
+                        self.assertEqual(text.count(r"\clip"), 1)
+                        self.assertIn("rectangle (", text)
+                        self.assertIn(",2.1)", text)
 
 
 if __name__ == "__main__":

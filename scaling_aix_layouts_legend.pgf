@@ -1,0 +1,25 @@
+% Generated TikZ/PGF fragment; requires \usepackage{tikz}.
+\begin{tikzpicture}[font=\fontsize{8}{10}\selectfont,
+axis/.style={black!85,line width=0.5pt},
+grid/.style={black!14,line width=0.35pt,dotted},
+tick/.style={font=\fontsize{7}{8.5}\selectfont},
+title/.style={font=\fontsize{8}{10}\selectfont\bfseries}]
+\definecolor{caix_coll}{HTML}{1F77B4}
+\definecolor{caix_p2p}{HTML}{FF7F0E}
+\definecolor{caix_p2p_fc}{HTML}{2CA02C}
+\definecolor{cphydll_default}{HTML}{008080}
+\definecolor{cphydll_readiness}{HTML}{17BECF}
+\definecolor{csmartsim_c0}{HTML}{D62728}
+\definecolor{csmartsim_c3}{HTML}{9467BD}
+\definecolor{csmartsim_per_gpu_db}{HTML}{8C564B}
+\draw[black!25,fill=gray!3,rounded corners=2pt] (-0.75,-1.7) rectangle (13.050,-1.05);
+\draw[caix_coll,line width=1pt,solid] (-0.570,-1.380) -- (-0.150,-1.380);
+\fill[caix_coll] (-0.3600,-1.3800) circle (1.6pt);
+\node[anchor=west,font=\fontsize{7}{8.5}\selectfont] at (-0.070,-1.380) {AIx Collective};
+\draw[caix_p2p,line width=1pt,solid] (4.030,-1.380) -- (4.450,-1.380);
+\draw[caix_p2p,fill=caix_p2p,line width=0.8pt] (4.1950,-1.4250) rectangle (4.2850,-1.3350);
+\node[anchor=west,font=\fontsize{7}{8.5}\selectfont] at (4.530,-1.380) {AIx P2P (Credit = 1)};
+\draw[caix_p2p_fc,line width=1pt,solid] (8.630,-1.380) -- (9.050,-1.380);
+\fill[caix_p2p_fc] (8.8400,-1.3250) -- (8.7900,-1.4150) -- (8.8900,-1.4150) -- cycle;
+\node[anchor=west,font=\fontsize{7}{8.5}\selectfont] at (9.130,-1.380) {AIx P2P (Full Credits)};
+\end{tikzpicture}

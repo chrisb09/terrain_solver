@@ -18,6 +18,15 @@ HARDWARE = ("24c1g", "96c4g", "24p24c1g", "96p96c4g")
 MODELS = ("watercnn8k", "giantmlp288")
 AIX_LAYOUTS = ("default", "affine", "numa")
 AIX_VARIANT_SHA = "86968b64380307a5113db8077ffe4b9494309c71"
+REUSE_ORIGINAL_SOLVER_ENV = "GPU_REFRESH_REUSE_ORIGINAL_SOLVER_ENV"
+ORIGINAL_MODEL_PATH_CHECK = b'''    if (!cfg.print_build_timestamp) {
+        require(!cfg.model_path.empty(), "--model-path is required.");
+'''
+APPROVED_MODEL_PATH_CHECK = b'''    if (!cfg.print_build_timestamp) {
+        if (cfg.ml_interface != "none") {
+            require(!cfg.model_path.empty(), "--model-path is required when an ML interface is used.");
+        }
+'''
 
 
 def case_fields(case):
@@ -146,6 +155,31 @@ def thesis_native_groups():
     return result
 
 
+def targeted_retest_groups():
+    """Diagnostic repeats of three completed suspect cells, not missing profiles."""
+    cells = [
+        ("96p96c4g", "watercnn8k", "PHYDLL", "default", 25,
+         ["4938455", "4938457", "4938459"], [8.487, 2.908, 4.789], 8.5),
+        ("96c4g", "giantmlp288", "SMARTSIM", "shared", 8,
+         ["4735499", "4735500", "4735501"], [1.874, .862, .775], 2.0),
+        ("96c4g", "watercnn8k", "SMARTSIM", "shared_c1", 25,
+         ["5006197", "5006199", "5006201"], [6.719, 4.629, 4.542], 10.7),
+    ]
+    result = []
+    for hw, model, provider, variant, limit, jobs, means, bound in cells:
+        calls = 101 if model == "watercnn8k" else 6
+        budget = dict(purpose="diagnostic-retest", original_job_ids=jobs,
+                      original_mean_seconds=means, native_call_bound_seconds=bound,
+                      expected_calls_per_case=calls, inference_seconds=calls * bound,
+                      startup_cleanup_margin_seconds=limit * 60 - calls * bound,
+                      telemetry="not-integrated")
+        for repeat in (1, 2, 3):
+            result.append(dict(id=f"targeted_retest_{hw}_{model}_{provider.lower()}_{variant}_r{repeat}",
+                               hw=hw, mode="timing", repeat=repeat, minutes=limit,
+                               cases=[(model, provider, variant)], budget=dict(budget)))
+    return result
+
+
 def thesis_trace_groups():
     """One short five-call trace capture per library before the full expansion."""
     return [
@@ -155,6 +189,36 @@ def thesis_trace_groups():
         dict(id="thesis_trace_24p24c1g_r1", hw="24p24c1g", mode="trace", repeat=1, minutes=35,
              cases=[("watercnn8k", "PHYDLL", "default"), ("watercnn8k", "AIX", "p2p1")]),
     ]
+
+
+def thesis_aix_trace_groups():
+    """Six default-layout water traces using the isolated Score-P AIx build."""
+    # Latest missing65_20261016_memory_retry1 driver.log total-time maxima
+    # (AIx only), not solver inference times or the older fast trace pilots.
+    # sacct start/end elapsed includes allocation setup and between-case work:
+    # 5050769 12:07:54-12:13:15; 5050771 13:49:38-14:03:19;
+    # 5050773 23:13:52-23:24:27; 5050777 18:46:54-19:02:13.
+    measured = {"24c1g": ("5050769", 321, 7, 67),
+                "96c4g": ("5050771", 821, 8, 103),
+                "24p24c1g": ("5050773", 635, 8, 83),
+                "96p96c4g": ("5050777", 919, 8, 140)}
+    result = []
+    for hw in HARDWARE:
+        cases = [dict(model="watercnn8k", provider="AIX", variant=variant, layout="default")
+                 for variant in (("default", "p2p1") if hw.startswith("96") else ("default",))]
+        job, elapsed, count, driver = measured[hw]
+        # Group 5050773 also contains SmartSim; use only AIx driver totals.
+        # Reserve 30s/case for cleanup/trace flush, 50% trace headroom, and
+        # 60s allocation overhead. Six minutes is the single-case floor.
+        seconds = 60 + 1.5 * len(cases) * (driver + 30)
+        budget = dict(measured_campaign="missing65_20261016_memory_retry1", measured_job_id=job,
+                      measured_group_seconds=elapsed, measured_group_cases=count,
+                      measured_aix_driver_max_seconds=driver, expected_calls_per_case=6,
+                      driver_seconds=len(cases) * driver, cleanup_seconds=30 * len(cases),
+                      headroom_factor=1.5, allocation_overhead_seconds=60, estimated_seconds=seconds)
+        result.append(dict(id=f"thesis_aix_trace_{hw}_r1", hw=hw, mode="trace", repeat=1,
+                           cases=cases, minutes=max(6, math.ceil(seconds / 60)), budget=budget))
+    return result
 
 
 def minutes(group):
@@ -266,7 +330,53 @@ def aix_ready(layout, build):
     return text
 
 
+def check_sources(provenance):
+    manifest = provenance / "source.sha256"
+    if os.environ.get(REUSE_ORIGINAL_SOLVER_ENV) != "1":
+        subprocess.run(["sha256sum", "--check", str(manifest)], check=True, stdout=subprocess.DEVNULL)
+        return None, None
+    source = MINI / "solver_cpp/terrain_solver.cpp"
+    lines = manifest.read_text().splitlines(keepends=True)
+    solver_lines = [line for line in lines if line[66:].rstrip("\n") == str(source)]
+    if len(solver_lines) != 1:
+        raise RuntimeError("Original solver review requires exactly one solver source record")
+    current = source.read_bytes()
+    if current.count(APPROVED_MODEL_PATH_CHECK) != 1:
+        raise RuntimeError("Original solver review requires exactly one approved patch")
+    original = current.replace(APPROVED_MODEL_PATH_CHECK, ORIGINAL_MODEL_PATH_CHECK, 1)
+    digest = hashlib.sha256(original).hexdigest()
+    if digest != solver_lines[0][:64]:
+        raise RuntimeError("Original solver reverse patch does not match recorded source SHA-256")
+    subprocess.run(["sha256sum", "--check"], input="".join(line for line in lines if line != solver_lines[0]),
+                   text=True, check=True, stdout=subprocess.DEVNULL)
+    review = dict(approval="KeepOriginalBuild", build_identity=provenance.name.removeprefix("provenance-"),
+                  original_binary_profile="plain", provenance=str(provenance), source=str(source),
+                  current_sha256=hashlib.sha256(current).hexdigest(), original_sha256=digest,
+                  source_original_snapshot="terrain_solver.original.cpp",
+                  approved_patch=dict(original=ORIGINAL_MODEL_PATH_CHECK.decode(), current=APPROVED_MODEL_PATH_CHECK.decode(),
+                                      replacements=1, scope="Model-path requirement only for ml_interface != none; ML paths unchanged"),
+                  binaries_manifest_sha256=hashlib.sha256((provenance / "binaries.sha256").read_bytes()).hexdigest())
+    return review, original
+
+
+def check_original_solver_groups(selected_groups):
+    if os.environ.get(REUSE_ORIGINAL_SOLVER_ENV) == "1":
+        authorized = {g["id"] for g in targeted_retest_groups()}
+        if any(g["id"] not in authorized or g["mode"] != "timing" for g in selected_groups):
+            raise RuntimeError("Original solver reuse is restricted to targeted_retest_groups plain timing")
+
+
+def archive_original_solver(root):
+    if os.environ.get(REUSE_ORIGINAL_SOLVER_ENV) == "1":
+        provenance = MINI / "solver_cpp/build_gpu_refresh_plain" / f"provenance-{os.environ['GPU_REFRESH_BUILD_JOB_ID_ENV']}"
+        review, original = check_sources(provenance)
+        (root / review["source_original_snapshot"]).write_bytes(original)
+        (root / "original-solver-review.json").write_text(json.dumps(review, indent=2) + "\n")
+
+
 def ready(build, aix_layouts=()):
+    if os.environ.get(REUSE_ORIGINAL_SOLVER_ENV) == "1" and build != "plain":
+        raise RuntimeError("Original solver reuse requires plain timing binaries")
     solver = MINI / "solver_cpp" / f"build_gpu_refresh_{build}"
     dl = MINI.parent / "CPP-ML-Interface/dl_clients" / f"build-gpu-refresh-{build}"
     identity = os.environ.get("GPU_REFRESH_BUILD_JOB_ID_ENV", "")
@@ -300,7 +410,7 @@ def ready(build, aix_layouts=()):
         if f"{flag}:BOOL=ON" not in cache:
             raise RuntimeError(f"Missing {flag}; driver could force a rebuild")
     provenance = solver / f"provenance-{identity}"
-    subprocess.run(["sha256sum", "--check", str(provenance / "source.sha256")], check=True, stdout=subprocess.DEVNULL)
+    check_sources(provenance)
     subprocess.run(["sha256sum", "--check", str(provenance / "binaries.sha256")], check=True, stdout=subprocess.DEVNULL)
     for name in ("terrain_solver", "phydll_dl_client"):
         linkage = (provenance / f"{name}.ldd.txt").read_text()
@@ -334,6 +444,7 @@ def submit(mode, campaign, selected_groups=None, notifier="swatch", smoke_first=
     selected_groups = groups() if selected_groups is None else selected_groups
     if mode not in ("--dry-run", "--submit") or not selected_groups:
         raise ValueError("Expected dry-run/submit and at least one group")
+    check_original_solver_groups(selected_groups)
     markers = {}
     selected_layouts = {}
     for build in sorted({"scorep" if g["mode"] in ("profile", "trace") else "plain" for g in selected_groups}):
@@ -351,6 +462,7 @@ def submit(mode, campaign, selected_groups=None, notifier="swatch", smoke_first=
     if mode == "--submit" and not os.access(watcher, os.X_OK):
         raise RuntimeError("Mandatory swatch executable missing")
     root.mkdir(parents=True)
+    archive_original_solver(root)
     (root / "ready.json").write_text(json.dumps(markers, indent=2) + "\n")
     (root / "budget.json").write_text(json.dumps({g["id"]: g["budget"] for g in selected_groups if "budget" in g}, indent=2) + "\n")
     (root / "aix-ready.json").write_text(json.dumps({f"{layout}_{build}": aix_ready(layout, build)
@@ -410,6 +522,7 @@ def clean_steps(job):
 
 
 def run(group, campaign):
+    check_original_solver_groups([group])
     job = os.environ.get("SLURM_JOB_ID", "")
     if not re.fullmatch(r"[0-9]+", job):
         raise RuntimeError("Slurm allocation required")
@@ -427,6 +540,7 @@ def run(group, campaign):
         ready(build)
     root = MINI / "results/gpu_refresh" / campaign / f"{group['id']}_{job}"
     root.mkdir(parents=True, exist_ok=False)
+    archive_original_solver(root)
     rows = []
     failed = False
     for index, case in enumerate(group["cases"], 1):
@@ -532,7 +646,8 @@ def main():
         return 0
     if args.action in ("--describe", "--run"):
         authorized = (groups() + profile_retry_groups() + [profile_recovery_group()]
-                       + thesis_native_groups() + thesis_trace_groups() + missing65_profile_groups())
+                       + thesis_native_groups() + thesis_trace_groups() + missing65_profile_groups()
+                        + thesis_aix_trace_groups() + targeted_retest_groups())
         group = next((g for g in authorized if g["id"] == args.token), None)
         if group is None:
             parser.error("Unauthorized group")

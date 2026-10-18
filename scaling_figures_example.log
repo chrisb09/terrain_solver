@@ -1,0 +1,525 @@
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.9.10)  16 OCT 2026 17:30
+entering extended mode
+ restricted \write18 enabled.
+ %&-line parsing enabled.
+**scaling_figures_example.tex
+(./scaling_figures_example.tex
+LaTeX2e <2026-06-01>
+L3 programming layer <2026-08-10>
+
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/latex/base/ar
+ticle.cls
+Document Class: article 2025/01/22 v1.4n Standard LaTeX document class
+
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/latex/base/si
+ze10.clo
+File: size10.clo 2025/01/22 v1.4n Standard LaTeX file (size option)
+)
+\c@part=\count276
+\c@section=\count277
+\c@subsection=\count278
+\c@subsubsection=\count279
+\c@paragraph=\count280
+\c@subparagraph=\count281
+\c@figure=\count282
+\c@table=\count283
+\abovecaptionskip=\skip49
+\belowcaptionskip=\skip50
+\bibindent=\dimen150
+)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/latex/geometr
+y/geometry.sty
+Package: geometry 2026/03/07 v6.0 Page Geometry
+
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/latex/graphic
+s/keyval.sty
+Package: keyval 2026-05-17 v1.15 key=value parser (DPC)
+\KV@toks@=\toks17
+)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/iftex
+/ifvtex.sty
+Package: ifvtex 2019/10/25 v1.7 ifvtex legacy package. Use iftex instead.
+
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/iftex
+/iftex.sty
+Package: iftex 2024/12/12 v1.0g TeX engine tests
+))
+\Gm@cnth=\count284
+\Gm@cntv=\count285
+\c@Gm@tempcnt=\count286
+\Gm@bindingoffset=\dimen151
+\Gm@wd@mp=\dimen152
+\Gm@odd@mp=\dimen153
+\Gm@even@mp=\dimen154
+\Gm@layoutwidth=\dimen155
+\Gm@layoutheight=\dimen156
+\Gm@layouthoffset=\dimen157
+\Gm@layoutvoffset=\dimen158
+\Gm@dimlist=\toks18
+)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/latex/pgf/fro
+ntendlayer/tikz.sty
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/latex/pgf/bas
+iclayer/pgf.sty
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/latex/pgf/uti
+lities/pgfrcs.sty
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/u
+tilities/pgfutil-common.tex
+\pgfutil@everybye=\toks19
+\pgfutil@tempdima=\dimen159
+\pgfutil@tempdimb=\dimen160
+)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/u
+tilities/pgfutil-latex.def
+\pgfutil@abb=\box53
+)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/u
+tilities/pgfrcs.code.tex
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/p
+gf.revision.tex)
+Package: pgfrcs 2026-08-01 v3.1.12 (3.1.12)
+))
+Package: pgf 2026-08-01 v3.1.12 (3.1.12)
+
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/latex/pgf/bas
+iclayer/pgfcore.sty
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/latex/graphic
+s/graphicx.sty
+Package: graphicx 2026-05-17 v1.2e Enhanced LaTeX Graphics (DPC,SPQR)
+
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/latex/graphic
+s/graphics.sty
+Package: graphics 2026-05-17 v1.4h Standard LaTeX Graphics (DPC,SPQR)
+
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/latex/graphic
+s/trig.sty
+Package: trig 2023/12/02 v1.11 sin cos tan (DPC)
+)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/latex/graphic
+s-cfg/graphics.cfg
+File: graphics.cfg 2016/06/04 v1.11 sample graphics configuration
+)
+Package graphics Info: Driver file: pdftex.def on input line 106.
+
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/latex/graphic
+s-def/pdftex.def
+File: pdftex.def 2025/09/29 v1.2d Graphics/color driver for pdftex
+))
+\Gin@req@height=\dimen161
+\Gin@req@width=\dimen162
+)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/latex/pgf/sys
+temlayer/pgfsys.sty
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/s
+ystemlayer/pgfsys.code.tex
+Package: pgfsys 2026-08-01 v3.1.12 (3.1.12)
+
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/u
+tilities/pgfkeys.code.tex
+\pgfkeys@pathtoks=\toks20
+\pgfkeys@temptoks=\toks21
+
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/u
+tilities/pgfkeyslibraryfiltered.code.tex
+\pgfkeys@tmptoks=\toks22
+))
+\pgf@x=\dimen163
+\pgf@y=\dimen164
+\pgf@xa=\dimen165
+\pgf@ya=\dimen166
+\pgf@xb=\dimen167
+\pgf@yb=\dimen168
+\pgf@xc=\dimen169
+\pgf@yc=\dimen170
+\pgf@xd=\dimen171
+\pgf@yd=\dimen172
+\w@pgf@writea=\write3
+\r@pgf@reada=\read2
+\c@pgf@counta=\count287
+\c@pgf@countb=\count288
+\c@pgf@countc=\count289
+\c@pgf@countd=\count290
+\t@pgf@toka=\toks23
+\t@pgf@tokb=\toks24
+\t@pgf@tokc=\toks25
+\pgf@sys@id@count=\count291
+
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/s
+ystemlayer/pgf.cfg
+File: pgf.cfg 2026-08-01 v3.1.12 (3.1.12)
+)
+Driver file for pgf: pgfsys-pdftex.def
+
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/s
+ystemlayer/pgfsys-pdftex.def
+File: pgfsys-pdftex.def 2026-08-01 v3.1.12 (3.1.12)
+
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/s
+ystemlayer/pgfsys-common-pdf.def
+File: pgfsys-common-pdf.def 2026-08-01 v3.1.12 (3.1.12)
+)))
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/s
+ystemlayer/pgfsyssoftpath.code.tex
+File: pgfsyssoftpath.code.tex 2026-08-01 v3.1.12 (3.1.12)
+\pgfsyssoftpath@smallbuffer@items=\count292
+\pgfsyssoftpath@bigbuffer@items=\count293
+)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/s
+ystemlayer/pgfsysprotocol.code.tex
+File: pgfsysprotocol.code.tex 2026-08-01 v3.1.12 (3.1.12)
+))
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/latex/xcolor/
+xcolor.sty
+Package: xcolor 2024/09/29 v3.02 LaTeX color extensions (UK)
+
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/latex/graphic
+s-cfg/color.cfg
+File: color.cfg 2016/01/02 v1.6 sample color configuration
+)
+Package xcolor Info: Driver file: pdftex.def on input line 274.
+
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/latex/graphic
+s/mathcolor.ltx)
+Package xcolor Info: Model `cmy' substituted by `cmy0' on input line 1349.
+Package xcolor Info: Model `hsb' substituted by `rgb' on input line 1353.
+Package xcolor Info: Model `RGB' extended on input line 1365.
+Package xcolor Info: Model `HTML' substituted by `rgb' on input line 1367.
+Package xcolor Info: Model `Hsb' substituted by `hsb' on input line 1368.
+Package xcolor Info: Model `tHsb' substituted by `hsb' on input line 1369.
+Package xcolor Info: Model `HSB' substituted by `hsb' on input line 1370.
+Package xcolor Info: Model `Gray' substituted by `gray' on input line 1371.
+Package xcolor Info: Model `wave' substituted by `hsb' on input line 1372.
+)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/b
+asiclayer/pgfcore.code.tex
+Package: pgfcore 2026-08-01 v3.1.12 (3.1.12)
+
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/m
+ath/pgfmath.code.tex
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/m
+ath/pgfmathutil.code.tex)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/m
+ath/pgfmathparser.code.tex
+\pgfmath@dimen=\dimen173
+\pgfmath@count=\count294
+\pgfmath@box=\box54
+\pgfmath@toks=\toks26
+\pgfmath@stack@operand=\toks27
+\pgfmath@stack@operation=\toks28
+)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/m
+ath/pgfmathfunctions.code.tex)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/m
+ath/pgfmathfunctions.basic.code.tex)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/m
+ath/pgfmathfunctions.trigonometric.code.tex)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/m
+ath/pgfmathfunctions.random.code.tex)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/m
+ath/pgfmathfunctions.comparison.code.tex)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/m
+ath/pgfmathfunctions.base.code.tex)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/m
+ath/pgfmathfunctions.round.code.tex)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/m
+ath/pgfmathfunctions.misc.code.tex)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/m
+ath/pgfmathfunctions.integerarithmetics.code.tex)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/m
+ath/pgfmathcalc.code.tex)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/m
+ath/pgfmathfloat.code.tex
+\c@pgfmathroundto@lastzeros=\count295
+))
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/m
+ath/pgfint.code.tex)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/b
+asiclayer/pgfcorepoints.code.tex
+File: pgfcorepoints.code.tex 2026-08-01 v3.1.12 (3.1.12)
+\pgf@picminx=\dimen174
+\pgf@picmaxx=\dimen175
+\pgf@picminy=\dimen176
+\pgf@picmaxy=\dimen177
+\pgf@pathminx=\dimen178
+\pgf@pathmaxx=\dimen179
+\pgf@pathminy=\dimen180
+\pgf@pathmaxy=\dimen181
+\pgf@xx=\dimen182
+\pgf@xy=\dimen183
+\pgf@yx=\dimen184
+\pgf@yy=\dimen185
+\pgf@zx=\dimen186
+\pgf@zy=\dimen187
+)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/b
+asiclayer/pgfcorepathconstruct.code.tex
+File: pgfcorepathconstruct.code.tex 2026-08-01 v3.1.12 (3.1.12)
+\pgf@path@lastx=\dimen188
+\pgf@path@lasty=\dimen189
+)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/b
+asiclayer/pgfcorepathusage.code.tex
+File: pgfcorepathusage.code.tex 2026-08-01 v3.1.12 (3.1.12)
+\pgf@shorten@end@additional=\dimen190
+\pgf@shorten@start@additional=\dimen191
+)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/b
+asiclayer/pgfcorescopes.code.tex
+File: pgfcorescopes.code.tex 2026-08-01 v3.1.12 (3.1.12)
+\pgfpic=\box55
+\pgf@hbox=\box56
+\pgf@layerbox@main=\box57
+\pgf@picture@serial@count=\count296
+)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/b
+asiclayer/pgfcoregraphicstate.code.tex
+File: pgfcoregraphicstate.code.tex 2026-08-01 v3.1.12 (3.1.12)
+\pgflinewidth=\dimen192
+)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/b
+asiclayer/pgfcoretransformations.code.tex
+File: pgfcoretransformations.code.tex 2026-08-01 v3.1.12 (3.1.12)
+\pgf@pt@x=\dimen193
+\pgf@pt@y=\dimen194
+\pgf@pt@temp=\dimen195
+)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/b
+asiclayer/pgfcorequick.code.tex
+File: pgfcorequick.code.tex 2026-08-01 v3.1.12 (3.1.12)
+)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/b
+asiclayer/pgfcoreobjects.code.tex
+File: pgfcoreobjects.code.tex 2026-08-01 v3.1.12 (3.1.12)
+)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/b
+asiclayer/pgfcorepathprocessing.code.tex
+File: pgfcorepathprocessing.code.tex 2026-08-01 v3.1.12 (3.1.12)
+)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/b
+asiclayer/pgfcorearrows.code.tex
+File: pgfcorearrows.code.tex 2026-08-01 v3.1.12 (3.1.12)
+\pgfarrowsep=\dimen196
+)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/b
+asiclayer/pgfcoreshade.code.tex
+File: pgfcoreshade.code.tex 2026-08-01 v3.1.12 (3.1.12)
+\pgf@max=\dimen197
+\pgf@sys@shading@range@num=\count297
+\pgf@shadingcount=\count298
+)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/b
+asiclayer/pgfcoreimage.code.tex
+File: pgfcoreimage.code.tex 2026-08-01 v3.1.12 (3.1.12)
+)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/b
+asiclayer/pgfcoreexternal.code.tex
+File: pgfcoreexternal.code.tex 2026-08-01 v3.1.12 (3.1.12)
+\pgfexternal@startupbox=\box58
+)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/b
+asiclayer/pgfcorelayers.code.tex
+File: pgfcorelayers.code.tex 2026-08-01 v3.1.12 (3.1.12)
+)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/b
+asiclayer/pgfcoretransparency.code.tex
+File: pgfcoretransparency.code.tex 2026-08-01 v3.1.12 (3.1.12)
+)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/b
+asiclayer/pgfcorepatterns.code.tex
+File: pgfcorepatterns.code.tex 2026-08-01 v3.1.12 (3.1.12)
+)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/b
+asiclayer/pgfcorerdf.code.tex
+File: pgfcorerdf.code.tex 2026-08-01 v3.1.12 (3.1.12)
+)))
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/m
+odules/pgfmoduleshapes.code.tex
+File: pgfmoduleshapes.code.tex 2026-08-01 v3.1.12 (3.1.12)
+\pgfnodeparttextbox=\box59
+)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/m
+odules/pgfmoduleplot.code.tex
+File: pgfmoduleplot.code.tex 2026-08-01 v3.1.12 (3.1.12)
+)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/latex/pgf/com
+patibility/pgfcomp-version-0-65.sty
+Package: pgfcomp-version-0-65 2026-08-01 v3.1.12 (3.1.12)
+\pgf@nodesepstart=\dimen198
+\pgf@nodesepend=\dimen199
+)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/latex/pgf/com
+patibility/pgfcomp-version-1-18.sty
+Package: pgfcomp-version-1-18 2026-08-01 v3.1.12 (3.1.12)
+))
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/latex/pgf/uti
+lities/pgffor.sty
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/latex/pgf/uti
+lities/pgfkeys.sty
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/u
+tilities/pgfkeys.code.tex))
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/latex/pgf/mat
+h/pgfmath.sty
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/m
+ath/pgfmath.code.tex))
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/u
+tilities/pgffor.code.tex
+Package: pgffor 2026-08-01 v3.1.12 (3.1.12)
+\pgffor@iter=\dimen256
+\pgffor@skip=\dimen257
+\pgffor@stack=\toks29
+\pgffor@toks=\toks30
+))
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/f
+rontendlayer/tikz/tikz.code.tex
+Package: tikz 2026-08-01 v3.1.12 (3.1.12)
+
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/l
+ibraries/pgflibraryplothandlers.code.tex
+File: pgflibraryplothandlers.code.tex 2026-08-01 v3.1.12 (3.1.12)
+\pgf@plot@mark@count=\count299
+\pgfplotmarksize=\dimen258
+)
+\tikz@lastx=\dimen259
+\tikz@lasty=\dimen260
+\tikz@lastxsaved=\dimen261
+\tikz@lastysaved=\dimen262
+\tikz@lastmovetox=\dimen263
+\tikz@lastmovetoy=\dimen264
+\tikzleveldistance=\dimen265
+\tikzsiblingdistance=\dimen266
+\tikz@figbox=\box60
+\tikz@figbox@bg=\box61
+\tikz@tempbox=\box62
+\tikz@tempbox@bg=\box63
+\tikztreelevel=\count300
+\tikznumberofchildren=\count301
+\tikznumberofcurrentchild=\count302
+\tikz@fig@count=\count303
+
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/m
+odules/pgfmodulematrix.code.tex
+File: pgfmodulematrix.code.tex 2026-08-01 v3.1.12 (3.1.12)
+\pgfmatrixcurrentrow=\count304
+\pgfmatrixcurrentcolumn=\count305
+\pgf@matrix@numberofcolumns=\count306
+)
+\tikz@expandcount=\count307
+
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/generic/pgf/f
+rontendlayer/tikz/libraries/tikzlibrarytopaths.code.tex
+File: tikzlibrarytopaths.code.tex 2026-08-01 v3.1.12 (3.1.12)
+)))
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/latex/l3kerne
+l/l3backend-pdftex.def
+File: l3backend-pdftex.def 2026-08-10 L3 backend support: PDF output (pdfTeX)
+\l__color_backend_stack_int=\count308
+) (./scaling_figures_example.aux)
+\openout1 = `scaling_figures_example.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 5.
+LaTeX Font Info:    ... okay on input line 5.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 5.
+LaTeX Font Info:    ... okay on input line 5.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 5.
+LaTeX Font Info:    ... okay on input line 5.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 5.
+LaTeX Font Info:    ... okay on input line 5.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 5.
+LaTeX Font Info:    ... okay on input line 5.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 5.
+LaTeX Font Info:    ... okay on input line 5.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 5.
+LaTeX Font Info:    ... okay on input line 5.
+*geometry* driver: auto-detecting
+*geometry* detected driver: pdftex
+*geometry* verbose mode - [ preamble ] result:
+* driver: pdftex
+* paper: a4paper
+* layout: <same size as paper>
+* layoutoffset:(h,v)=(0.0pt,0.0pt)
+* modes: 
+* h-part:(L,W,R)=(85.35826pt, 426.79135pt, 85.35826pt)
+* v-part:(T,H,B)=(85.35826pt, 674.33032pt, 85.35826pt)
+* \paperwidth=597.50787pt
+* \paperheight=845.04684pt
+* \textwidth=426.79135pt
+* \textheight=674.33032pt
+* \oddsidemargin=13.08827pt
+* \evensidemargin=13.08827pt
+* \topmargin=-23.91173pt
+* \headheight=12.0pt
+* \headsep=25.0pt
+* \topskip=10.0pt
+* \footskip=30.0pt
+* \marginparwidth=57.0pt
+* \marginparsep=11.0pt
+* \columnsep=10.0pt
+* \skip\footins=9.0pt plus 4.0pt minus 2.0pt
+* \hoffset=0.0pt
+* \voffset=0.0pt
+* \mag=1000
+* \@twocolumnfalse
+* \@twosidefalse
+* \@mparswitchfalse
+* \@reversemarginfalse
+* (1in=72.27pt=25.4mm, 1cm=28.453pt)
+
+
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/context/base/
+mkii/supp-pdf.mkii
+[Loading MPS to PDF converter (version 2006.09.02).]
+\scratchcounter=\count309
+\scratchdimen=\dimen267
+\scratchbox=\box64
+\nofMPsegments=\count310
+\nofMParguments=\count311
+\everyMPshowfont=\toks31
+\MPscratchCnt=\count312
+\MPscratchDim=\dimen268
+\MPnumerator=\count313
+\makeMPintoPDFobject=\count314
+\everyMPtoPDFconversion=\toks32
+)
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/latex/epstopd
+f-pkg/epstopdf-base.sty
+Package: epstopdf-base 2020-01-24 v2.11 Base part for package epstopdf
+Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
+85.
+
+(/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/tex/latex/latexco
+nfig/epstopdf-sys.cfg
+File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
+e
+)) (./scaling_framework_comparison_all.pgf) (./scaling_framework_comparison_wit
+hout_smartsim.pgf) (./scaling_framework_comparison_legend.pgf) (./scaling_aix_l
+ayouts_default.pgf) (./scaling_aix_layouts_affine.pgf) (./scaling_aix_layouts_n
+uma.pgf) (./scaling_aix_layouts_legend.pgf) [1
+
+{/rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-var/fonts/map/pdftex/u
+pdmap/pdftex.map}] (./scaling_figures_example.aux)
+ ***********
+LaTeX2e <2026-06-01>
+L3 programming layer <2026-08-10>
+ ***********
+ ) 
+Here is how much of TeX's memory you used:
+ 12614 strings out of 468232
+ 269746 string characters out of 5421604
+ 716155 words of memory out of 5000000
+ 41573 multiletter control sequences out of 15000+600000
+ 628329 words of font info for 42 fonts, out of 8000000 for 9000
+ 430 hyphenation exceptions out of 8191
+ 102i,9n,107p,406b,693s stack positions out of 10000i,1000n,20000p,200000b,200000s
+</rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/fonts/type1/pub
+lic/amsfonts/cm/cmbx8.pfb></rwthfs/rz/cluster/home/ro092286/opt/texlive/2026/te
+xmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></rwthfs/rz/cluster/home/ro09
+2286/opt/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></rwth
+fs/rz/cluster/home/ro092286/opt/texlive/2026/texmf-dist/fonts/type1/public/amsf
+onts/cm/cmr8.pfb>
+Output written on scaling_figures_example.pdf (1 page, 69079 bytes).
+PDF statistics:
+ 31 PDF objects out of 1000 (max. 8388607)
+ 19 compressed objects within 1 object stream
+ 0 named destinations out of 1000 (max. 500000)
+ 13 words of extra memory for PDF output out of 10000 (max. 10000000)
+

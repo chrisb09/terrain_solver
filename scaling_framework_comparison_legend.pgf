@@ -1,0 +1,34 @@
+% Generated TikZ/PGF fragment; requires \usepackage{tikz}.
+\begin{tikzpicture}[font=\fontsize{8}{10}\selectfont,
+axis/.style={black!85,line width=0.5pt},
+grid/.style={black!14,line width=0.35pt,dotted},
+tick/.style={font=\fontsize{7}{8.5}\selectfont},
+title/.style={font=\fontsize{8}{10}\selectfont\bfseries}]
+\definecolor{caix_coll}{HTML}{1F77B4}
+\definecolor{caix_p2p}{HTML}{FF7F0E}
+\definecolor{caix_p2p_fc}{HTML}{2CA02C}
+\definecolor{cphydll_default}{HTML}{008080}
+\definecolor{cphydll_readiness}{HTML}{17BECF}
+\definecolor{csmartsim_c0}{HTML}{D62728}
+\definecolor{csmartsim_c3}{HTML}{9467BD}
+\definecolor{csmartsim_per_gpu_db}{HTML}{8C564B}
+\draw[black!25,fill=gray!3,rounded corners=2pt] (-0.75,-2.1999999999999997) rectangle (13.050,-1.05);
+\draw[caix_coll,line width=1pt,solid] (-0.570,-1.380) -- (-0.150,-1.380);
+\fill[caix_coll] (-0.3600,-1.3800) circle (1.6pt);
+\node[anchor=west,font=\fontsize{7}{8.5}\selectfont] at (-0.070,-1.380) {AIx Collective};
+\draw[cphydll_default,line width=1pt,dotted] (4.030,-1.380) -- (4.450,-1.380);
+\fill[cphydll_default] (4.2400,-1.3800) +(-1.8pt,0) -- +(0,1.8pt) -- +(1.8pt,0) -- +(0,-1.8pt) -- cycle;
+\node[anchor=west,font=\fontsize{7}{8.5}\selectfont] at (4.530,-1.380) {PhyDLL (default)};
+\draw[cphydll_readiness,line width=1pt,dashdotted] (8.630,-1.380) -- (9.050,-1.380);
+\fill[cphydll_readiness] (8.8400,-1.3800) circle (1.6pt);
+\node[anchor=west,font=\fontsize{7}{8.5}\selectfont] at (9.130,-1.380) {PhyDLL (readiness)};
+\draw[csmartsim_c0,line width=1pt,dashed] (-0.570,-1.880) -- (-0.150,-1.880);
+\fill[csmartsim_c0] (-0.3600,-1.8800) circle (1.6pt);
+\node[anchor=west,font=\fontsize{7}{8.5}\selectfont] at (-0.070,-1.880) {SmartSim (default)};
+\draw[csmartsim_c3,line width=1pt,dashdotted] (4.030,-1.880) -- (4.450,-1.880);
+\fill[csmartsim_c3] (4.2400,-1.8800) +(-1.8pt,0) -- +(0,1.8pt) -- +(1.8pt,0) -- +(0,-1.8pt) -- cycle;
+\node[anchor=west,font=\fontsize{7}{8.5}\selectfont] at (4.530,-1.880) {SmartSim c=3 (Sequential)};
+\draw[csmartsim_per_gpu_db,line width=1pt,densely dotted] (8.630,-1.880) -- (9.050,-1.880);
+\draw[csmartsim_per_gpu_db,fill=white,line width=0.8pt] (8.7950,-1.9250) rectangle (8.8850,-1.8350);
+\node[anchor=west,font=\fontsize{7}{8.5}\selectfont] at (9.130,-1.880) {SmartSim Per-GPU DB};
+\end{tikzpicture}

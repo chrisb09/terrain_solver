@@ -1,0 +1,69 @@
+% Generated TikZ/PGF fragment; requires \usepackage{tikz}.
+\begin{tikzpicture}[font=\fontsize{8}{10}\selectfont,
+axis/.style={black!85,line width=0.5pt},
+grid/.style={black!14,line width=0.35pt,dotted},
+tick/.style={font=\fontsize{7}{8.5}\selectfont},
+title/.style={font=\fontsize{8}{10}\selectfont\bfseries}]
+\definecolor{caix_coll}{HTML}{1F77B4}
+\definecolor{caix_p2p}{HTML}{FF7F0E}
+\definecolor{caix_p2p_fc}{HTML}{2CA02C}
+\definecolor{cphydll_default}{HTML}{008080}
+\definecolor{cphydll_readiness}{HTML}{17BECF}
+\definecolor{csmartsim_c0}{HTML}{D62728}
+\definecolor{csmartsim_c3}{HTML}{9467BD}
+\definecolor{csmartsim_per_gpu_db}{HTML}{8C564B}
+\node[title] at (1.975,2.450) {(b) Affine};
+\draw[grid] (0,0.0000) -- (3.950,0.0000);
+\draw[axis] (0,0.0000) -- (-0.07,0.0000);
+\draw[grid] (0,0.4200) -- (3.950,0.4200);
+\draw[axis] (0,0.4200) -- (-0.07,0.4200);
+\draw[grid] (0,0.8400) -- (3.950,0.8400);
+\draw[axis] (0,0.8400) -- (-0.07,0.8400);
+\draw[grid] (0,1.2600) -- (3.950,1.2600);
+\draw[axis] (0,1.2600) -- (-0.07,1.2600);
+\draw[grid] (0,1.6800) -- (3.950,1.6800);
+\draw[axis] (0,1.6800) -- (-0.07,1.6800);
+\draw[grid] (0,2.1000) -- (3.950,2.1000);
+\draw[axis] (0,2.1000) -- (-0.07,2.1000);
+\draw[grid] (0.0800,0) -- (0.0800,2.1);
+\draw[axis] (0.0800,0) -- (0.0800,-0.07);
+\node[tick,anchor=north] at (0.0800,-0.12) {1};
+\draw[grid] (1.0275,0) -- (1.0275,2.1);
+\draw[axis] (1.0275,0) -- (1.0275,-0.07);
+\node[tick,anchor=north] at (1.0275,-0.12) {2};
+\draw[grid] (1.9750,0) -- (1.9750,2.1);
+\draw[axis] (1.9750,0) -- (1.9750,-0.07);
+\node[tick,anchor=north] at (1.9750,-0.12) {4};
+\draw[grid] (2.9225,0) -- (2.9225,2.1);
+\draw[axis] (2.9225,0) -- (2.9225,-0.07);
+\node[tick,anchor=north] at (2.9225,-0.12) {8};
+\draw[grid] (3.8700,0) -- (3.8700,2.1);
+\draw[axis] (3.8700,0) -- (3.8700,-0.07);
+\node[tick,anchor=north] at (3.8700,-0.12) {16};
+\node at (1.975,-0.65) {Solver Nodes};
+\begin{scope}
+\clip (0,0) rectangle (3.95,2.1);
+% aix_coll_affine: 83.24450, 94.90800, 92.18550, 114.95150, 230.16050 ms
+\draw[caix_coll,line width=1pt,solid] (0.0800,0.6993) -- (1.0275,0.7972) -- (1.9750,0.7744) -- (2.9225,0.9656) -- (3.8700,1.9333);
+\fill[caix_coll] (0.0800,0.6993) circle (1.6pt);
+\fill[caix_coll] (1.0275,0.7972) circle (1.6pt);
+\fill[caix_coll] (1.9750,0.7744) circle (1.6pt);
+\fill[caix_coll] (2.9225,0.9656) circle (1.6pt);
+\fill[caix_coll] (3.8700,1.9333) circle (1.6pt);
+% aix_p2p_affine: 66.52550, 76.72650, 82.31800, 88.42700, 161.82400 ms
+\draw[caix_p2p,line width=1pt,solid] (0.0800,0.5588) -- (1.0275,0.6445) -- (1.9750,0.6915) -- (2.9225,0.7428) -- (3.8700,1.3593);
+\draw[caix_p2p,fill=caix_p2p,line width=0.8pt] (0.0350,0.5138) rectangle (0.1250,0.6038);
+\draw[caix_p2p,fill=caix_p2p,line width=0.8pt] (0.9825,0.5995) rectangle (1.0725,0.6895);
+\draw[caix_p2p,fill=caix_p2p,line width=0.8pt] (1.9300,0.6465) rectangle (2.0200,0.7365);
+\draw[caix_p2p,fill=caix_p2p,line width=0.8pt] (2.8775,0.6978) rectangle (2.9675,0.7878);
+\draw[caix_p2p,fill=caix_p2p,line width=0.8pt] (3.8250,1.3143) rectangle (3.9150,1.4043);
+% aix_p2p_fc_affine: 70.32500, 79.23350, 85.73000, 120.26050, 151.49900 ms
+\draw[caix_p2p_fc,line width=1pt,solid] (0.0800,0.5907) -- (1.0275,0.6656) -- (1.9750,0.7201) -- (2.9225,1.0102) -- (3.8700,1.2726);
+\fill[caix_p2p_fc] (0.0800,0.6457) -- (0.0300,0.5557) -- (0.1300,0.5557) -- cycle;
+\fill[caix_p2p_fc] (1.0275,0.7206) -- (0.9775,0.6306) -- (1.0775,0.6306) -- cycle;
+\fill[caix_p2p_fc] (1.9750,0.7751) -- (1.9250,0.6851) -- (2.0250,0.6851) -- cycle;
+\fill[caix_p2p_fc] (2.9225,1.0652) -- (2.8725,0.9752) -- (2.9725,0.9752) -- cycle;
+\fill[caix_p2p_fc] (3.8700,1.3276) -- (3.8200,1.2376) -- (3.9200,1.2376) -- cycle;
+\end{scope}
+\draw[axis] (0,0) rectangle (3.95,2.1);
+\end{tikzpicture}

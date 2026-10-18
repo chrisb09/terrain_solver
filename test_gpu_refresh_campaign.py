@@ -20,6 +20,345 @@ spec.loader.exec_module(refresh)
 
 
 class CampaignTest(unittest.TestCase):
+    def test_original_solver_exact_patch_and_fail_closed_guards(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            mini = self.fixture(Path(tmp), reviewed_solver=True)
+            source = mini / "solver_cpp/terrain_solver.cpp"
+            current = source.read_bytes()
+            solver = mini / "solver_cpp/build_gpu_refresh_plain"
+            prov = solver / "provenance-123"
+            protected = [prov / "source.sha256", prov / "binaries.sha256", solver / "BUILD_READY",
+                         solver / "terrain_solver",
+                         mini.parent / "CPP-ML-Interface/dl_clients/build-gpu-refresh-plain/phydll_dl_client"]
+            originals = {p: p.read_bytes() for p in protected}
+            with patch.object(refresh, "MINI", mini), patch.dict(os.environ, GPU_REFRESH_BUILD_JOB_ID_ENV="123"):
+                for flag in ("", "0", "true"):
+                    with patch.dict(os.environ, {refresh.REUSE_ORIGINAL_SOLVER_ENV: flag}):
+                        with self.assertRaises(subprocess.CalledProcessError):
+                            refresh.ready("plain")
+                with patch.dict(os.environ, {refresh.REUSE_ORIGINAL_SOLVER_ENV: "1"}):
+                    self.assertEqual(refresh.ready("plain"), originals[solver / "BUILD_READY"].decode())
+                    review, original = refresh.check_sources(prov)
+                    self.assertEqual(original, b"// fixture\n" + refresh.ORIGINAL_MODEL_PATH_CHECK)
+                    self.assertEqual(review["original_sha256"], hashlib.sha256(original).hexdigest())
+                    self.assertEqual(review["current_sha256"], hashlib.sha256(current).hexdigest())
+                    for changed in (current + b"// unexpected\n", current * 2,
+                                    current.replace(b'!= "none"', b'== "none"')):
+                        source.write_bytes(changed)
+                        with self.assertRaises(RuntimeError):
+                            refresh.ready("plain")
+                    source.write_bytes(current)
+                    other = mini / "5r_driver_single.zsh"
+                    other_original = other.read_bytes()
+                    other.write_bytes(other_original + b"# unexpected\n")
+                    with self.assertRaises(subprocess.CalledProcessError):
+                        refresh.ready("plain")
+                    other.write_bytes(other_original)
+                    for path in protected:
+                        path.write_bytes(originals[path] + b"corrupt\n")
+                        with self.assertRaises((RuntimeError, subprocess.CalledProcessError)):
+                            refresh.ready("plain")
+                        path.write_bytes(originals[path])
+                    with self.assertRaisesRegex(RuntimeError, "plain timing"):
+                        refresh.ready("scorep")
+                    refresh.ready("plain")
+            self.assertEqual(source.read_bytes(), current)
+            self.assertTrue(all(p.read_bytes() == data for p, data in originals.items()))
+
+    def test_original_solver_targeted_scope_and_archives(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            mini = self.fixture(Path(tmp), reviewed_solver=True)
+            groups = refresh.targeted_retest_groups()
+            env = {"GPU_REFRESH_BUILD_JOB_ID_ENV": "123", refresh.REUSE_ORIGINAL_SOLVER_ENV: "1"}
+            with patch.object(refresh, "MINI", mini), patch.dict(os.environ, env), \
+                 contextlib.redirect_stdout(io.StringIO()) as output:
+                rejected = [refresh.groups()[0], refresh.missing65_profile_groups()[0],
+                            dict(groups[0], mode="profile"), dict(groups[0], mode="trace")]
+                for group in rejected:
+                    for selected in ([group], [groups[0], group]):
+                        with self.assertRaisesRegex(RuntimeError, "restricted"):
+                            refresh.submit("--dry-run", "rejected", selected)
+                    with self.assertRaisesRegex(RuntimeError, "restricted"):
+                        refresh.run(group, "rejected")
+                self.assertFalse((mini / "results").exists())
+                refresh.submit("--dry-run", "reviewed", groups, smoke_first=True)
+                root = mini / "results/gpu_refresh/reviewed"
+                review = json.loads((root / "original-solver-review.json").read_text())
+                original = (root / review["source_original_snapshot"]).read_bytes()
+                self.assertEqual(hashlib.sha256(original).hexdigest(), review["original_sha256"])
+                self.assertEqual((review["build_identity"], review["original_binary_profile"]), ("123", "plain"))
+                self.assertEqual(review["approved_patch"]["replacements"], 1)
+                commands = [shlex.split(line) for line in output.getvalue().splitlines() if line.startswith("sbatch ")]
+                self.assertEqual(len(commands), 9)
+                self.assertTrue(all(any(a.startswith("--export=ALL,") for a in cmd) for cmd in commands))
+
+    def test_original_solver_runtime_review_before_cases(self):
+        from unittest.mock import MagicMock
+        group = refresh.targeted_retest_groups()[3]
+        with tempfile.TemporaryDirectory() as tmp:
+            mini = self.fixture(Path(tmp), reviewed_solver=True)
+            shutil.copy(HERE / "config.toml", mini)
+            root = mini / "results/gpu_refresh/reviewed" / f"{group['id']}_456"
+
+            def fake_popen(*args, **kwargs):
+                review = json.loads((root / "original-solver-review.json").read_text())
+                self.assertTrue((root / review["source_original_snapshot"]).exists())
+                self.assertEqual(kwargs["env"][refresh.REUSE_ORIGINAL_SOLVER_ENV], "1")
+                for step in range(2, 13, 2):
+                    kwargs["stdout"].write(f"STEP_TIMING step={step} solver=ML step_ms=1\n")
+                return MagicMock(pid=99999999, wait=MagicMock(return_value=0))
+
+            env = {"GPU_REFRESH_BUILD_JOB_ID_ENV": "123", refresh.REUSE_ORIGINAL_SOLVER_ENV: "1",
+                   "SLURM_JOB_ID": "456", "SLURM_NTASKS": "96", "SLURM_JOB_NUM_NODES": "1"}
+            with patch.object(refresh, "MINI", mini), patch.dict(os.environ, env), \
+                 patch.object(refresh, "ready") as ready, patch.object(refresh, "clean_steps"), \
+                 patch.object(refresh.subprocess, "run"), \
+                 patch.object(refresh.subprocess, "Popen", side_effect=fake_popen) as popen, \
+                 patch.object(refresh.os, "killpg", side_effect=ProcessLookupError):
+                self.assertEqual(refresh.run(group, "reviewed"), 0)
+                self.assertEqual([c.args for c in ready.call_args_list], [("plain",)] * 2)
+                popen.assert_called_once()
+
+    def test_targeted_retest_matrix_and_environment(self):
+        groups = refresh.targeted_retest_groups()
+        expected = {
+            ("96p96c4g", "watercnn8k", "PHYDLL", "default"): (25, 8.5, 101),
+            ("96c4g", "giantmlp288", "SMARTSIM", "shared"): (8, 2, 6),
+            ("96c4g", "watercnn8k", "SMARTSIM", "shared_c1"): (25, 10.7, 101),
+        }
+        self.assertEqual(len(groups), 9)
+        self.assertEqual(len({g["id"] for g in groups}), 9)
+        self.assertFalse({g["id"] for g in groups} & {g["id"] for g in refresh.groups()})
+        for identity, (limit, bound, calls) in expected.items():
+            selected = [g for g in groups if (g["hw"], *g["cases"][0]) == identity]
+            self.assertEqual([g["repeat"] for g in selected], [1, 2, 3])
+            for group in selected:
+                self.assertEqual(len(group["cases"]), 1)
+                self.assertEqual(group["mode"], "timing")
+                self.assertEqual(refresh.minutes(group), limit)
+                budget = group["budget"]
+                self.assertEqual(budget["purpose"], "diagnostic-retest")
+                self.assertEqual(budget["telemetry"], "not-integrated")
+                self.assertEqual(len(budget["original_job_ids"]), 3)
+                self.assertEqual(budget["native_call_bound_seconds"], bound)
+                self.assertEqual(budget["expected_calls_per_case"], calls)
+                self.assertAlmostEqual(budget["inference_seconds"] + budget["startup_cleanup_margin_seconds"], limit * 60)
+                env = refresh.case_env(group, group["cases"][0])
+                water = identity[1] == "watercnn8k"
+                self.assertEqual(env["TOTAL_STEPS_ENV"], "202" if water else "12")
+                self.assertEqual(env["ML_BATCH_SIZE_ENV"], "20000000" if water else "500000")
+                for key in ("USE_SCOREP", "USE_SCOREP_ENV", "NIC_SAMPLING_ENV", "GPU_MEM_SAMPLING_ENV", "OVERWRITE_OUTPUT_ENV"):
+                    self.assertEqual(env[key], "0")
+                self.assertEqual(env["SCOREP_ENABLE_PROFILING"], "false")
+                self.assertEqual(env["SCOREP_ENABLE_TRACING"], "false")
+                self.assertNotIn("CUDA_LAUNCH_BLOCKING", env)
+                self.assertEqual(env["PHYDLL_PIN_CPU_BUDGET_ENV"], "96")
+                self.assertEqual(env["PHYDLL_NP_DL_ENV"], "4")
+                self.assertEqual(env["SMARTSIM_THREADS_PER_QUEUE"], "1")
+                self.assertEqual(env["SMARTSIM_INTRA_OP_THREADS"], "8")
+                self.assertEqual(env["SMARTSIM_INTER_OP_THREADS"], "1")
+                self.assertEqual(env["SMARTSIM_MPI_SEQUENTIAL_PUT"], "1" if identity[3] == "shared_c1" else "0")
+                with patch.object(refresh, "run", return_value=0) as run, \
+                     patch.object(refresh.os.sys, "argv", ["campaign", "--run", group["id"]]), \
+                     patch.dict(os.environ, GPU_REFRESH_CAMPAIGN_ENV="targeted_test"):
+                    self.assertEqual(refresh.main(), 0)
+                    run.assert_called_once_with(group, "targeted_test")
+
+    def test_targeted_retest_dry_run_gate_and_readiness(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            mini = self.fixture(Path(tmp))
+            groups = refresh.targeted_retest_groups()
+            with patch.object(refresh, "MINI", mini), patch.dict(os.environ, GPU_REFRESH_BUILD_JOB_ID_ENV="123"), \
+                 patch.object(refresh, "ready", wraps=refresh.ready) as ready, \
+                 patch.object(refresh.subprocess, "check_output", wraps=subprocess.check_output) as calls, \
+                 contextlib.redirect_stdout(io.StringIO()) as output:
+                refresh.submit("--dry-run", "targeted", groups, notifier="snotify", smoke_first=True)
+                ready.assert_called_once_with("plain")
+                self.assertFalse(any(call.args[0][0] in ("sbatch", "snotify") for call in calls.call_args_list))
+                commands = [shlex.split(line) for line in output.getvalue().splitlines() if line.startswith("sbatch ")]
+                self.assertEqual(len(commands), 9)
+                for index, (group, command) in enumerate(zip(groups, commands)):
+                    self.assertEqual(command[-1], group["id"])
+                    self.assertEqual(command.count(":"), int("p" in group["hw"]))
+                    self.assertEqual([a for a in command if a.startswith("--time=")],
+                                     [f"--time=00:{refresh.minutes(group):02d}:00"] * (2 if "p" in group["hw"] else 1))
+                    self.assertEqual([a for a in command if a.startswith("--dependency=")],
+                                     ["--dependency=afterok:DRY_RUN"] if index else [])
+                    if index:
+                        self.assertIn("--kill-on-invalid-dep=yes", command)
+                root = mini / "results/gpu_refresh/targeted"
+                self.assertEqual(set(json.loads((root / "ready.json").read_text())), {"plain"})
+                self.assertEqual(len(json.loads((root / "budget.json").read_text())), 9)
+                with (root / "cases.csv").open() as stream:
+                    rows = list(csv.DictReader(stream))
+                self.assertEqual(len(rows), 9)
+                self.assertTrue(all((r["warm"], r["steady"]) == ("1", "100" if r["model"] == "watercnn8k" else "5") for r in rows))
+                original = (root / "cases.csv").read_bytes()
+                with self.assertRaisesRegex(RuntimeError, "already exists"):
+                    refresh.submit("--dry-run", "targeted", groups)
+                self.assertEqual((root / "cases.csv").read_bytes(), original)
+                (mini / "solver_cpp/build_gpu_refresh_plain/BUILD_READY").unlink()
+                with self.assertRaises(OSError):
+                    refresh.submit("--dry-run", "not_ready", groups)
+                self.assertFalse((mini / "results/gpu_refresh/not_ready").exists())
+
+    def test_targeted_retest_all_nine_complete_without_profiles(self):
+        from unittest.mock import MagicMock
+        for group in refresh.targeted_retest_groups():
+            with self.subTest(group=group["id"]), tempfile.TemporaryDirectory() as tmp:
+                mini = self.fixture(Path(tmp))
+                for name in ("config.toml", "config_phydll_gpu_refresh_default.toml"):
+                    shutil.copy(HERE / name, mini)
+
+                def fake_popen(*args, **kwargs):
+                    env = kwargs["env"]
+                    self.assertEqual(env["CUDA_LAUNCH_BLOCKING"], "1")
+                    for step in range(2, int(env["TOTAL_STEPS_ENV"]) + 1, 2):
+                        kwargs["stdout"].write(f"STEP_TIMING step={step} solver=ML step_ms=1\n")
+                    return MagicMock(pid=99999999, wait=MagicMock(return_value=0))
+
+                env = dict(SLURM_JOB_ID="456", SLURM_NTASKS="96", SLURM_JOB_NUM_NODES="1",
+                           SLURM_HET_SIZE="2", SLURM_NTASKS_HET_GROUP_0="96", SLURM_NTASKS_HET_GROUP_1="96",
+                           SLURM_JOB_NUM_NODES_HET_GROUP_0="1", SLURM_JOB_NUM_NODES_HET_GROUP_1="1",
+                           CUDA_LAUNCH_BLOCKING="1")
+                with patch.object(refresh, "MINI", mini), patch.dict(os.environ, env), \
+                     patch.object(refresh, "ready") as ready, patch.object(refresh, "clean_steps"), \
+                     patch.object(refresh.subprocess, "Popen", side_effect=fake_popen) as popen, \
+                     patch.object(refresh.os, "killpg", side_effect=ProcessLookupError):
+                    self.assertEqual(refresh.run(group, "targeted"), 0)
+                popen.assert_called_once()
+                self.assertEqual([call.args for call in ready.call_args_list], [("plain",)] * 2)
+                root = mini / "results/gpu_refresh/targeted" / f"{group['id']}_456"
+                with (root / "manifest.csv").open() as stream:
+                    rows = list(csv.DictReader(stream))
+                self.assertEqual(len(rows), 1)
+                row = rows[0]
+                self.assertEqual((row["rc"], row["validation_error"], row["cleanup_safe"]), ("0", "", "True"))
+                self.assertEqual(int(row["observed_ml_calls"]), 101 if row["model"] == "watercnn8k" else 6)
+                self.assertEqual((root / row["run_id"] / "profiles.txt").read_text(), "")
+
+    def test_thesis_aix_trace_matrix_environment_and_authorization(self):
+        groups = refresh.thesis_aix_trace_groups()
+        self.assertEqual(len(groups), 4)
+        self.assertEqual(len({g["id"] for g in groups}), 4)
+        self.assertEqual({g["hw"] for g in groups}, set(refresh.HARDWARE))
+        self.assertEqual([refresh.minutes(g) for g in groups], [6, 8, 6, 10])
+        seen = set()
+        for group in groups:
+            self.assertEqual((group["mode"], group["repeat"]), ("trace", 1))
+            budget = group["budget"]
+            self.assertEqual(budget["expected_calls_per_case"], 6)
+            seconds = 60 + 1.5 * (budget["driver_seconds"] + budget["cleanup_seconds"])
+            self.assertEqual(budget["estimated_seconds"], seconds)
+            self.assertEqual(refresh.minutes(group), max(6, refresh.math.ceil(seconds / 60)))
+            for case in group["cases"]:
+                self.assertIsInstance(case, dict)
+                self.assertEqual(case, dict(model="watercnn8k", provider="AIX",
+                                            variant=case["variant"], layout="default"))
+                identity = (group["hw"], case["variant"])
+                self.assertNotIn(identity, seen)
+                seen.add(identity)
+                env = refresh.case_env(group, case)
+                for key in ("SCOREP_ENABLE_TRACING", "SCOREP_ENABLE_PROFILING"):
+                    self.assertEqual(env[key], "true")
+                    self.assertEqual(env[key + "_ENV"], "true")
+                self.assertEqual(env["TOTAL_STEPS_ENV"], "12")
+                self.assertEqual(int(env["TOTAL_STEPS_ENV"]) // 2 - 1, 5)
+                self.assertEqual(env["USE_SCOREP_ENV"], "1")
+                self.assertEqual(env["SKIP_COMPILE_ENV"], "1")
+                prefix = HERE / "solver_cpp/build_thesis_aix_variants/default_scorep/aix-install"
+                self.assertEqual(env["AIX_INSTALL_PREFIX_ENV"], str(prefix))
+                self.assertEqual(env["GPU_REFRESH_AIX_LIBRARY_DIR_ENV"], str(prefix / "lib"))
+                pipelined = case["variant"] == "p2p1"
+                self.assertEqual(env["AIX_COMMUNICATION_MODE_ENV"], "pipelined" if pipelined else "collective")
+                self.assertEqual(env["AIX_P2P_TIMELINE_ENV"], str(int(pipelined)))
+                self.assertEqual(env["CPP_ML_CONFIG_ENV"], "config_aix_pipelined.toml" if pipelined else "config_aix.toml")
+                if pipelined:
+                    self.assertEqual(env["AIX_P2P_INITIAL_CREDITS_ENV"], "1")
+                    self.assertEqual(env["AIX_P2P_ASYNC_CONTROLLER"], "0")
+                else:
+                    self.assertNotIn("AIX_P2P_INITIAL_CREDITS_ENV", env)
+            with patch.object(refresh, "run", return_value=0) as run:
+                with patch.object(refresh.os.sys, "argv", ["campaign", "--run", group["id"]]), patch.dict(os.environ, GPU_REFRESH_CAMPAIGN_ENV="aix_trace_test"):
+                    self.assertEqual(refresh.main(), 0)
+                run.assert_called_once_with(group, "aix_trace_test")
+        self.assertEqual(seen, {(hw, "default") for hw in refresh.HARDWARE}
+                         | {("96c4g", "p2p1"), ("96p96c4g", "p2p1")})
+        with patch.object(refresh, "run") as run, contextlib.redirect_stderr(io.StringIO()):
+            with patch.object(refresh.os.sys, "argv", ["campaign", "--run", "thesis_aix_trace_unlisted_r1"]):
+                with self.assertRaises(SystemExit):
+                    refresh.main()
+            run.assert_not_called()
+
+    def test_thesis_aix_trace_dry_run_readiness_and_manifests(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            mini = self.fixture(Path(tmp))
+            variant = self.variant_fixture(mini, "default")
+            groups = refresh.thesis_aix_trace_groups()
+            with patch.object(refresh, "MINI", mini), patch.dict(os.environ, GPU_REFRESH_BUILD_JOB_ID_ENV="123"), contextlib.redirect_stdout(io.StringIO()) as output:
+                with patch.object(refresh, "ready", wraps=refresh.ready) as ready:
+                    refresh.submit("--dry-run", "aix_trace", groups)
+                ready.assert_called_once_with("scorep", ["default"])
+                root = mini / "results/gpu_refresh/aix_trace"
+                with (root / "cases.csv").open() as stream:
+                    rows = list(csv.DictReader(stream))
+                self.assertEqual(len(rows), 6)
+                self.assertTrue(all((r["warm"], r["steady"], r["steps"]) == ("1", "5", "12") for r in rows))
+                self.assertEqual(set(json.loads((root / "aix-ready.json").read_text())), {"default_scorep"})
+                self.assertEqual(len(json.loads((root / "budget.json").read_text())), 4)
+                commands = [shlex.split(line) for line in output.getvalue().splitlines() if line.startswith("sbatch ")]
+                self.assertEqual(len(commands), 4)
+                for group, command in zip(groups, commands):
+                    self.assertEqual([a for a in command if a.startswith("--time=")],
+                                     [f"--time=00:{refresh.minutes(group):02d}:00"] * (2 if "p" in group["hw"] else 1))
+                (variant / "READY").unlink()
+                with self.assertRaises(OSError):
+                    refresh.submit("--dry-run", "aix_trace_bad", groups)
+                self.assertFalse((mini / "results/gpu_refresh/aix_trace_bad").exists())
+
+    def test_thesis_aix_trace_runtime_checks_and_p2p_csv(self):
+        from unittest.mock import MagicMock
+        group = next(g for g in refresh.thesis_aix_trace_groups() if g["hw"] == "96c4g")
+        for timeline in (True, False):
+            with self.subTest(timeline=timeline), tempfile.TemporaryDirectory() as tmp:
+                mini = self.fixture(Path(tmp))
+                for name in ("config_aix.toml", "config_aix_pipelined.toml"):
+                    shutil.copy(HERE / name, mini)
+
+                def fake_popen(*args, **kwargs):
+                    env = kwargs["env"]
+                    run_id = env["RUN_ID_ENV"]
+                    for step in range(2, 13, 2):
+                        kwargs["stdout"].write(f"STEP_TIMING step={step} solver=ML step_ms=1\n")
+                    scorep = mini / "scorep_runs" / f"gpu_refresh_{run_id}"
+                    scorep.mkdir(parents=True)
+                    (scorep / "profile.cubex").write_text("profile")
+                    (scorep / "traces.otf2").write_text("trace")
+                    if timeline and env["AIX_P2P_TIMELINE_ENV"] == "1":
+                        csv_dir = mini / "logs" / f"aix_p2p_timeline_{run_id}"
+                        csv_dir.mkdir(parents=True)
+                        (csv_dir / "aix_p2p_timeline_rank_0.csv").write_text("step,time\n2,1\n")
+                    return MagicMock(pid=99999999, wait=MagicMock(return_value=0))
+
+                env = dict(SLURM_JOB_ID="456", SLURM_NTASKS="96", SLURM_JOB_NUM_NODES="1")
+                with patch.object(refresh, "MINI", mini), patch.dict(os.environ, env), \
+                     patch.object(refresh, "ready") as ready, \
+                     patch.object(refresh, "aix_ready", return_value="verified READY") as aix_ready, \
+                     patch.object(refresh, "clean_steps"), \
+                     patch.object(refresh.subprocess, "Popen", side_effect=fake_popen), \
+                     patch.object(refresh.os, "killpg", side_effect=ProcessLookupError):
+                    self.assertEqual(refresh.run(group, "trace_test"), int(not timeline))
+                self.assertEqual(ready.call_count, 3)
+                self.assertTrue(all(call.args == ("scorep", ["default"]) for call in ready.call_args_list))
+                self.assertEqual(aix_ready.call_count, 2)
+                self.assertTrue(all(call.args == ("default", "scorep") for call in aix_ready.call_args_list))
+                root = mini / "results/gpu_refresh/trace_test" / f"{group['id']}_456"
+                with (root / "manifest.csv").open() as stream:
+                    rows = list(csv.DictReader(stream))
+                self.assertEqual([r["observed_ml_calls"] for r in rows], ["6", "6"])
+                self.assertEqual(rows[1]["validation_error"], "" if timeline else "; Missing AIx P2P timeline CSV")
+                self.assertTrue(all((root / r["run_id"] / "aix.READY").read_text() == "verified READY" for r in rows))
+
     def test_missing65_matrix_environment_and_budgets(self):
         groups = refresh.missing65_profile_groups()
         self.assertEqual(len(groups), 8)
@@ -267,7 +606,7 @@ class CampaignTest(unittest.TestCase):
                         self.assertEqual(refresh.main(), 0)
                 self.assertEqual(run.call_args.args, (g, "thesis_test"))
 
-    def fixture(self, base):
+    def fixture(self, base, reviewed_solver=False):
         mini = base / "mini_app"
         mini.mkdir()
         for driver in ("5r_driver_single.zsh", "5r_driver_hetsurrogate.zsh"):
@@ -287,6 +626,14 @@ class CampaignTest(unittest.TestCase):
                 (prov / f"{path.name}.ldd.txt").write_text("libscorep_mpp_mpi\n" if mode == "scorep" else "libmpi\n")
             (prov / "binaries.sha256").write_text("".join(entries))
             (prov / "source.sha256").write_text(entries[0])
+            if reviewed_solver:
+                source = mini / "solver_cpp/terrain_solver.cpp"
+                original = b"// fixture\n" + refresh.ORIGINAL_MODEL_PATH_CHECK
+                source.write_bytes(b"// fixture\n" + refresh.APPROVED_MODEL_PATH_CHECK)
+                other = mini / "5r_driver_single.zsh"
+                (prov / "source.sha256").write_text(
+                    f"{hashlib.sha256(original).hexdigest()}  {source}\n"
+                    f"{hashlib.sha256(other.read_bytes()).hexdigest()}  {other}\n")
             cache = f"CMAKE_BUILD_TYPE:STRING=Release\nWITH_SCOREP:BOOL={'ON' if mode == 'scorep' else 'OFF'}\nPHYDLL_DL_WITH_TORCH:BOOL=ON\nCPPML_SCOREP_MPP:STRING=mpi\n"
             (dl / "CMakeCache.txt").write_text(cache)
             (solver / "CMakeCache.txt").write_text(cache + "".join(f"{f}:BOOL=ON\n" for f in ("USE_CPP_ML_INTERFACE", "WITH_PHYDLL", "WITH_SMARTSIM", "WITH_AIX", "WITH_TORCH")))

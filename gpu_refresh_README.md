@@ -197,6 +197,125 @@ job `5050769`, seven dependent jobs `5050770`, `5050771`, `5050772`, `5050773`,
 `5050775`, `5050777`, `5050779`, and consolidated snotify watcher `5050781`.
 The original dependent jobs were cancelled without running. Limits are unchanged.
 
+## Targeted Diagnostic Retests
+
+`targeted_retest_groups()` explicitly selects three independent repeats of each
+completed suspect native cell: nine single-case groups, nine dedicated exclusive
+allocations. These are diagnostic retests, not failed-case retries or new profile
+coverage. No jobs were submitted for this addition.
+
+| Hardware / Cell | Original Jobs | Original Means (s) | Limit Per Repeat |
+| --- | --- | --- | --- |
+| 96p96c4g / PhyDLL default WaterCNN8k | 4938455 / 4938457 / 4938459 | 8.487 / 2.908 / 4.789 | 25 min |
+| 96c4g / SmartSim shared c0 GiantMLP288 | 4735499 / 4735500 / 4735501 | 1.874 / 0.862 / 0.775 | 8 min |
+| 96c4g / SmartSim shared c1 WaterCNN8k | 5006197 / 5006199 / 5006201 | 6.719 / 4.629 / 4.542 | 25 min |
+
+Budgets reserve 101 x 8.5 = 858.5 s for PhyDLL water, 101 x 10.7 =
+1080.7 s for SmartSim c1 water, and 6 x 2 = 12 s for GiantMLP. Remaining
+startup/cleanup margins are 641.5 / 419.3 / 468 s respectively. These are
+single-case limits, not the older multi-case 75-minute PhyDLL or 40-minute
+SmartSim water limits. `budget.json` records the rationale and original jobs.
+Total requested allocation wall time is 174 minutes (249 node-minutes because
+the three PhyDLL allocations each use two nodes).
+
+The existing `case_env()` is reused unchanged: WaterCNN has 202 steps, one
+warm plus 100 steady calls; GiantMLP has 12 steps, one warm plus five steady.
+Dimensions, chunks, caps (20000000 / 500000), native `USE_SCOREP=0`, plain
+executables, TPQ1, SmartSim intra/inter-op 8/1, shared DB and c0/c1 are preserved.
+PhyDLL retains the existing 192 solver ranks (96 per host), four DL workers,
+and 100 GPU-side tasks sharing the existing 96-CPU pinning budget. This is
+known CPU sharing, not a new affinity fix. Neither affinity nor
+`CUDA_LAUNCH_BLOCKING` is overridden by this selector; driver behavior,
+software sources and workloads are not changed.
+
+Opt-in API preview, after the existing build readiness checks pass:
+
+```bash
+GPU_REFRESH_BUILD_JOB_ID_ENV=BUILD_JOB_ID python3 -c 'from mini_app.gpu_refresh_campaign import submit, targeted_retest_groups; submit("--dry-run", "targeted_retest_FRESH_UNIQUE_TOKEN", targeted_retest_groups(), notifier="snotify", smoke_first=True)'
+```
+
+The normal CLI `--list` and default submission matrix are unchanged. Inspect
+an individual group with `--describe targeted_retest_96p96c4g_watercnn8k_phydll_default_r1`.
+An operator may later use the same API with `--submit` and another fresh token,
+only after launch approval. `smoke_first=True` gates the other eight allocations
+on the first successful PhyDLL run (`afterok`, cancel invalid dependencies);
+the repeats still execute in separate allocations, not a shared timing session.
+All groups use the existing `rwth0792` / `c23g` templates, both components where
+applicable, and normal consolidated snotify registration. No build jobs are
+queued. `ready("plain")` checks the completed build identity, markers, caches,
+checksums, registries and native linkage before preview/submission and runtime.
+CPU readiness alone is not GPU validation. Existing tokens are rejected and
+original measurements and plotting selections are never automatically replaced.
+
+### Approved Original Build Reuse
+
+The user explicitly approved `KeepOriginalBuild` for these targeted timing
+reruns using the preserved matching binaries from build `4938224`. Enable it
+only with `GPU_REFRESH_REUSE_ORIGINAL_SOLVER_ENV=1`. Submit and runtime reject
+this opt-in for any group outside `targeted_retest_groups()` or any mode other
+than plain timing, including mixed selections. Standalone `ready("plain")`
+can validate the approval without creating a campaign or submitting jobs.
+
+This is not a source-hash bypass. Exactly one source exception is allowed:
+`solver_cpp/terrain_solver.cpp` may contain the reviewed change nesting the
+model-path requirement under `cfg.ml_interface != "none"` and changing its
+error message to `--model-path is required when an ML interface is used.`
+inside `if (!cfg.print_build_timestamp)`. The exact byte replacement must
+occur once; reversing it must reproduce the original recorded SHA-256. This
+changes only the no-ML-interface path, not the ML paths used by these reruns.
+Every other source record, every binary checksum, and all `BUILD_READY`,
+cache, registry and linkage checks remain mandatory. With the flag absent,
+the original full source check still rejects the current solver edit.
+
+Before any submissions, the campaign root receives `original-solver-review.json`
+and `terrain_solver.original.cpp`, reconstructed and hash-verified from the
+reverse patch. The review records approval, original/current source hashes,
+the exact approved patch, original plain binary profile, build identity,
+provenance and binary-manifest hash, and snapshot path. Every runtime group
+writes its own verified review and original-source snapshot before cases;
+runtime readiness checks are retained. No current source, `source.sha256`,
+`binaries.sha256` or `BUILD_READY` is rewritten. Slurm `--export=ALL` carries
+the opt-in into runtime checks.
+
+Read-only readiness check from the workspace root (no campaign files created):
+
+```bash
+GPU_REFRESH_BUILD_JOB_ID_ENV=4938224 GPU_REFRESH_REUSE_ORIGINAL_SOLVER_ENV=1 PYTHONDONTWRITEBYTECODE=1 python3 -c 'from mini_app.gpu_refresh_campaign import ready; print(ready("plain").splitlines()[0])'
+```
+
+For an operator preview, add `GPU_REFRESH_REUSE_ORIGINAL_SOLVER_ENV=1` to the
+targeted API command above and use build identity `4938224`. Preview creates
+manifests and review snapshots but launches nothing. Actual submission remains
+the lead operator's responsibility and requires a fresh campaign token.
+
+Telemetry is **not integrated** and must not be claimed for these native runs.
+The existing GPU-memory sampler is gated on `USE_SCOREP=1`, so changing only
+`GPU_MEM_SAMPLING_ENV` cannot enable it here; NIC sampling also stays disabled.
+Recommendation to the lead: separately validate a reusable external stdlib
+sampler at roughly 1 s intervals for rank/host process memory, host memory and
+`nvidia-smi` GPU queries, concurrent on both PhyDLL hosts. Its Slurm steps must
+be proven not to block application steps, change affinity or steal GPU resources,
+and must cooperate with `clean_steps()` lifecycle cleanup. A local batch-host
+sampler alone does not cover both hosts. Until that overlap/cleanup path is
+validated, these groups provide timing diagnostics only, without resource
+telemetry or an explanation of the variance.
+
+## Targeted WaterCNN AIx Traces
+
+`thesis_aix_trace_groups()` fills six WaterCNN 7680x4320 default-layout trace
+cells: collective on all four hardware setups, plus P2P1 on 96c4g and
+96p96c4g. The two existing 24-rank P2P1 traces are reused. All new cases use
+the verified isolated default_scorep library, 12 steps, one warmup plus five
+measured calls, profiling and OTF2 tracing; P2P1 also enables per-rank timeline
+CSVs with one credit and the async controller disabled. Common interval CSVs
+still require a separate export. Automatic CUDA tracing remains disabled.
+
+Campaign `aix_watercnn_trace_completion_20261016_r1` was submitted as jobs
+`5095650` (24c1g, 6 min), `5095651` (96c4g, 8 min), `5095652`
+(24p24c1g, 6 min), `5095654` (96p96c4g, 10 min). GPU account/partition:
+rwth0792/c23g, including both surrogate components. Consolidated snotify
+watcher: `5095656` on thes2181/c23ms. This campaign does not add GiantMLP traces.
+
 Per-group limits in minutes (WaterCNN / GiantMLP):
 
 | Hardware | Minutes |

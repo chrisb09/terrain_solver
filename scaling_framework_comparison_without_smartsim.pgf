@@ -1,0 +1,76 @@
+% Generated TikZ/PGF fragment; requires \usepackage{tikz}.
+\begin{tikzpicture}[font=\fontsize{8}{10}\selectfont,
+axis/.style={black!85,line width=0.5pt},
+grid/.style={black!14,line width=0.35pt,dotted},
+tick/.style={font=\fontsize{7}{8.5}\selectfont},
+title/.style={font=\fontsize{8}{10}\selectfont\bfseries}]
+\definecolor{caix_coll}{HTML}{1F77B4}
+\definecolor{caix_p2p}{HTML}{FF7F0E}
+\definecolor{caix_p2p_fc}{HTML}{2CA02C}
+\definecolor{cphydll_default}{HTML}{008080}
+\definecolor{cphydll_readiness}{HTML}{17BECF}
+\definecolor{csmartsim_c0}{HTML}{D62728}
+\definecolor{csmartsim_c3}{HTML}{9467BD}
+\definecolor{csmartsim_per_gpu_db}{HTML}{8C564B}
+\node[title] at (2.825,2.450) {(b) Without SmartSim};
+\draw[grid] (0,0.0000) -- (5.650,0.0000);
+\draw[axis] (0,0.0000) -- (-0.07,0.0000);
+\node[tick,anchor=east] at (-0.12,0.0000) {0};
+\draw[grid] (0,0.4200) -- (5.650,0.4200);
+\draw[axis] (0,0.4200) -- (-0.07,0.4200);
+\node[tick,anchor=east] at (-0.12,0.4200) {200};
+\draw[grid] (0,0.8400) -- (5.650,0.8400);
+\draw[axis] (0,0.8400) -- (-0.07,0.8400);
+\node[tick,anchor=east] at (-0.12,0.8400) {400};
+\draw[grid] (0,1.2600) -- (5.650,1.2600);
+\draw[axis] (0,1.2600) -- (-0.07,1.2600);
+\node[tick,anchor=east] at (-0.12,1.2600) {600};
+\draw[grid] (0,1.6800) -- (5.650,1.6800);
+\draw[axis] (0,1.6800) -- (-0.07,1.6800);
+\node[tick,anchor=east] at (-0.12,1.6800) {800};
+\draw[grid] (0,2.1000) -- (5.650,2.1000);
+\draw[axis] (0,2.1000) -- (-0.07,2.1000);
+\node[tick,anchor=east] at (-0.12,2.1000) {1,000};
+\draw[grid] (0.0800,0) -- (0.0800,2.1);
+\draw[axis] (0.0800,0) -- (0.0800,-0.07);
+\node[tick,anchor=north] at (0.0800,-0.12) {1};
+\draw[grid] (1.4525,0) -- (1.4525,2.1);
+\draw[axis] (1.4525,0) -- (1.4525,-0.07);
+\node[tick,anchor=north] at (1.4525,-0.12) {2};
+\draw[grid] (2.8250,0) -- (2.8250,2.1);
+\draw[axis] (2.8250,0) -- (2.8250,-0.07);
+\node[tick,anchor=north] at (2.8250,-0.12) {4};
+\draw[grid] (4.1975,0) -- (4.1975,2.1);
+\draw[axis] (4.1975,0) -- (4.1975,-0.07);
+\node[tick,anchor=north] at (4.1975,-0.12) {8};
+\draw[grid] (5.5700,0) -- (5.5700,2.1);
+\draw[axis] (5.5700,0) -- (5.5700,-0.07);
+\node[tick,anchor=north] at (5.5700,-0.12) {16};
+\node at (2.825,-0.65) {Solver Nodes};
+\node[rotate=90,align=center] at (-1.05,1.050) {Median ML-Step\\Time (ms)};
+\begin{scope}
+\clip (0,0) rectangle (5.65,2.1);
+% aix_coll_default: 75.72750, 84.86250, 84.62150, 109.77150, 196.49100 ms
+\draw[caix_coll,line width=1pt,solid] (0.0800,0.1590) -- (1.4525,0.1782) -- (2.8250,0.1777) -- (4.1975,0.2305) -- (5.5700,0.4126);
+\fill[caix_coll] (0.0800,0.1590) circle (1.6pt);
+\fill[caix_coll] (1.4525,0.1782) circle (1.6pt);
+\fill[caix_coll] (2.8250,0.1777) circle (1.6pt);
+\fill[caix_coll] (4.1975,0.2305) circle (1.6pt);
+\fill[caix_coll] (5.5700,0.4126) circle (1.6pt);
+% phydll_default: 885.98850, 889.43200, 893.32200, 897.58450, 912.67050 ms
+\draw[cphydll_default,line width=1pt,dotted] (0.0800,1.8606) -- (1.4525,1.8678) -- (2.8250,1.8760) -- (4.1975,1.8849) -- (5.5700,1.9166);
+\fill[cphydll_default] (0.0800,1.8606) +(-1.8pt,0) -- +(0,1.8pt) -- +(1.8pt,0) -- +(0,-1.8pt) -- cycle;
+\fill[cphydll_default] (1.4525,1.8678) +(-1.8pt,0) -- +(0,1.8pt) -- +(1.8pt,0) -- +(0,-1.8pt) -- cycle;
+\fill[cphydll_default] (2.8250,1.8760) +(-1.8pt,0) -- +(0,1.8pt) -- +(1.8pt,0) -- +(0,-1.8pt) -- cycle;
+\fill[cphydll_default] (4.1975,1.8849) +(-1.8pt,0) -- +(0,1.8pt) -- +(1.8pt,0) -- +(0,-1.8pt) -- cycle;
+\fill[cphydll_default] (5.5700,1.9166) +(-1.8pt,0) -- +(0,1.8pt) -- +(1.8pt,0) -- +(0,-1.8pt) -- cycle;
+% phydll_readiness: 890.99000, 887.02450, 861.51300, 878.20250, 891.21550 ms
+\draw[cphydll_readiness,line width=1pt,dashdotted] (0.0800,1.8711) -- (1.4525,1.8628) -- (2.8250,1.8092) -- (4.1975,1.8442) -- (5.5700,1.8716);
+\fill[cphydll_readiness] (0.0800,1.8711) circle (1.6pt);
+\fill[cphydll_readiness] (1.4525,1.8628) circle (1.6pt);
+\fill[cphydll_readiness] (2.8250,1.8092) circle (1.6pt);
+\fill[cphydll_readiness] (4.1975,1.8442) circle (1.6pt);
+\fill[cphydll_readiness] (5.5700,1.8716) circle (1.6pt);
+\end{scope}
+\draw[axis] (0,0) rectangle (5.65,2.1);
+\end{tikzpicture}

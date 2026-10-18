@@ -1107,7 +1107,9 @@ static Config parse_args(int argc, char** argv, int rank, int total_ranks) {
     }
 
     if (!cfg.print_build_timestamp) {
-        require(!cfg.model_path.empty(), "--model-path is required.");
+        if (cfg.ml_interface != "none") {
+            require(!cfg.model_path.empty(), "--model-path is required when an ML interface is used.");
+        }
         require(!cfg.input_hdf5.empty(), "--input-hdf5 is required.");
         require(!cfg.output_hdf5.empty(), "--output-hdf5 is required.");
         require(!cfg.model_backend.empty(), "--model-backend must not be empty.");

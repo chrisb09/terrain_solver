@@ -1,0 +1,31 @@
+\documentclass[a4paper]{article}
+\usepackage[margin=30mm]{geometry}
+\usepackage{tikz}
+
+\begin{document}
+
+\begin{figure}[htbp]
+  \centering
+  \input{scaling_framework_comparison_all.pgf}\hfill
+  \input{scaling_framework_comparison_without_smartsim.pgf}
+  \par\smallskip
+  \input{scaling_framework_comparison_legend.pgf}
+  \caption{Framework comparison using the default layout. AIx Collective
+    is the AIx reference. The right panel excludes SmartSim and uses a
+    smaller y-axis range.}
+  \label{fig:scaling-frameworks}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \input{scaling_aix_layouts_default.pgf}\hfill
+  \input{scaling_aix_layouts_affine.pgf}\hfill
+  \input{scaling_aix_layouts_numa.pgf}
+  \par\smallskip
+  \input{scaling_aix_layouts_legend.pgf}
+  \caption{AIx coupling modes across the Default, Affine, and NUMA layouts,
+    using a shared y-axis scale.}
+  \label{fig:scaling-aix-layouts}
+\end{figure}
+
+\end{document}

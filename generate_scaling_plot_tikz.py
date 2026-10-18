@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate separate framework-comparison and AIx-layout standalone TikZ figures."""
+"""Generate standalone previews and independently includable TikZ/PGF fragments."""
 
 from pathlib import Path
 
@@ -96,7 +96,7 @@ def generate_tikz(nodes, data, output_tex, title, panels, legend):
     validate_panels(nodes, data, panels)
     count = len(panels)
     width, gap = (5.65, 1.65) if count == 2 else (3.95, 0.55)
-    height = 3.5
+    height = 2.1
     total_width = count * width + (count - 1) * gap
     lines = [
         r"\documentclass[tikz,border=4pt]{standalone}",
@@ -111,10 +111,14 @@ def generate_tikz(nodes, data, output_tex, title, panels, legend):
     ]
     for key, (_, color, _, _) in STYLES.items():
         lines.append(f"\\definecolor{{c{key}}}{{HTML}}{{{color}}}")
+    picture_header = lines[4:].copy()
+    panel_names = ("all", "without_smartsim") if count == 2 else ("default", "affine", "numa")
+    fragments = {}
     lines.append(f"\\node[title] at ({total_width/2:.3f},{height+0.90:.3f}) {{{title}}};")
 
     for index, (panel_title, maximum, ticks, curves) in enumerate(panels):
         lines.append(f"\\begin{{scope}}[shift={{({index*(width+gap):.3f},0)}}]")
+        panel_start = len(lines)
         lines.append(f"\\node[title] at ({width/2:.3f},{height+0.35:.3f}) {{{panel_title}}};")
         for tick in ticks:
             y = tick / maximum * height
@@ -129,8 +133,8 @@ def generate_tikz(nodes, data, output_tex, title, panels, legend):
             lines.append(f"\\node[tick,anchor=north] at ({x:.4f},-0.12) {{{node}}};")
         lines.append(f"\\node at ({width/2:.3f},-0.65) {{Solver Nodes}};")
         if count == 2 or index == 0:
-            label_x = (-1.25 if index == 0 else -1.05) if count == 2 else -0.88
-            lines.append(f"\\node[rotate=90] at ({label_x},{height/2:.3f}) {{Median ML-Step Time (ms)}};")
+            label_x = (-1.25 if index == 0 else -1.05) if count == 2 else -1.2
+            lines.append(f"\\node[rotate=90,align=center] at ({label_x},{height/2:.3f}) {{Median ML-Step\\\\Time (ms)}};")
 
         # Validate before clipping: clipping must not conceal out-of-range data.
         lines.extend([r"\begin{scope}", f"\\clip (0,0) rectangle ({width},{height});"])
@@ -142,13 +146,13 @@ def generate_tikz(nodes, data, output_tex, title, panels, legend):
             lines.append(f"\\draw[c{key},line width=1pt,{STYLES[key][2]}] {path};")
             lines.extend(draw_marker(key, x, y) for x, y in points)
         lines.extend([r"\end{scope}", f"\\draw[axis] (0,0) rectangle ({width},{height});", r"\end{scope}"])
+        fragments[panel_names[index]] = lines[panel_start:-1]
 
     # One row for the shared reference curves, another for SmartSim (left only).
     rows = (len(legend) + 2) // 3
     left, right = -0.75, total_width + 0.1
     top, bottom = -1.05, -1.05 - rows * 0.5 - 0.15
-    if count == 2:
-        bottom -= 0.35
+    legend_start = len(lines)
     lines.append(f"\\draw[black!25,fill=gray!3,rounded corners=2pt] ({left},{bottom}) rectangle ({right:.3f},{top});")
     column_width = (right - left) / 3
     for index, key in enumerate(legend):
@@ -158,11 +162,17 @@ def generate_tikz(nodes, data, output_tex, title, panels, legend):
         lines.append(f"\\draw[c{key},line width=1pt,{pattern}] ({x:.3f},{y:.3f}) -- ({x+0.42:.3f},{y:.3f});")
         lines.append(draw_marker(key, x+0.21, y))
         lines.append(f"\\node[anchor=west,font=\\fontsize{{7}}{{8.5}}\\selectfont] at ({x+0.5:.3f},{y:.3f}) {{{label}}};")
-    if count == 2:
-        lines.append(f"\\node[font=\\fontsize{{7}}{{8.5}}\\selectfont,text=black!70] at ({(left+right)/2:.3f},{bottom+0.22:.3f}) {{SmartSim curves appear in panel (a) only.}};")
+    fragments["legend"] = lines[legend_start:]
     lines.extend([r"\end{tikzpicture}", r"\end{document}"])
     output_tex.write_text("\n".join(lines) + "\n")
     print(f"Generated {output_tex}")
+    for suffix, content in fragments.items():
+        output_pgf = output_tex.with_name(f"{output_tex.stem}_{suffix}.pgf")
+        output_pgf.write_text("\n".join([
+            "% Generated TikZ/PGF fragment; requires \\usepackage{tikz}.",
+            *picture_header, *content, r"\end{tikzpicture}",
+        ]) + "\n")
+        print(f"Generated {output_pgf}")
 
 
 if __name__ == "__main__":
