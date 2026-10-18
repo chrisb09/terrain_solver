@@ -2,13 +2,12 @@
 """Generate standalone previews and independently includable TikZ/PGF fragments."""
 
 from pathlib import Path
+import argparse
 
 import numpy as np
 import pandas as pd
 
 MINI_APP_DIR = Path(__file__).resolve().parent
-CSV_HET3 = MINI_APP_DIR / "results/hethires3/ml_step_makespan.csv"
-CSV_HET2 = MINI_APP_DIR / "results/hethires2/ml_step_makespan.csv"
 
 # label, color, line pattern, marker; reused in panels and legends.
 STYLES = {
@@ -23,9 +22,10 @@ STYLES = {
 }
 
 
-def compute_medians():
-    df3 = pd.read_csv(CSV_HET3)
-    df2 = pd.read_csv(CSV_HET2)
+def compute_medians(input_dir=None, summary_csv=None):
+    input_dir = Path(input_dir) if input_dir is not None else MINI_APP_DIR / "results"
+    df3 = pd.read_csv(input_dir / "hethires3/ml_step_makespan.csv")
+    df2 = pd.read_csv(input_dir / "hethires2/ml_step_makespan.csv")
     s3 = df3[df3["solver_step"] > 2]
     s2 = df2[df2["solver_step"] > 2]
     scenarios = [7, 8, 9, 10, 11]
@@ -41,12 +41,20 @@ def compute_medians():
             curves[f"aix_{mode}_{layout}"] = [f"s{s}_aix_{column}_{layout}" for s in scenarios]
 
     data = {}
+    summary = []
     for name, columns in curves.items():
         values = []
-        for column in columns:
+        for node, column in zip((1, 2, 4, 8, 16), columns):
             series = s3[column].dropna() if column in s3 else s2[column].dropna() if column in s2 else []
-            values.append(float(np.median(series)) if len(series) else None)
+            median = float(np.median(series)) if len(series) else None
+            values.append(median)
+            summary.append({"curve": name, "cpu_solver_nodes": node,
+                            "total_solver_ranks": 96 * (node + 1),
+                            "source_csv": "hethires3/ml_step_makespan.csv" if column in s3 else "hethires2/ml_step_makespan.csv",
+                            "source_column": column, "steady_samples": len(series), "median_ms": median})
         data[name] = values
+    if summary_csv is not None:
+        pd.DataFrame(summary).to_csv(summary_csv, index=False)
     return [1, 2, 4, 8, 16], data
 
 
@@ -118,8 +126,9 @@ def generate_tikz(nodes, data, output_tex, title, panels, legend):
 
     for index, (panel_title, maximum, ticks, curves) in enumerate(panels):
         lines.append(f"\\begin{{scope}}[shift={{({index*(width+gap):.3f},0)}}]")
-        panel_start = len(lines)
         lines.append(f"\\node[title] at ({width/2:.3f},{height+0.35:.3f}) {{{panel_title}}};")
+        # Standalone previews retain titles; LaTeX supplies fragment subcaptions.
+        panel_start = len(lines)
         for tick in ticks:
             y = tick / maximum * height
             lines.append(f"\\draw[grid] (0,{y:.4f}) -- ({width:.3f},{y:.4f});")
@@ -131,10 +140,10 @@ def generate_tikz(nodes, data, output_tex, title, panels, legend):
             lines.append(f"\\draw[grid] ({x:.4f},0) -- ({x:.4f},{height});")
             lines.append(f"\\draw[axis] ({x:.4f},0) -- ({x:.4f},-0.07);")
             lines.append(f"\\node[tick,anchor=north] at ({x:.4f},-0.12) {{{node}}};")
-        lines.append(f"\\node at ({width/2:.3f},-0.65) {{Solver Nodes}};")
+        lines.append(f"\\node at ({width/2:.3f},-0.65) {{CPU Solver Nodes}};")
         if count == 2 or index == 0:
-            label_x = (-1.25 if index == 0 else -1.05) if count == 2 else -1.2
-            lines.append(f"\\node[rotate=90,align=center] at ({label_x},{height/2:.3f}) {{Median ML-Step\\\\Time (ms)}};")
+            label_x = (-1.45 if index == 0 else -1.25) if count == 2 else -1.35
+            lines.append(f"\\node[rotate=90,align=center] at ({label_x},{height/2:.3f}) {{Median Logged\\\\ML Step Time (ms)}};")
 
         # Validate before clipping: clipping must not conceal out-of-range data.
         lines.extend([r"\begin{scope}", f"\\clip (0,0) rectangle ({width},{height});"])
@@ -146,7 +155,11 @@ def generate_tikz(nodes, data, output_tex, title, panels, legend):
             lines.append(f"\\draw[c{key},line width=1pt,{STYLES[key][2]}] {path};")
             lines.extend(draw_marker(key, x, y) for x, y in points)
         lines.extend([r"\end{scope}", f"\\draw[axis] (0,0) rectangle ({width},{height});", r"\end{scope}"])
-        fragments[panel_names[index]] = lines[panel_start:-1]
+        # Equal vertical extents keep axes aligned below top-positioned captions.
+        fragments[panel_names[index]] = [
+            f"\\path (0,{height + 0.4:.3f}) (0,-0.85);",
+            *lines[panel_start:-1],
+        ]
 
     # One row for the shared reference curves, another for SmartSim (left only).
     rows = (len(legend) + 2) // 3
@@ -176,10 +189,19 @@ def generate_tikz(nodes, data, output_tex, title, panels, legend):
 
 
 if __name__ == "__main__":
-    nodes, data = compute_medians()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--input-dir", type=Path, default=MINI_APP_DIR / "results",
+                        help="Directory containing hethires2/ and hethires3/ inputs")
+    parser.add_argument("--output-dir", type=Path, default=MINI_APP_DIR,
+                        help="Existing directory for generated figure sources")
+    parser.add_argument("--summary-csv", type=Path, help="Optional per-point statistics and input provenance")
+    args = parser.parse_args()
+    if not args.output_dir.is_dir():
+        parser.error("--output-dir must be an existing directory")
+    nodes, data = compute_medians(args.input_dir, args.summary_csv)
     specs = figure_specs()
     # Check both figures before replacing either generated source.
     for _, _, panels, _ in specs:
         validate_panels(nodes, data, panels)
     for name, title, panels, legend in specs:
-        generate_tikz(nodes, data, MINI_APP_DIR / f"{name}.tex", title, panels, legend)
+        generate_tikz(nodes, data, args.output_dir / f"{name}.tex", title, panels, legend)

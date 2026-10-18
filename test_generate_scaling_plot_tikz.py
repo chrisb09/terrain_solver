@@ -2,10 +2,31 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from generate_scaling_plot_tikz import figure_specs, generate_tikz, validate_panels
+import pandas as pd
+
+from generate_scaling_plot_tikz import compute_medians, figure_specs, generate_tikz, validate_panels
 
 
 class ScalingPlotTests(unittest.TestCase):
+    def test_explicit_inputs_and_summary_preserve_selection_and_warmup(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for name in ("hethires2", "hethires3"):
+                (root / name).mkdir()
+            pd.DataFrame({"solver_step": [2, 4, 6], "s7_aix_coll_default": [1000, 10, 30]}).to_csv(
+                root / "hethires3/ml_step_makespan.csv", index=False)
+            pd.DataFrame({"solver_step": [2, 4, 6], "s7_aix_coll_default": [999, 100, 200],
+                          "s7_smartsim_c0": [999, 60, 80]}).to_csv(
+                root / "hethires2/ml_step_makespan.csv", index=False)
+            _, data = compute_medians(root, root / "summary.csv")
+            self.assertEqual(data["aix_coll_default"][0], 20)
+            self.assertEqual(data["smartsim_c0"][0], 70)
+            summary = pd.read_csv(root / "summary.csv")
+            selected = summary[(summary["curve"] == "smartsim_c0") & (summary["cpu_solver_nodes"] == 1)].iloc[0]
+            self.assertEqual(selected["source_csv"], "hethires2/ml_step_makespan.csv")
+            self.assertEqual(selected["steady_samples"], 2)
+            self.assertEqual(selected["total_solver_ranks"], 192)
+
     def test_framework_panel_membership(self):
         _, _, panels, legend = figure_specs()[0]
         self.assertEqual([panel[1] for panel in panels], [22000, 1000])
@@ -55,6 +76,7 @@ class ScalingPlotTests(unittest.TestCase):
                     self.assertEqual(text.count(r"\end{tikzpicture}"), 1)
                     self.assertNotIn(r"\documentclass", text)
                     self.assertNotIn("SmartSim curves appear", text)
+                    self.assertNotIn(r"\node[title]", text)
                     if fragment.stem.endswith("_legend"):
                         self.assertNotIn(r"\clip", text)
                     else:

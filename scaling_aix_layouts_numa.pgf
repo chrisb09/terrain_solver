@@ -12,7 +12,7 @@ title/.style={font=\fontsize{8}{10}\selectfont\bfseries}]
 \definecolor{csmartsim_c0}{HTML}{D62728}
 \definecolor{csmartsim_c3}{HTML}{9467BD}
 \definecolor{csmartsim_per_gpu_db}{HTML}{8C564B}
-\node[title] at (1.975,2.450) {(c) NUMA};
+\path (0,2.500) (0,-0.85);
 \draw[grid] (0,0.0000) -- (3.950,0.0000);
 \draw[axis] (0,0.0000) -- (-0.07,0.0000);
 \draw[grid] (0,0.4200) -- (3.950,0.4200);
@@ -40,7 +40,7 @@ title/.style={font=\fontsize{8}{10}\selectfont\bfseries}]
 \draw[grid] (3.8700,0) -- (3.8700,2.1);
 \draw[axis] (3.8700,0) -- (3.8700,-0.07);
 \node[tick,anchor=north] at (3.8700,-0.12) {16};
-\node at (1.975,-0.65) {Solver Nodes};
+\node at (1.975,-0.65) {CPU Solver Nodes};
 \begin{scope}
 \clip (0,0) rectangle (3.95,2.1);
 % aix_coll_numa: 70.91350, 82.08450, 88.89350, 146.59200, 225.17500 ms
