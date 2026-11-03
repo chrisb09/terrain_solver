@@ -674,6 +674,20 @@ if [[ -n "${SCOREP_MPP_ENV:-}" ]]; then
 fi
 SCOREP_MPP="${SCOREP_MPP:-mpi}"
 export SCOREP_MPP
+if [[ "${USE_SCOREP}" == "1" && "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:u}" == "PHYDLL" && "${USE_PYTHON_DL_CLIENT:-0}" == "1" ]]; then
+  if [[ "${SCOREP_MPP}" != "none" ]]; then
+    echo "ERROR: Score-P MPI-instrumented PhyDLL solver cannot share MPI_COMM_WORLD with the standard mpi4py client, with or without the Python wrapper; use the C++ DL client or disable Score-P." >&2
+    exit 1
+  fi
+  if [[ "${SCOREP_ENABLE_TRACING_ENV:-false}" == "true" || "${SCOREP_ENABLE_TRACING_ENV:-false}" == "1" || "${SCOREP_SHARED_PROFILE_ENV:-0}" == "1" ]]; then
+    echo "ERROR: Score-P mpp=none solver ranks need separate profiling directories; disable tracing and shared profiles." >&2
+    exit 1
+  fi
+  if [[ "${PHYDLL_PY_SCOREP_WRAPPER:-0}" == "1" && "${PHYDLL_NP_DL_ENV:-${PHYDLL_NP_DL:-1}}" != "1" ]]; then
+    echo "ERROR: independent Score-P Python clients would share an experiment directory; use one DL client." >&2
+    exit 1
+  fi
+fi
 if [[ -n "${COMPILE_OUTPUT_PATH_ENV:-}" ]]; then
   COMPILE_OUTPUT_PATH="${COMPILE_OUTPUT_PATH_ENV}"
   echo "Using COMPILE_OUTPUT_PATH from environment variable: ${COMPILE_OUTPUT_PATH}"
@@ -708,6 +722,10 @@ if [[ "${USE_CPP_ML_INTERFACE}" -eq 1 && "${CPP_ML_INTERFACE_PROVIDER:u}" == "PH
     SKIP_COMPILE=0
   elif [[ "${SKIP_COMPILE}" -eq 1 && ( ! -f "${_phydll_cache}" || "$(grep -E '^WITH_PHYDLL:BOOL=ON$' "${_phydll_cache}" 2>/dev/null || true)" == "" ) ]]; then
     echo "PhyDLL provider requested but existing build is not configured with WITH_PHYDLL=ON; forcing compilation."
+    SKIP_COMPILE=0
+  fi
+  if [[ "${SKIP_COMPILE}" -eq 1 && "${USE_SCOREP}" == "1" && "${USE_PYTHON_DL_CLIENT:-0}" == "1" ]] && ! grep -Eq '^CPPML_SCOREP_MPP:[^=]+=none$' "${_phydll_cache}"; then
+    echo "PhyDLL Python client requires a solver configured with Score-P mpp=none; forcing compilation."
     SKIP_COMPILE=0
   fi
 fi
@@ -941,23 +959,6 @@ if [[ "${USE_SCOREP}" == "1" ]]; then
   _scorep_tracing=false
   if [[ "${SCOREP_ENABLE_TRACING_ENV:-false}" == "true" || "${SCOREP_ENABLE_TRACING_ENV:-false}" == "1" ]]; then
     _scorep_tracing=true
-  fi
-  if [[ "${USE_PYTHON_DL_CLIENT:-0}" == "1" && "${PHYDLL_PY_SCOREP_WRAPPER:-0}" == "1" && "${USE_SCOREP}" == "1" ]]; then
-    # STRUCTURAL LIMITATION (confirmed by hang in jobs 3707238/3708403): with
-    # Score-P-MPI-instrumented solver ranks, EVERY process in MPI_COMM_WORLD
-    # must participate in Score-P's init: SCOREP_Ipc_Init does PMPI_Comm_dup +
-    # a node-id Allgather over the whole world, and with tracing the init AND
-    # finalize additionally run a world-wide clock ping-pong
-    # (scorep_clock_synchronization_mpp_ipc.c, tsc is never "global"). A
-    # Python DL client under standard mpi4py (scorep --mpp=none) never joins
-    # these collectives, so all 96 solver ranks block inside MPI_Init - in
-    # profiling AND tracing mode. No phydll_py case with a Score-P solver has
-    # ever produced data. Fixes would be: Score-P-instrumented mpi4py for the
-    # client (or LD_AUDIT interposition via libscorep_rtld_audit.so).
-    # Fail fast instead of deadlocking until the job's time limit.
-    echo "ERROR: phydll_py + Score-P solver is structurally impossible: the Python DL client (standard mpi4py) cannot join Score-P's world-wide init collectives (PMPI_Comm_dup/Allgather, clock sync). The solver ranks would deadlock inside MPI_Init in profiling AND tracing mode." >&2
-    echo "       Options: run this case without the Score-P python wrapper (plain client still deadlocks against the instrumented solver!), use the C++ DL client (phydll_cpp works), or build Score-P-instrumented mpi4py / use LD_AUDIT for the client." >&2
-    exit 1
   fi
   # Clean up stale experiment dirs from previous attempts BEFORE any rank starts
   # (single batch-script process, so this is race-free).
@@ -2062,7 +2063,7 @@ if [[ "${SKIP_COMPILE}" -eq 1 ]]; then
         # with overwrite=false (:301 "exists and overwriting is disabled"), and
         # with overwrite=true the client would rename the solver's live
         # experiment away. Single-process client => own dir, always.
-        DL_CLIENT_CMD=("env" "ENABLE_SCOREP_USER=1" "SCOREP_EXPERIMENT_DIRECTORY=${_py_exp_dir}" "${_py_overwrite}" "SMARTSIM_PAPI_ROOT=${SMARTSIM_PAPI_ROOT}" "SMARTSIM_SCOREP_ROOT=${SMARTSIM_SCOREP_ROOT}" "PATH=${SCOREP_BIN_DIR}:$PATH" "PYTHONPATH=${SCOREP_PYTHONPATH}:${PYTHONPATH:-}" "${PY_ENV}/bin/python3" "-m" "scorep" "--keep-files" "--instrumenter-type=dummy" "--noinstrumenter" "--mpp=none" "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/phydll_dl_client.py")
+        DL_CLIENT_CMD=("env" "ENABLE_SCOREP_USER=1" "SCOREP_MPP=none" "SCOREP_EXPERIMENT_DIRECTORY=${_py_exp_dir}" "${_py_overwrite}" "SMARTSIM_PAPI_ROOT=${SMARTSIM_PAPI_ROOT}" "SMARTSIM_SCOREP_ROOT=${SMARTSIM_SCOREP_ROOT}" "PATH=${SCOREP_BIN_DIR}:$PATH" "PYTHONPATH=${SCOREP_PYTHONPATH}:${PYTHONPATH:-}" "${PY_ENV}/bin/python3" "-m" "scorep" "--keep-files" "--instrumenter-type=profile" "--noinstrumenter" "--mpp=none" "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/phydll_dl_client.py")
       else
         DL_CLIENT_CMD=("${PY_ENV}/bin/python3" "${MINI_APP_DIR}/../CPP-ML-Interface/dl_clients/phydll_dl_client.py")
       fi
